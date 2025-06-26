@@ -1,0 +1,124 @@
+! Submodule : mesh_io_sm
+! Purpose   : Input/output for mesh_t types
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_io_sm
+
+   ! Uses
+
+   use forum_m
+
+   use file_m
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure read
+
+      integer :: revision
+   
+      ! Read the mesh_t
+
+      call check_type(hdf5io, 'mesh_t', stat)
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      call hdf5io%read_attr('REVISION', revision)
+
+      select case(revision)
+      case(1)
+         call read_rev1_()
+      case default
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_REVISION
+            return
+         else
+            @:ABORT('invalid group revision')
+         end if
+      end select
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_rev1_()
+
+         integer              :: n_vert
+         integer              :: n_edge
+         integer              :: n_face
+         integer, allocatable :: EV(:)
+         integer, allocatable :: ET(:)
+         integer, allocatable :: VE(:)
+      
+         call hdf5io%read_attr('n_vert', n_vert)
+         call hdf5io%read_attr('n_edge', n_edge)
+         call hdf5io%read_attr('n_face', n_face)
+
+         call hdf5io%alloc_read_dset('EV', EV)
+         call hdf5io%alloc_read_dset('ET', ET)
+         call hdf5io%alloc_read_dset('VE', VE)
+
+         if (SIZE(EV) /= n_edge .OR. SIZE(ET) /= n_edge .OR. SIZE(VE) /= n_vert) then
+            if (PRESENT(stat)) then
+               stat = STAT_INVALID_DATASET_DIM
+               return
+            else
+               @:ABORT('invalid dataset dimension')
+            end if
+         end if
+
+         select type(self)
+         type is(mesh_t)
+            self = mesh_t_(EV, ET, VE)
+         class default
+            @:ABORT('invalid type')
+         end select
+
+         call self%validate(stat)
+
+         ! Finish
+
+         return
+
+      end subroutine read_rev1_
+
+   end procedure read
+
+   !****
+   
+   module procedure write
+
+      ! Write the mesh_t
+
+      call hdf5io%write_attr('TYPE', 'mesh_t')
+      call hdf5io%write_attr('REVISION', 1)
+
+      call hdf5io%write_attr('n_vert', self%n_vert)
+      call hdf5io%write_attr('n_edge', self%n_edge)
+      call hdf5io%write_attr('n_face', self%n_face)
+
+      call hdf5io%write_dset('EV', self%EV)
+      call hdf5io%write_dset('ET', self%ET)
+      call hdf5io%write_dset('VE', self%VE)
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end procedure write
+
+end submodule mesh_io_sm

@@ -1,0 +1,400 @@
+! Submodule : mesh_modify_sm
+! Purpose   : Routines to modify mesh_t types
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_modify_sm
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure flip_edge
+
+      logical :: clockwise_
+      integer :: e_t
+      integer :: e1
+      integer :: e2
+      integer :: e3
+      integer :: e4
+      integer :: e5
+      integer :: e6
+      integer :: e2_t
+      integer :: e3_t
+      integer :: e5_t
+      integer :: e6_t
+      integer :: v1
+      integer :: v2
+      integer :: v3
+      integer :: v4
+      integer :: v1_e
+      integer :: v2_e
+      integer :: v3_e
+      integer :: v4_e
+
+      ! Flip edge e in a clockwise direction (clockwise=.TRUE.) or a
+      ! counter-clockwise direction (clockwise=.FALSE., default). An
+      ! attempt to flip a boundary edge (i.e., lacking a twin) or invalid
+      ! edge will do nothing
+
+      if (PRESENT(clockwise)) then
+         clockwise_ = clockwise
+      else
+         clockwise_ = .FALSE.
+      end if
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+
+      e_t = self%edge_twin(e)
+
+      @:ASSERT_DEBUG(e_t /= BOUNDARY_EDGE, 'boundary edge')
+
+      ! Identify edges and twins
+      
+      e1 = e
+      e2 = self%edge_next(e1)
+      e3 = self%edge_prev(e1)
+
+      e4 = e_t
+      e5 = self%edge_next(e4)
+      e6 = self%edge_prev(e4)
+
+      e2_t = self%edge_twin(e2)
+      e3_t = self%edge_twin(e3)
+      e5_t = self%edge_twin(e5)
+      e6_t = self%edge_twin(e6)
+
+      @:ASSERT(e2_t /= e6 .AND. e3_t /= e5, 'unflippable edge')
+
+      ! Identify vertices and vertex-edges
+
+      v1 = self%edge_vert(e5)
+      v2 = self%edge_vert(e6)
+      v3 = self%edge_vert(e2)
+      v4 = self%edge_vert(e3)
+
+      v1_e = self%vert_edge(v1)
+      v2_e = self%vert_edge(v2)
+      v3_e = self%vert_edge(v3)
+      v4_e = self%vert_edge(v4)
+
+      ! Perform the flip
+
+      if (clockwise_) then
+
+         ! Update the vertex-edge table
+
+         if (v1_e == e1 .OR. v1_e == e5) then
+            self%VE(v1) = e6
+         end if
+
+         if (v2_e == e6) then
+            self%VE(v2) = e4
+         end if
+
+         if (v3_e == e2 .OR. v3_e == e4) then
+            self%VE(v3) = e3
+         end if
+
+         if (v4_e == e3) then
+            self%VE(v4) = e1
+         end if
+
+         ! Update the edge-vertex table
+
+         self%EV(e1) = v4
+         self%EV(e2) = v2
+         self%EV(e3) = v3
+
+         self%EV(e4) = v2
+         self%EV(e5) = v4
+         self%EV(e6) = v1
+
+         ! Update the edge-twin table
+
+         self%ET(e2) = e6_t
+         self%ET(e3) = e2_t
+         self%ET(e5) = e3_t
+         self%ET(e6) = e5_t
+
+         if (e2_t /= BOUNDARY_EDGE) self%ET(e2_t) = e3
+         if (e3_t /= BOUNDARY_EDGE) self%ET(e3_t) = e5
+         if (e5_t /= BOUNDARY_EDGE) self%ET(e5_t) = e6
+         if (e6_t /= BOUNDARY_EDGE) self%ET(e6_t) = e2
+
+      else
+
+         ! Update the vertex-edge table
+
+         if (v1_e == e1 .OR. v1_e == e5) then
+            self%VE(v1) = e3
+         end if
+
+         if (v2_e == e6) then
+            self%VE(v2) = e1
+         end if
+
+         if (v3_e == e2 .OR. v3_e == e4) then
+            self%VE(v3) = e6
+         end if
+
+         if (v4_e == e3) then
+            self%VE(v4) = e4
+         end if
+
+         ! Update the edge-vertex table
+
+         self%EV(e1) = v2
+         self%EV(e2) = v4
+         self%EV(e3) = v1
+
+         self%EV(e4) = v4
+         self%EV(e5) = v2
+         self%EV(e6) = v3
+
+         ! Update the edge-twin table
+
+         self%ET(e2) = e3_t
+         self%ET(e3) = e5_t
+         self%ET(e5) = e6_t
+         self%ET(e6) = e2_t
+
+         if (e2_t /= BOUNDARY_EDGE) self%ET(e2_t) = e6
+         if (e3_t /= BOUNDARY_EDGE) self%ET(e3_t) = e2
+         if (e5_t /= BOUNDARY_EDGE) self%ET(e5_t) = e3
+         if (e6_t /= BOUNDARY_EDGE) self%ET(e6_t) = e5
+
+      end if
+
+      ! Finish
+
+      return
+
+   end procedure flip_edge
+
+   !****
+
+   module procedure refine_face
+
+      integer :: e1
+      integer :: e2
+      integer :: e3
+      integer :: e3
+      integer :: e4
+      integer :: e5
+      integer :: e6
+      integer :: e7
+      integer :: e8
+      integer :: e9
+      integer :: e1_t
+      integer :: e2_t
+      integer :: e3_t
+      integer :: v1
+      integer :: v2
+      integer :: v3
+      integer :: v1_e
+      integer :: v2_e
+      integer :: v3_e
+
+      @:ASSERT(f >= 1 .AND. f <= self%n_face, 'invalid face')
+
+      ! Refine the face by inserting a new vertex at the center. The
+      ! faces are oriented so that their first edges are adjacent to
+      ! the (old) neighboring faces. The new vertex is returned in v
+
+      call expand_(self, self%n_vert+1, self%n_edge+6)
+
+      ! Identify edges and twins
+
+      e1 = self%face_edge(f)
+      e2 = self%edge_next(e1)
+      e3 = self%edge_prev(e1)
+      e4 = self%n_edge + 1
+      e5 = self%n_edge + 2
+      e6 = self%n_edge + 3
+      e7 = self%n_edge + 4
+      e8 = self%n_edge + 5
+      e9 = self%n_edge + 6
+
+      e1_t = self%edge_twin(e1)
+      e2_t = self%edge_twin(e2)
+      e3_t = self%edge_twin(e3)
+
+      ! Identify vertices and vertex-edges
+
+      v1 = self%edge_vert(e1)
+      v2 = self%edge_vert(e2)
+      v3 = self%edge_vert(e3)
+
+      v1_e = self%vert_edge(v1)
+      v2_e = self%vert_edge(v2)
+      v3_e = self%vert_edge(v3)
+
+      v = self%n_vert + 1
+
+      ! Create new edges
+
+      ! Update the edge-vertex table
+
+      self%EV(e2) = v2
+      self%EV(e3) = v
+
+      self%EV(e4) = v2
+      self%EV(e5) = v3
+      self%EV(e6) = v
+
+      self%EV(e7) = v3
+      self%EV(e8) = v1
+      self%EV(e9) = v
+
+      ! Update the edge-twin table
+
+      self%ET(e2) = e6
+      self%ET(e3) = e8
+
+
+      self%ET(e4) = e2_t
+      if (e2_t /= BOUNDARY_EDGE) self%ET(e2_t) = e4
+
+      self%ET(e5) = e9
+      self%ET(e6) = e2
+
+      self%ET(e7) = e3_t
+      if (e3_t /= BOUNDARY_EDGE) self%ET(e3_t) = e7
+
+      self%ET(e8) = e3
+      self%ET(e9) = e5
+
+      ! Update the vertex-edge table
+
+      if (v2_e == e2) then
+         self%VE(v2) = e4
+      end if
+
+      if (v3_e == e3) then
+         self%VE(v3) = e7
+      end if
+
+      self%VE(v) = e3
+
+      ! Update the mesh dimensions
+
+      self%n_vert = self%n_vert + 1
+      self%n_edge = self%n_edge + 6
+      self%n_face = self%n_face + 2
+
+      ! Finish
+
+      return
+
+   end procedure refine_face
+
+   !****
+
+   module procedure refine
+
+      integer :: f
+
+      ! Refine all faces. The new vertices are returned in v
+
+      call expand_(self, self%n_vert+self%n_face, self%n_edge+6*self%n_face)
+
+      allocate(v(self%n_face))
+      
+      face_loop: do f = 1, self%n_face
+         call self%refine_face(f, v(f))
+      end do face_loop
+
+      ! Finish
+
+      return
+
+   end procedure refine
+   
+   !****
+
+   module procedure refine_and_flip
+
+      logical, allocatable :: face_mask(:)
+      integer              :: f
+      integer              :: e
+      integer              :: e_t
+
+      ! Refine all faces, and then flip the old edges. The new vertices are returned in v
+
+      call refine(self, v)
+
+      allocate(face_mask(self%n_face))
+      face_mask = .FALSE.
+
+      face_loop: do f = 1, self%n_face
+
+         if (.NOT. face_mask(f)) then
+
+            e = self%face_edge(f)
+            e_t = self%edge_twin(e)
+
+            if (e_t /= BOUNDARY_EDGE) then
+
+               call self%flip_edge(e, clockwise)
+
+               face_mask(f) = .TRUE.
+               face_mask(self%edge_face(e_t)) = .TRUE.
+
+            end if
+
+         end if
+
+      end do face_loop
+
+      ! Finish
+
+      return
+
+   end procedure refine_and_flip
+
+   !****
+
+   subroutine expand_(mesh, d_vert, d_edge)
+
+      class(mesh_t), intent(inout) :: mesh
+      integer, intent(in)          :: d_vert
+      integer, intent(in)          :: d_edge
+
+      ! If necessary, expand arrays
+
+      if (d_vert > mesh%n_vert) then
+
+         call reallocate(mesh%VE, [d_vert])
+         mesh%VE(mesh%n_vert+1:) = 0
+
+      end if
+
+      if (d_edge > mesh%n_edge) then
+
+         call reallocate(mesh%EV, [d_edge])
+         mesh%EV(mesh%n_edge+1:) = 0
+
+         call reallocate(mesh%ET, [d_edge])
+         mesh%ET(mesh%n_edge+1:) = 0
+
+      end if
+
+      ! Finish
+
+      return
+
+   end subroutine expand_
+
+end submodule mesh_modify_sm
+

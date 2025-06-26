@@ -1,0 +1,36 @@
+! Submodule : mesh_topology_sm
+! Purpose   : Routines to determine topology of mesh_t types
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_topology_sm
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure euler_characteristic
+
+      @:ASSERT(ALL(self%ET /= BOUNDARY_EDGE), 'invalid mesh')
+
+      ! Evaluate the Euler characteristic
+      
+      chi = self%n_face - self%n_edge/2 + self%n_vert
+
+      ! Finish
+
+      return
+
+   end procedure euler_characteristic
+
+end submodule mesh_topology_sm

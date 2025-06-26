@@ -1,0 +1,133 @@
+! Module  : mesh_primitives_m
+! Purpose : Create mesh_t types for polyhedral and other primitives
+
+#:include 'forum.inc'
+
+module mesh_primitives_m
+
+   ! Uses
+
+   use forum_m
+   use mesh_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Accessibility
+
+   private
+
+   public :: one_face_mesh
+   public :: two_face_mesh
+   public :: tetrahedron_mesh
+   public :: icosahedron_mesh
+
+   ! Procedures
+
+contains
+
+   function one_face_mesh() result(mesh)
+
+      type(mesh_t) :: mesh
+
+      integer :: face_verts(3,1)
+
+      ! Create a single-face mesh_t
+
+      face_verts(:,1) = [1, 2, 3]
+
+      mesh = mesh_t(face_verts)
+
+      ! Finish
+
+      return
+
+   end function one_face_mesh
+
+   !****
+
+   function two_face_mesh() result(mesh)
+
+      type(mesh_t) :: mesh
+
+      integer :: face_verts(3,2)
+
+      ! Create a two-face mesh_t
+
+      face_verts(:,1) = [1, 2, 3]
+      face_verts(:,2) = [2, 4, 3]
+
+      mesh = mesh_t(face_verts)
+
+      ! Finish
+
+      return
+
+   end function two_face_mesh
+
+   !***
+
+   function tetrahedron_mesh() result(mesh)
+
+      type(mesh_t) :: mesh
+
+      integer  :: face_verts(3,4)
+
+      ! Create a tetrahedron mesh_t
+
+      face_verts(:,1) = [1, 2, 3]
+      face_verts(:,2) = [2, 1, 4]
+      face_verts(:,3) = [3, 4, 1]
+      face_verts(:,4) = [4, 3, 2]
+
+      mesh = mesh_t(face_verts)
+
+      ! Finish
+
+      return
+
+   end function tetrahedron_mesh
+
+   !****
+
+   function icosahedron_mesh() result(mesh)
+
+      type(mesh_t) :: mesh
+
+      integer  :: face_verts(3, 20)
+
+      ! Create an icosahedron mesh_t
+
+      face_verts(:,1) = [1, 12, 6]
+      face_verts(:,2) = [1, 6, 2]
+      face_verts(:,3) = [1, 2, 8]
+      face_verts(:,4) = [1, 8, 11]
+      face_verts(:,5) = [1, 11, 12]
+      face_verts(:,6) = [2, 6, 10]
+      face_verts(:,7) = [6, 12, 5]
+      face_verts(:,8) = [12, 11, 3]
+      face_verts(:,9) = [11, 8, 7]
+      face_verts(:,10) = [8, 2, 9]
+      face_verts(:,11) = [4, 10, 5]
+      face_verts(:,12) = [4, 5, 3]
+      face_verts(:,13) = [4, 3, 7]
+      face_verts(:,14) = [4, 7, 9]
+      face_verts(:,15) = [4, 9, 10]
+      face_verts(:,16) = [5, 10, 6]
+      face_verts(:,17) = [3, 5, 12]
+      face_verts(:,18) = [7, 3, 11]
+      face_verts(:,19) = [9, 7, 8]
+      face_verts(:,20) = [10, 9, 2]
+
+      mesh = mesh_t(face_verts)
+
+      ! Finish
+
+      return
+
+   end function icosahedron_mesh
+
+end module mesh_primitives_m

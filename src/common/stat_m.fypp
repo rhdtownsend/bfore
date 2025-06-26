@@ -1,0 +1,55 @@
+! Module  : stat_m
+! Purpose : Define status codes
+
+#:include 'forum.inc'
+
+module stat_m
+
+   ! Uses
+
+   use forum_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   ! Status codes
+
+   integer, parameter :: STAT_OK = 0
+
+   ! mesh_t codes
+
+   integer, parameter :: STAT_INVALID_FACE_VERT = -1     ! Out-of-bounds face_verts entry
+   integer, parameter :: STAT_INVALID_EDGE_VERT = -2     ! Out-of-bounds EV entry
+   integer, parameter :: STAT_INVALID_EDGE_TWIN = -3     ! Out-of-bounds ET entry
+   integer, parameter :: STAT_INVALID_VERT_EDGE = -4     ! Out-of-bounds VE entry
+   integer, parameter :: STAT_DEGENERATE_FACE = -5       ! Face with two or more matching vertices
+   integer, parameter :: STAT_MISMATCHED_EDGE_TWIN = -6  ! Edge twin does not point back to edge
+   integer, parameter :: STAT_MISMATCHED_VERT_EDGE = -7  ! Vert edge does not point back to vert
+   integer, parameter :: STAT_MISORIENTED_EDGE_TWIN = -8 ! Edge twin has wrong orientation
+
+   ! I/O codes
+
+   integer, parameter :: STAT_INVALID_GROUP_TYPE = -100
+   integer, parameter :: STAT_INVALID_GROUP_REVISION = -101
+   integer, parameter :: STAT_INVALID_DATASET_DIM = -102
+
+   ! Accessibility
+
+   private
+
+   public :: STAT_OK
+   public :: STAT_INVALID_EDGE_VERT
+   public :: STAT_INVALID_EDGE_TWIN
+   public :: STAT_INVALID_VERT_EDGE
+   public :: STAT_DEGENERATE_FACE
+   public :: STAT_MISMATCHED_EDGE_TWIN
+   public :: STAT_MISMATCHED_VERT_EDGE
+   public :: STAT_MISORIENTED_EDGE_TWIN
+   public :: STAT_INVALID_GROUP_TYPE
+   public :: STAT_INVALID_GROUP_REVISION
+   public :: STAT_INVALID_DATASET_DIM
+
+end module stat_m

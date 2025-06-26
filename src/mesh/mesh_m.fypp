@@ -1,0 +1,487 @@
+! Module  : mesh_m
+! Purpose : Define mesh_t datatype, for representing triangular surface
+!           meshes using the compact half-edge paradigm
+
+#:include 'forum.inc'
+
+module mesh_m
+
+   ! Uses
+
+   use forum_m
+
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   integer, parameter :: BOUNDARY_EDGE = -HUGE(0)
+
+   ! Derived-type definitions
+
+   type :: mesh_t
+      private
+      integer, allocatable :: EV(:) ! Edge-vertex table
+      integer, allocatable :: ET(:) ! Edge-twin table
+      integer, allocatable :: VE(:) ! Vertex-edge table
+      integer, public      :: n_vert
+      integer, public      :: n_edge
+      integer, public      :: n_face
+   contains
+      private
+      procedure, public :: edge_prev
+      procedure, public :: edge_next
+      procedure, public :: edge_twin
+      procedure, public :: vert_edge
+      procedure, public :: vert_face
+      procedure, public :: edge_vert
+      procedure, public :: edge_face
+      procedure, public :: face_vert
+      procedure, public :: face_edge
+      procedure, public :: flip_edge
+      procedure, public :: validate
+      procedure, public :: refine_face
+      procedure, public :: refine
+      procedure, public :: refine_and_flip
+      procedure, public :: euler_characteristic
+      procedure, public :: read
+      procedure, public :: write
+   end type mesh_t
+
+   ! Interfaces
+
+   interface mesh_t
+      module procedure mesh_t_face_verts_
+      module procedure mesh_t_meshes_
+   end interface mesh_t
+
+   interface compare
+      module procedure compare_
+   end interface compare
+
+   interface
+
+      ! In mesh_construct_sm
+
+      module function mesh_t_face_verts_(face_verts) result(mesh)
+         integer, intent(in) :: face_verts(:,:)
+         type(mesh_t)        :: mesh
+      end function mesh_t_face_verts_
+      
+      module function mesh_t_meshes_(meshes) result(mesh)
+         type(mesh_t), intent(in) :: meshes(:)
+         type(mesh_t)             :: mesh
+      end function mesh_t_meshes_
+
+      ! In mesh_modify_sm
+
+      module subroutine flip_edge(self, e, clockwise)
+         class(mesh_t), intent(inout)  :: self
+         integer, intent(in)           :: e
+         logical, intent(in), optional :: clockwise
+      end subroutine flip_edge
+
+      module subroutine refine_face(self, f, v)
+         class(mesh_t), intent(inout) :: self
+         integer, intent(in)          :: f
+         integer, intent(out)         :: v
+      end subroutine refine_face
+
+      module subroutine refine(self, v)
+         class(mesh_t), intent(inout)      :: self
+         integer, allocatable, intent(out) :: v(:)
+      end subroutine refine
+
+      module subroutine refine_and_flip(self, v, clockwise)
+         class(mesh_t), intent(inout)      :: self
+         integer, allocatable, intent(out) :: v(:)
+         logical, intent(in), optional     :: clockwise
+      end subroutine refine_and_flip
+
+      ! In mesh_topology_sm
+
+      module function euler_characteristic(self) result(chi)
+         class(mesh_t), intent(in) :: self
+         integer                   :: chi
+      end function euler_characteristic
+
+      ! In mesh_io_sm
+
+      module subroutine read(self, hdf5io, stat)
+         class(mesh_t), intent(out)     :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         class(mesh_t), intent(in)      :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine write
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: BOUNDARY_EDGE
+   public :: mesh_t
+   public :: mesh_t_ ! Required for submodules to see mesh_t_
+   public :: compare
+
+   ! Procedures
+
+contains
+
+   function mesh_t_(EV, ET, VE) result(mesh)
+
+      integer, intent(in) :: EV(:)
+      integer, intent(in) :: ET(:)
+      integer, intent(in) :: VE(:)
+      type(mesh_t)        :: mesh
+
+      @:CHECK_BOUNDS(SIZE(ET), SIZE(EV))
+
+      ! Construct the mesh_t from the supplied compact half-edge
+      ! tables
+
+      mesh%n_vert = MAXVAL(EV)
+      mesh%n_edge = SIZE(EV)
+      mesh%n_face = SIZE(EV)/3
+
+      mesh%EV = EV
+      mesh%ET = ET
+      mesh%VE = VE
+
+      ! Finish
+
+      return
+
+   end function mesh_t_
+
+   !****
+
+   impure elemental function edge_prev(self, e) result(e_p)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: e
+      integer                   :: e_p
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+
+      ! Get the previous edge of edge e
+
+      e_p = 3*(self%edge_face(e) - 1) + 1 + MODULO(e + 1, 3)
+
+      ! Finish
+
+      return
+
+   end function edge_prev
+
+   !****
+
+   impure elemental function edge_next(self, e) result(e_n)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: e
+      integer                   :: e_n
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+
+      ! Get the next edge of edge e
+
+      e_n = 3*(self%edge_face(e) - 1) + 1 + MODULO(e, 3)
+
+      ! Finish
+
+      return
+
+   end function edge_next
+
+   !****
+
+   impure elemental function edge_twin(self, e) result(e_t)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: e
+      integer                   :: e_t
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+
+      ! Get the twin edge of edge e
+
+      e_t = self%ET(e)
+
+      ! Finish
+
+      return
+
+   end function edge_twin
+
+   !****
+
+   impure elemental function vert_edge(self, v) result(v_e)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: v
+      integer                   :: v_e
+
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
+         
+      ! Get one of the outbound edges of vertex v
+
+      v_e = self%VE(v)
+
+      ! Finish
+
+      return
+
+   end function vert_edge
+
+   !****
+
+   impure elemental function vert_face(self, v) result(v_f)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: v
+      integer                   :: v_f
+
+      integer :: v_e
+
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
+
+      ! Get one of the faces of vertex v
+
+      v_e = self%vert_edge(v)
+
+      v_f = self%edge_face(v_e)
+
+      ! Finish
+
+      return
+
+   end function vert_face
+
+   !****
+
+   impure elemental function edge_vert(self, e) result(e_v)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: e
+      integer                   :: e_v
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+
+      ! Get the starting vertex of edge e
+
+      e_v = self%EV(e)
+
+      ! Finish
+
+      return
+
+   end function edge_vert
+
+   !****
+      
+   impure elemental function edge_face(self, e) result(e_f)
+
+      class(mesh_t), intent(in)      :: self
+      integer, intent(in)            :: e
+      integer                        :: e_f
+
+      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
+         
+      ! Get the face of edge e
+
+      e_f = (e - 1)/3 + 1
+
+      ! Finish
+
+      return
+
+   end function edge_face
+
+   !****
+
+   impure elemental function face_vert(self, f) result(f_v)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: f
+      integer                   :: f_v
+
+      integer :: f_e
+
+      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid face')
+
+      ! Get the first vertex of face f
+
+      f_e = self%face_edge(f)
+
+      f_v = self%edge_vert(f_e)
+
+      ! Finish
+
+      return
+
+   end function face_vert
+
+   !****
+
+   impure elemental function face_edge(self, f) result(f_e)
+
+      class(mesh_t), intent(in) :: self
+      integer, intent(in)       :: f
+      integer                   :: f_e
+
+      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid face')
+         
+      ! Get the first edge of face f
+
+      f_e = 3*(f - 1) + 1
+
+      ! Finish
+
+      return
+
+   end function face_edge
+
+   !****
+
+   subroutine validate(self, stat, loc)
+
+      class(mesh_t), intent(inout)   :: self
+      integer, intent(out)           :: stat
+      integer, intent(out), optional :: loc
+
+      integer :: i
+      integer :: e(self%n_edge)
+      integer :: e_t(self%n_edge)
+      logical :: edge_mask(self%n_edge)
+      integer :: v(self%n_vert)
+      integer :: v_e(self%n_vert)
+      
+      ! Validate the mesh
+
+      associate( &
+         EV => self%EV(:self%n_edge), &
+         ET => self%ET(:self%n_edge), &
+         VE => self%VE(:self%n_vert))
+
+         ! Check table values
+
+         call validate_cond_(EV >= 1 .AND. EV <= self%n_vert, &
+            STAT_INVALID_EDGE_VERT)
+         if (stat /= STAT_OK) return
+
+         call validate_cond_((ET >= 1 .AND. ET <= self%n_edge) .OR. ET == BOUNDARY_EDGE, &
+            STAT_INVALID_EDGE_TWIN)
+         if (stat /= STAT_OK) return
+
+         call validate_cond_(VE >= 1 .AND. VE <= self%n_edge, &
+            STAT_INVALID_VERT_EDGE)
+         if (stat /= STAT_OK) return
+
+         ! Check for degenerate faces
+
+         call validate_cond_(EV(1::3) /= EV(2::3) .AND. EV(1::3) /= EV(3::3) .AND. EV(2::3) /= EV(3::3), &
+            STAT_DEGENERATE_FACE)
+         if (stat /= STAT_OK) return
+
+      end associate
+
+      ! Check the traversal identities
+
+      e = [(i, i=1, self%n_edge)]
+      e_t = self%edge_twin(e)
+
+      edge_mask = e_t /= BOUNDARY_EDGE
+
+      call validate_cond_(self%edge_twin(PACK(e_t, MASK=edge_mask)) == &
+         PACK(e, MASK=edge_mask), &
+         STAT_MISMATCHED_EDGE_TWIN)
+      if (stat /= STAT_OK) return
+
+      v = [(i, i=1, self%n_vert)]
+      v_e = self%vert_edge(v)
+
+      call validate_cond_(self%edge_vert(v_e) == v, &
+         STAT_MISMATCHED_VERT_EDGE)
+      if (stat /= STAT_OK) return
+
+      ! Check the orientation constraint
+
+      call validate_cond_(self%edge_vert(self%edge_next(PACK(e_t, MASK=edge_mask))) == &
+         self%edge_vert(PACK(e, MASK=edge_mask)), &
+         STAT_MISORIENTED_EDGE_TWIN)
+      if (stat /= STAT_OK) return
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine validate_cond_(cond, stat_on_err)
+
+         logical, intent(in) :: cond(:)
+         integer, intent(in) :: stat_on_err
+
+         ! Validate based on the cond array
+
+         if (.NOT. ALL(cond)) then
+
+            stat = stat_on_err
+            if (PRESENT(loc)) loc = FINDLOC(cond, .FALSE., DIM=1)
+
+         else
+
+            stat = STAT_OK
+            if (PRESENT(loc)) loc = 0
+
+         end if
+
+         ! Finish
+
+         return
+
+      end subroutine validate_cond_
+
+   end subroutine validate
+
+   !****
+
+   function compare_(mesh_a, mesh_b) result(same)
+
+      type(mesh_t), intent(in) :: mesh_a
+      type(mesh_t), intent(in) :: mesh_b
+      logical                  :: same
+
+      ! Compare the two meshes
+
+      same = &
+         mesh_a%n_vert == mesh_a%n_vert .AND. &
+         mesh_a%n_edge == mesh_b%n_edge .AND. &
+         mesh_a%n_face == mesh_b%n_face
+
+      if (.NOT. same) return
+
+      same = &
+         ALL(mesh_a%EV == mesh_b%EV) .AND. &
+         ALL(mesh_a%ET == mesh_b%ET) .AND. &
+         ALL(mesh_a%VE == mesh_b%VE)
+
+      ! Finish
+
+      return
+
+   end function compare_
+
+end module mesh_m

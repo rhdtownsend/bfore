@@ -1,0 +1,71 @@
+! Module  : file_m
+! Purpose : file-oriented support routines
+
+#:include 'forum.inc'
+
+module file_m
+
+   ! Uses
+
+   use forum_m
+
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Access specifiers
+
+   private
+
+   public :: check_type
+
+   ! Procedures
+
+contains
+
+   subroutine check_type(hdf5io, type, stat)
+
+      type(hdf5io_t), intent(inout)  :: hdf5io
+      character(*), intent(in)       :: type
+      integer, intent(out), optional :: stat
+
+      character(TYPE_LEN) :: type_
+      
+      ! Check the type attribute stored in the HDF5 group
+
+      if (hdf5io%attr_exists('TYPE')) then
+
+         call hdf5io%read_attr('TYPE', type_)
+         if (type_ /= type) then
+            if (PRESENT(stat)) then
+               stat = STAT_INVALID_GROUP_TYPE
+               return
+            else
+               @:ABORT('invalid group type')
+            end if
+         end if
+
+      else
+
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_TYPE
+            return
+         else
+            @:ABORT('invalid group type')
+         end if
+
+      end if
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end subroutine check_type
+
+end module file_m

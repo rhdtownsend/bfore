@@ -1,0 +1,306 @@
+! Program : utest_mesh
+! Purpose : Unit tests for mesh_m
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_mesh
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use mesh_primitives_m
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Run the tests
+
+   call test_traversal()
+   call test_validation()
+   call test_primitives()
+   call test_modification()
+   call test_io()
+
+   ! Finish
+
+contains
+
+   !****
+
+   subroutine test_traversal()
+
+      type(mesh_t)         :: mesh
+      integer              :: i
+      integer, allocatable :: e(:)
+      integer, allocatable :: e_n(:)
+      integer, allocatable :: e_p(:)
+      integer, allocatable :: e_t(:)
+      logical, allocatable :: edge_mask(:)
+      integer, allocatable :: f(:)
+      integer, allocatable :: f_e(:)
+      integer, allocatable :: e_f(:)
+      integer, allocatable :: v(:)
+      integer, allocatable :: v_e(:)
+      integer, allocatable :: e_v(:)
+      
+      ! Test data-independent node operations:
+      !
+      !   edge_next
+      !   edge_prev
+      !   face_edge
+      !   edge_face
+      !   edge_vert
+      !   vert_edge
+
+      print *,'Checking mesh traversal'
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 4, 3], SHAPE=[3, 2]))
+      
+      ! Check edge-edge operations
+
+      e = [(i, i=1, mesh%n_edge)]
+
+      e_n = mesh%edge_next(e)
+      e_p = mesh%edge_prev(e)
+      e_t = mesh%edge_twin(e)
+
+      @:CHECK(ALL(mesh%edge_next(e_p) == e), 'edge_next(edge_prev(e)) == e')
+      @:CHECK(ALL(mesh%edge_prev(e_n) == e), 'edge_prev(edge_next(e)) == e')
+
+      @:CHECK(ALL(mesh%edge_next(e_n) == e_p), 'edge_next(edge_next(e)) == edge_prev(e)')
+      @:CHECK(ALL(mesh%edge_prev(e_p) == e_n), 'edge_prev(edge_prev(e)) == edge_next(e)')
+
+      edge_mask = e_t /= BOUNDARY_EDGE
+
+      @:CHECK(ALL(mesh%edge_twin(PACK(e_t, MASK=edge_mask)) == PACK(e, MASK=edge_mask)), &
+         'edge_twin(e) == e')
+
+      ! Check edge-face operations
+
+      f = [(i, i=1, mesh%n_face)]
+
+      f_e = mesh%face_edge(f)
+      e_f = mesh%edge_face(e)
+
+      @:CHECK(ALL(mesh%edge_face(f_e) == f), 'edge_face(face_edge(f)) == f')
+      @:CHECK(ALL(mesh%edge_face(mesh%face_edge(e_f)) == e_f), 'edge_face(face_edge(edge_face(e))) == edge_face(e)')
+
+      ! Check edge-vert operations
+
+      v = [(i, i=1, mesh%n_vert)]
+
+      v_e = mesh%vert_edge(v)
+      e_v = mesh%edge_vert(e)
+
+      @:CHECK(ALL(mesh%edge_vert(v_e) == v), 'edge_vert(vert_edge(v)) == v')
+      @:CHECK(ALL(mesh%edge_vert(mesh%vert_edge(e_v)) == e_v), 'edge_vert(vert_edge(edge_vert(e))) == edge_vert(e)')
+
+      ! Finish
+
+      return
+
+   end subroutine test_traversal
+
+   !****
+
+   subroutine test_validation()
+
+      type(mesh_t) :: mesh
+
+      integer :: face_verts(3,0)
+      integer :: stat
+      integer :: loc
+
+      ! Check validity of good & bad meshes
+
+      print *,'Checking mesh validation'
+
+      ! "Good" meshes
+
+      mesh = mesh_t(face_verts)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'no faces -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3], SHAPE=[3, 1]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'one face -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 4, 5, 6], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two disjoint faces -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 4, 5], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ one shared vertex -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 4, 3], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ one shared edge -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 3, 4], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ one shared edge, misordeded -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 2, 1], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ two shared edges -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 1, 2], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ two shared edges, misordered -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 1, 3, 2], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ three shared edges -> valid')
+
+      mesh = mesh_t(RESHAPE([1, 2, 3, 1, 2, 3], SHAPE=[3, 2]))
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two faces w/ three shared edges, misordered -> valid')
+
+      ! "Bad" meshes
+
+      mesh = mesh_t(RESHAPE([0, 1, 2], SHAPE=[3, 1]))
+      call mesh%validate(stat, loc)
+      @:CHECK(stat == STAT_INVALID_EDGE_VERT .AND. loc == 1, 'one face w/ invalid vertex -> invaid')
+
+      mesh = mesh_t(RESHAPE([1, 1, 2], SHAPE=[3, 1]))
+      call mesh%validate(stat, loc)
+      @:CHECK(stat == STAT_DEGENERATE_FACE .AND. loc == 1, 'one face w/ degenerate vertices -> invaid')
+
+      mesh = mesh_t(RESHAPE([1, 3, 4], SHAPE=[3, 1]))
+      call mesh%validate(stat, loc)
+      @:CHECK(stat == STAT_INVALID_VERT_EDGE .AND. loc == 2, 'one face w/ missing vertex -> invalid')
+
+      ! Finish
+
+      return
+
+   end subroutine test_validation
+
+   !****
+
+   subroutine test_primitives()
+
+      type(mesh_t) :: mesh
+      integer      :: stat
+
+      print *, 'Checking mesh primitives'
+
+      mesh = one_face_mesh()
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'one_face_mesh -> valid')
+
+      mesh = two_face_mesh()
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'two_face_mesh -> valid')
+
+      mesh = tetrahedron_mesh()
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'tetrahedron_mesh -> valid')
+
+      mesh = icosahedron_mesh()
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'icosahedron_mesh -> valid')
+
+      ! Finish
+
+      return
+
+   end subroutine test_primitives
+
+   !****
+
+   subroutine test_modification()
+ 
+      type(mesh_t)         :: mesh
+      integer              :: stat
+      integer              :: v
+      integer, allocatable :: vv(:)
+
+      print *, 'Checking mesh modification'
+
+      mesh = two_face_mesh()
+      call mesh%flip_edge(2)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'flip_edge counter-clockwise on two_face_mesh -> valid') 
+
+      mesh = two_face_mesh()
+      call mesh%flip_edge(2, clockwise=.TRUE.)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'flip_edge clockwise on two_face_mesh -> valid') 
+
+      mesh = two_face_mesh()
+      call mesh%flip_edge(2)
+      call mesh%flip_edge(2, clockwise=.TRUE.)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'flip_edge counter+clockwise on two_face_mesh -> valid') 
+
+      mesh = two_face_mesh()
+      call mesh%refine_face(1, v)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK .AND. v == 5, 'refine_face on two_face_mesh -> valid')
+
+      mesh = two_face_mesh()
+      call mesh%refine(vv)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine on two_face_mesh -> valid')
+
+      mesh = two_face_mesh()
+      call mesh%refine_and_flip(vv)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine_and_flip on two_face_mesh -> valid')
+
+      mesh = two_face_mesh()
+      call mesh%refine_and_flip(vv)
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine_and_flip on two_face_mesh -> valid')
+
+      mesh = mesh_t([two_face_mesh(), two_face_mesh()])
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'append_mesh on two two_face_mesh -> valid')
+
+      ! Finish
+
+      return
+
+   end subroutine test_modification
+
+   !****
+
+   subroutine test_io()
+
+      type(mesh_t)   :: write_mesh
+      type(mesh_t)   :: read_mesh
+      type(hdf5io_t) :: hdf5io
+      integer        :: stat
+
+      print *, 'Checking mesh i/o'
+
+      write_mesh = icosahedron_mesh()
+
+      hdf5io = hdf5io_t('mesh_tmp.h5', CREATE_FILE)
+      call write_mesh%write(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'write icosahedron_mesh to file')
+
+      hdf5io = hdf5io_t('mesh_tmp.h5', OPEN_FILE_RO)
+      call read_mesh%read(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'read icosahedron_mesh from file')
+
+      @:CHECK(compare(write_mesh, read_mesh), 'read mesh equals written mesh')
+
+      ! Finish
+
+      return
+
+   end subroutine test_io
+
+end program utest_mesh

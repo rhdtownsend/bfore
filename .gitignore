@@ -1,0 +1,17 @@
+# .gitignore file for BFORE
+
+*~
+*.o
+*.mod
+
+bin
+lib
+include
+
+doc/*.log
+doc/*.aux
+doc/*.bbl
+doc/*.blg
+
+.DS_Store
+__pycache__

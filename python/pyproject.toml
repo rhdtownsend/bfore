@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bfore"
+dynamic = ["version"]
+authors = [
+  { name="Rich Townsend", email="rhtownsend@wisc.edu" },
+]
+description = "Python interface to MSG"
+readme = "README.rst"
+requires-python = ">=3.7"
+dependencies = ["numpy>=1.15.0", "h5py>=1.17.3"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+
+[tool.hatch.version]
+path = "src/bfore/__init__.py"

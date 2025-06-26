@@ -1,0 +1,93 @@
+! Module  : geo_mesh_primitives_m
+! Purpose : Create geo_mesh_t types for polyhedral and other primitives
+
+#:include 'forum.inc'
+
+module geo_mesh_primitives_m
+
+   ! Uses
+
+   use forum_m
+   use mesh_m
+   use mesh_primitives_m
+   use geo_mesh_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Accessibility
+
+   private
+
+   public :: tetrahedron_geo_mesh
+   public :: icosahedron_geo_mesh
+
+   ! Procedures
+
+contains
+
+   function tetrahedron_geo_mesh() result(geo_mesh)
+
+      type(geo_mesh_t) :: geo_mesh
+
+      real(RD), parameter :: SQRT_1_9 = SQRT(1._RD/9._RD)
+      real(RD), parameter :: SQRT_2_9 = SQRT(2._RD/9._RD)
+      real(RD), parameter :: SQRT_6_9 = SQRT(6._RD/9._RD)
+      real(RD), parameter :: SQRT_8_9 = SQRT(8._RD/9._RD)
+
+      real(RD) :: vert_coords(3,4)
+
+      ! Create a tetrahedron geo_mesh_t (to fit inside unit sphere, with
+      ! bottom face parallel to xy plane)
+
+      vert_coords(:,1) = [SQRT_8_9, 0._RD, -SQRT_1_9]
+      vert_coords(:,2) = [-SQRT_2_9, -SQRT_6_9, -SQRT_1_9]
+      vert_coords(:,3) = [-SQRT_2_9, SQRT_6_9, -SQRT_1_9]
+      vert_coords(:,4) = [0._RD, 0._RD, 1._RD]
+
+      geo_mesh = geo_mesh_t(tetrahedron_mesh(), vert_coords)
+
+      ! Finish
+
+      return
+
+   end function tetrahedron_geo_mesh
+
+   !****
+
+   function icosahedron_geo_mesh() result(geo_mesh)
+
+      type(geo_mesh_t) :: geo_mesh
+
+      real(RD), parameter :: PHI = (SQRT(5._RD) + 1._RD)/2._RD
+
+      real(RD) :: vert_coords(3, 12)
+
+      ! Create an icosahedron geo_mesh_t (to fit inside cube with side
+      ! length 2*phi)
+
+      vert_coords(:,1) = [-1._RD,  phi,  0._RD]
+      vert_coords(:,2) = [1._RD,  phi,  0._RD]
+      vert_coords(:,3) = [-1._RD, -phi,  0._RD]
+      vert_coords(:,4) = [1._RD, -phi,  0._RD]
+      vert_coords(:,5) = [0._RD, -1._RD,  phi]
+      vert_coords(:,6) = [0._RD,  1._RD,  phi]
+      vert_coords(:,7) = [0._RD, -1._RD, -phi]
+      vert_coords(:,8) = [0._RD,  1._RD, -phi]
+      vert_coords(:,9) = [ phi,  0._RD, -1._RD]
+      vert_coords(:,10) = [ phi,  0._RD,  1._RD]
+      vert_coords(:,11) = [-phi,  0._RD, -1._RD]
+      vert_coords(:,12) = [-phi,  0._RD,  1._RD]
+
+      geo_mesh = geo_mesh_t(icosahedron_mesh(), vert_coords)
+
+      ! Finish
+
+      return
+
+   end function icosahedron_geo_mesh
+
+end module geo_mesh_primitives_m

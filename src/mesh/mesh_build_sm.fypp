@@ -1,0 +1,103 @@
+! Submodule : mesh_build_sm
+! Purpose   : Constructors for mesh_t types
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_build_sm
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure mesh_t_face_verts_
+
+      integer :: n_edge
+      integer :: n_face
+      logical :: face_mask(SIZE(face_verts, 2))
+      integer :: EV(SIZE(face_verts))
+
+      @:CHECK_BOUNDS(SIZE(face_verts, 1), 3)
+
+      ! Construct the mesh from the supplied face-vertex list
+
+      n_edge = SIZE(face_verts)
+      n_face = n_edge/3
+
+      ! Set up the edge-vertex table
+
+      EV = RESHAPE(face_verts, [n_edge])
+
+      ! Re-order entries in the list that have incorrect orientations
+
+      face_mask = .FALSE.
+
+      block
+
+         integer :: e1
+         integer :: e2
+         integer :: f1
+         integer :: f2
+         integer :: e1_n
+         integer :: e2_n
+         integer :: v
+
+         edge_1_loop : do e1 = 1, n_face
+
+            f1 = (e1 - 1)/3 + 1
+            e1_n = 3*(f1 - 1) + 1 + MODULO(e1, 3)
+
+            edge_2_loop : do e2 = 3*(f1-1)+4, n_edge
+
+               f2 = (e2 - 1)/3 + 1
+               e2_n = 3*(f2 - 1) + 1 + MODULO(e2, 3)
+
+               if (EV(e1) == EV(e2) .AND. EV(e1_n) == EV(e2_n)) then
+
+                  ! ! Check if we've already re-ordered this face
+
+                  ! if (face_mask(f2)) then
+
+                  !    mesh%status = UNORIENTABLE_FACE
+                  !    mesh%status_loc = f2
+                  !    return
+
+                  ! else
+
+                     face_mask(f2) = .TRUE.
+
+                     v = EV(e2)
+                     EV(e2) = EV(e2_n)
+                     EV(e2_n) = v
+
+!                  end if
+
+               end if
+
+            end do edge_2_loop
+
+         end do edge_1_loop
+
+      end block
+
+      ! Create the mesh
+
+      mesh = mesh_t(EV)
+
+      ! Finish
+
+      return
+
+   end procedure mesh_t_face_verts_
+
+end submodule mesh_build_sm
+
