@@ -26,12 +26,13 @@ module mesh_m
 
    type :: mesh_t
       private
-      integer, allocatable :: EV(:) ! Edge-vertex table
-      integer, allocatable :: ET(:) ! Edge-twin table
-      integer, allocatable :: VE(:) ! Vertex-edge table
-      integer, public      :: n_vert
-      integer, public      :: n_edge
-      integer, public      :: n_face
+      integer, allocatable  :: EV(:)   ! Edge-vertex table
+      integer, allocatable  :: ET(:)   ! Edge-twin table
+      integer, allocatable  :: VE(:)   ! Vertex-edge table
+      real(RD), allocatable :: VC(:,:) ! Vertex-coordinate table
+      integer, public       :: n_vert
+      integer, public       :: n_edge
+      integer, public       :: n_face
    contains
       private
       procedure, public :: edge_prev
@@ -48,6 +49,10 @@ module mesh_m
       procedure, public :: refine_face
       procedure, public :: refine
       procedure, public :: refine_and_flip
+      procedure, public :: vert_coord
+      procedure, public :: face_area
+      procedure, public :: face_varea
+      procedure, public :: face_vnormal
       procedure, public :: euler_characteristic
       procedure, public :: read
       procedure, public :: write
@@ -68,9 +73,10 @@ module mesh_m
 
       ! In mesh_construct_sm
 
-      module function mesh_t_face_verts_(face_verts) result(mesh)
-         integer, intent(in) :: face_verts(:,:)
-         type(mesh_t)        :: mesh
+      module function mesh_t_face_verts_(face_verts, vert_coords) result(mesh)
+         integer, intent(in)  :: face_verts(:,:)
+         real(RD), intent(in) :: vert_coords(:,:)
+         type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
       
       module function mesh_t_meshes_(meshes) result(mesh)
@@ -102,6 +108,32 @@ module mesh_m
          integer, allocatable, intent(out) :: v(:)
          logical, intent(in), optional     :: clockwise
       end subroutine refine_and_flip
+
+      ! In mesh_geometry_sm
+
+      module function vert_coord(self, v) result(c)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: v
+         real(RD), pointer, contiguous     :: c(:)
+      end function vert_coord
+
+      module function face_area(self, f) result(A)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: f
+         real(RD)                          :: A
+      end function face_area
+
+      module function face_varea(self, f) result(vA)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: f
+         real(RD)                          :: vA(3)
+      end function face_varea
+
+      module function face_vnormal(self, f) result(vN)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: f
+         real(RD)                          :: vN(3)
+      end function face_vnormal
 
       ! In mesh_topology_sm
 
@@ -139,25 +171,29 @@ module mesh_m
 
 contains
 
-   function mesh_t_(EV, ET, VE) result(mesh)
+   function mesh_t_(EV, ET, VE, VC) result(mesh)
 
-      integer, intent(in) :: EV(:)
-      integer, intent(in) :: ET(:)
-      integer, intent(in) :: VE(:)
-      type(mesh_t)        :: mesh
+      integer, intent(in)  :: EV(:)
+      integer, intent(in)  :: ET(:)
+      integer, intent(in)  :: VE(:)
+      real(RD), intent(in) :: VC(:,:)
+      type(mesh_t)         :: mesh
 
       @:CHECK_BOUNDS(SIZE(ET), SIZE(EV))
+
+      @:CHECK_BOUNDS(SIZE(VC, 1), 3)
 
       ! Construct the mesh_t from the supplied compact half-edge
       ! tables
 
-      mesh%n_vert = MAXVAL(EV)
+      mesh%n_vert = SIZE(VC, 2)
       mesh%n_edge = SIZE(EV)
       mesh%n_face = SIZE(EV)/3
 
       mesh%EV = EV
       mesh%ET = ET
       mesh%VE = VE
+      mesh%VC = VC
 
       ! Finish
 
@@ -476,7 +512,8 @@ contains
       same = &
          ALL(mesh_a%EV == mesh_b%EV) .AND. &
          ALL(mesh_a%ET == mesh_b%ET) .AND. &
-         ALL(mesh_a%VE == mesh_b%VE)
+         ALL(mesh_a%VE == mesh_b%VE) .AND. &
+         ALL(mesh_a%VC == mesh_b%VC)
 
       ! Finish
 

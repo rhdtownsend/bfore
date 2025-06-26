@@ -8,7 +8,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_mesh utest_geo_mesh
+   BIN_TARGETS += utest_mesh
 endif
 
 # Source file lists & related variables
@@ -18,18 +18,13 @@ endif
 # xxx_LIBS = library files required to link xxx
 
 mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_modify_sm.fypp \
-            mesh_topology_sm.fypp mesh_primitives_m.fypp mesh_io_sm.fypp \
-           stat_m.fypp file_m.fypp
-geo_mesh_SRCS = $(mesh_SRCS) geo_mesh_primitives_sm.fypp geo_mesh_m.fypp \
-                geo_mesh_construct_sm.fypp geo_mesh_modify_sm.fypp geo_mesh_io_sm.fypp
+            mesh_topology_sm.fypp mesh_geometry_sm.fypp mesh_io_sm.fypp \
+            mesh_primitives_m.fypp \
+           stat_m.fypp file_m.fypp math_m.fypp
 
 utest_mesh_SRCS = utest_mesh.fypp $(mesh_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
 utest_mesh_LIBS = 
-
-utest_geo_mesh_SRCS = utest_geo_mesh.fypp $(geo_mesh_SRCS)
-utest_geo_mesh_USES = $(utest_geo_mesh_SRCS)
-utest_geo_mesh_LIBS = 
 
 # Build flags
 

@@ -55,12 +55,13 @@ contains
 
       subroutine read_rev1_()
 
-         integer              :: n_vert
-         integer              :: n_edge
-         integer              :: n_face
-         integer, allocatable :: EV(:)
-         integer, allocatable :: ET(:)
-         integer, allocatable :: VE(:)
+         integer               :: n_vert
+         integer               :: n_edge
+         integer               :: n_face
+         integer, allocatable  :: EV(:)
+         integer, allocatable  :: ET(:)
+         integer, allocatable  :: VE(:)
+         real(RD), allocatable :: VC(:,:)
       
          call hdf5io%read_attr('n_vert', n_vert)
          call hdf5io%read_attr('n_edge', n_edge)
@@ -69,8 +70,13 @@ contains
          call hdf5io%alloc_read_dset('EV', EV)
          call hdf5io%alloc_read_dset('ET', ET)
          call hdf5io%alloc_read_dset('VE', VE)
+         call hdf5io%alloc_read_dset('VC', VC)
 
-         if (SIZE(EV) /= n_edge .OR. SIZE(ET) /= n_edge .OR. SIZE(VE) /= n_vert) then
+         if (SIZE(EV) /= n_edge .OR. &
+            SIZE(ET) /= n_edge .OR. &
+            SIZE(VE) /= n_vert .OR. &
+            SIZE(VC, 1) /= 3 .OR. &
+            SIZE(VC, 2) /= n_vert) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -81,7 +87,7 @@ contains
 
          select type(self)
          type is(mesh_t)
-            self = mesh_t_(EV, ET, VE)
+            self = mesh_t_(EV, ET, VE, VC)
          class default
             @:ABORT('invalid type')
          end select
@@ -112,6 +118,7 @@ contains
       call hdf5io%write_dset('EV', self%EV)
       call hdf5io%write_dset('ET', self%ET)
       call hdf5io%write_dset('VE', self%VE)
+      call hdf5io%write_dset('VC', self%VC)
 
       ! Finish
 

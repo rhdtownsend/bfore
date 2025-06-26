@@ -26,6 +26,8 @@ program utest_mesh
    call test_validation()
    call test_primitives()
    call test_modification()
+   call test_topology()
+   call test_geometry()
    call test_io()
 
    ! Finish
@@ -61,7 +63,7 @@ contains
 
       print *,'Checking mesh traversal'
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 4, 3], SHAPE=[3, 2]))
+      call build_mesh([1, 2, 3, 3, 2, 1], mesh)
       
       ! Check edge-edge operations
 
@@ -114,67 +116,90 @@ contains
 
       type(mesh_t) :: mesh
 
-      integer :: face_verts(3,0)
-      integer :: stat
-      integer :: loc
+      integer  :: face_verts(3,0)
+      real(RD) :: vert_coords(3,0)
+      integer  :: stat
+      integer  :: loc
 
       ! Check validity of good & bad meshes
 
-      print *,'Checking mesh validation'
+      print *, 'Checking mesh validation'
 
       ! "Good" meshes
 
-      mesh = mesh_t(face_verts)
+      mesh = mesh_t(face_verts, vert_coords)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'no faces -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3], SHAPE=[3, 1]))
+      !
+
+      call build_mesh([1, 2, 3], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'one face -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 4, 5, 6], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 4, 5, 6], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two disjoint faces -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 4, 5], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 3, 4, 5], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ one shared vertex -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 4, 3], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 2, 4, 3], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ one shared edge -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 2, 3, 4], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 2, 3, 4], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ one shared edge, misordeded -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 2, 1], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 3, 2, 1], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ two shared edges -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 3, 1, 2], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 3, 1, 2], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ two shared edges, misordered -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 1, 3, 2], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 1, 3, 2], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ three shared edges -> valid')
 
-      mesh = mesh_t(RESHAPE([1, 2, 3, 1, 2, 3], SHAPE=[3, 2]))
+      !
+
+      call build_mesh([1, 2, 3, 1, 2, 3], mesh)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'two faces w/ three shared edges, misordered -> valid')
 
       ! "Bad" meshes
 
-      mesh = mesh_t(RESHAPE([0, 1, 2], SHAPE=[3, 1]))
+      call build_mesh([0, 1, 2], mesh)
       call mesh%validate(stat, loc)
       @:CHECK(stat == STAT_INVALID_EDGE_VERT .AND. loc == 1, 'one face w/ invalid vertex -> invaid')
 
-      mesh = mesh_t(RESHAPE([1, 1, 2], SHAPE=[3, 1]))
+      !
+
+      call build_mesh([1, 1, 2], mesh)
       call mesh%validate(stat, loc)
       @:CHECK(stat == STAT_DEGENERATE_FACE .AND. loc == 1, 'one face w/ degenerate vertices -> invaid')
 
-      mesh = mesh_t(RESHAPE([1, 3, 4], SHAPE=[3, 1]))
+      !
+
+      call build_mesh([1, 3, 4], mesh)
       call mesh%validate(stat, loc)
       @:CHECK(stat == STAT_INVALID_VERT_EDGE .AND. loc == 2, 'one face w/ missing vertex -> invalid')
 
@@ -274,6 +299,73 @@ contains
 
    !****
 
+   subroutine test_topology()
+
+      type(mesh_t) :: mesh
+
+      print *, 'Checking mesh topology'
+
+      mesh = tetrahedron_mesh()
+      @:CHECK(mesh%euler_characteristic() == 2, 'Euler formula for tetrahedron_mesh')
+
+      mesh = mesh_t([tetrahedron_mesh(), tetrahedron_mesh()])
+      @:CHECK(mesh%euler_characteristic() == 4, 'Euler formula for two tetrahedra_mesh')
+
+      ! Finish
+
+      return
+
+   end subroutine test_topology
+
+   !****
+
+   subroutine test_geometry()
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(mesh_t) :: mesh
+      real(RD)     :: length(12)
+      integer      :: e
+      integer      :: v1
+      integer      :: v2
+      integer      :: f
+      real(RD)     :: area(4)
+
+      print *, 'Checking mesh geometry'
+
+      mesh = tetrahedron_mesh()
+      @:CHECK(ALL(ABS(mesh%vert_coord(4) - [0._RD, 0._RD, 1._RD]) < TOL), &
+         'get vertex coord of tetrahedron_mesh')
+
+      mesh = tetrahedron_mesh()
+      mesh%vert_coord(4) = [0._RD, 0._RD, 2._RD]
+      @:CHECK(ALL(mesh%vert_coord(4) == [0._RD, 0._RD, 2._RD]), &
+         'set vertex coord of tetrahedron_mesh')
+      
+      mesh = tetrahedron_mesh()
+      edge_loop: do e = 1, 12
+         v1 = mesh%edge_vert(e)
+         v2 = mesh%edge_vert(mesh%edge_next(e))
+         length(e) = NORM2(mesh%vert_coord(v2) - mesh%vert_coord(v1))
+      end do edge_loop
+      @:CHECK(ALL(ABS(length - 2._RD*SQRT(6._RD)/3._RD) < TOL), &
+         'edge lengths of tetrahedron_mesh')
+
+      mesh = tetrahedron_mesh()
+      face_loop: do f = 1, 4
+         area(f) = mesh%face_area(f)
+      end do face_loop
+      @:CHECK(ALL(ABS(area - 2._RD/SQRT(3._RD)) < TOL), &
+         'face areas of tetrahedron_mesh')
+
+      ! Finish
+
+      return
+
+   end subroutine test_geometry
+
+   !****
+
    subroutine test_io()
 
       type(mesh_t)   :: write_mesh
@@ -302,5 +394,32 @@ contains
       return
 
    end subroutine test_io
+
+   !****
+
+   subroutine build_mesh(edge_verts, mesh)
+
+      integer, intent(in)       :: edge_verts(:)
+      type(mesh_t), intent(out) :: mesh
+
+      integer :: n_vert
+
+      @:ASSERT(SIZE(edge_verts) > 0, 'invalid dimension')
+      @:ASSERT(MODULO(SIZE(edge_verts), 3) == 0, 'invalid dimension')
+
+      ! Build a simple mesh from the supplied edge-vertex list. All
+      ! vertex coordinates are set to the origin
+
+      n_vert = MAXVAL(edge_verts)
+
+      mesh = mesh_t( &
+         RESHAPE(edge_verts, SHAPE=[3, SIZE(edge_verts)/3]), &
+         RESHAPE(SPREAD(0._RD, DIM=1, NCOPIES=3*n_vert), SHAPE=[3, n_vert]))
+
+      ! Finish
+
+      return
+
+   end subroutine build_mesh
 
 end program utest_mesh

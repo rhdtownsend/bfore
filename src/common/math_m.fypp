@@ -1,0 +1,44 @@
+! Module  : math_m
+! Purpose : Mathematical functions
+
+#:include 'forum.inc'
+
+module math_m
+
+   ! Uses
+
+   use forum_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Accessibility
+
+   private
+
+   public :: cross_product
+
+   ! Procedures
+
+contains
+
+   pure function cross_product(va, vb) result (vc)
+
+      real(RD), intent(in) :: va(:)
+      real(RD), intent(in) :: vb(:)
+      real(RD)             :: vc(3)
+
+      ! Evaluate the cross product
+
+      vc(1) = va(2)*vb(3) - va(3)*vb(2)
+      vc(2) = va(3)*vb(1) - va(1)*vb(3)
+      vc(3) = va(1)*vb(2) - va(2)*vb(1)
+
+      ! Finish
+
+      return
+
+   end function cross_product
+
+end module math_m

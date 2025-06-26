@@ -287,6 +287,10 @@ contains
 
       self%VE(v) = e3
 
+      ! Update the vertex-coordinate table
+
+      self%VC(:,v) = (self%VC(:,v1) + self%VC(:,v2) + self%VC(:,v3))/3._RD
+
       ! Update the mesh dimensions
 
       self%n_vert = self%n_vert + 1
@@ -377,6 +381,9 @@ contains
 
          call reallocate(mesh%VE, [d_vert])
          mesh%VE(mesh%n_vert+1:) = 0
+
+         call reallocate(mesh%VC, [3, d_vert])
+         mesh%VC(:,mesh%n_vert+1:) = 0._RD
 
       end if
 

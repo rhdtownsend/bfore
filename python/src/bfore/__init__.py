@@ -25,28 +25,13 @@ class Mesh:
             self.EV = f[group]['EV'][...]
             self.ET = f[group]['ET'][...]
             self.VE = f[group]['VE'][...]
+            self.VC = f[group]['VC'][...]
 
     def face_verts(self):
 
         # Return the face-vertex list
 
         return np.reshape(self.EV, [self.n_face, 3])-1
-
-
-class GeoMesh(Mesh):
-
-    def __init__(self, file_name, group='/'):
-
-        Mesh.__init__(self, file_name, 'mesh')
-
-        with h5.File(file_name, 'r') as f:
-
-            type = f[group].attrs['TYPE'].decode('utf-8')
-
-            if type != 'geo_mesh_t':
-                raise Exception(f'invalid type: {type}')
-
-            self.VC = f[group]['VC'][...]
 
     def vert_coords(self):
 

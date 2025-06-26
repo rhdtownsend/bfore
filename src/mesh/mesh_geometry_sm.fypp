@@ -1,0 +1,107 @@
+! Submodule : mesh_geometry_sm
+! Purpose   : Geometry-related routines for mesh_t types
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_geometry_sm
+
+   ! Uses
+
+   use forum_m
+
+   use math_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure vert_coord
+
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
+
+      ! Get the coordinates of vertex v. Can also be used to set the
+      ! coordinates
+
+      c => self%VC(:,v)
+
+      ! Finish
+
+      return
+
+   end procedure vert_coord
+      
+   !****
+
+   module procedure face_varea
+
+      integer  :: f_e
+      integer  :: v1
+      integer  :: v2
+      integer  :: v3
+      real(RD) :: c1(3)
+      real(RD) :: c2(3)
+      real(RD) :: c3(3)
+
+      ! Get the area vector of face f
+
+      f_e = self%face_edge(f)
+
+      v1 = self%edge_vert(f_e)
+      v2 = self%edge_vert(self%edge_next(f_e))
+      v3 = self%edge_vert(self%edge_prev(f_e))
+
+      c1 = self%vert_coord(v1)
+      c2 = self%vert_coord(v2)
+      c3 = self%vert_coord(v3)
+
+      vA = 0.5_RD*cross_product(c2-c1, c3-c1)
+
+      ! Finish
+
+      return
+
+   end procedure face_varea
+
+   !****
+
+   module procedure face_area
+
+      real(RD) :: vA(3)
+
+      ! Get the area of face f
+
+      vA = self%face_varea(f)
+
+      A = NORM2(vA)
+
+      ! Finish
+
+      return
+
+   end procedure face_area
+
+   !****
+
+   module procedure face_vnormal
+
+      real(RD) :: vA(3)
+
+      ! Get the normal vector of face f
+
+      vA = self%face_varea(f)
+
+      vN = vA/NORM2(vA)
+
+      ! Finish
+
+      return
+      
+   end procedure face_vnormal
+
+end submodule mesh_geometry_sm
