@@ -1,0 +1,218 @@
+! Module  : transform_m
+! Purpose : Define transform_t datatype, for applying transformations to homogeneous vectors
+
+#:include 'forum.inc'
+
+module transform_m
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type :: transform_t
+      private
+      real(RD) :: T(4,4) ! Transformation matrix
+   contains
+      private
+      procedure, public :: rotate
+      procedure, public :: scale
+      procedure, public :: translate
+      procedure         :: apply_1_
+      procedure         :: apply_2_
+      generic, public   :: apply => apply_1_, apply_2_
+      procedure, public :: normalize
+   end type transform_t
+
+   ! Interfaces
+
+   interface transform_t
+      module procedure transform_t_
+   end interface transform_t
+
+   ! Accessibility
+
+   private
+
+   public :: transform
+
+   ! Procedures
+
+contains
+
+   function transform_t_() result(tform)
+
+      type(transform_t) :: tform
+
+      ! Construct the transform_t
+
+      tform%T(:,1) = [1._RD, 0._RD, 0._RD, 0._RD]
+      tform%T(:,2) = [0._RD, 1._RD, 0._RD, 0._RD]
+      tform%T(:,3) = [0._RD, 0._RD, 1._RD, 0._RD]
+      tform%T(:,4) = [0._RD, 0._RD, 0._RD, 1._RD]
+
+      ! Finish
+
+      return
+
+   end function transform_t_
+
+   !****
+
+   subroutine rotate(self, alpha, beta, gamma)
+
+      class(transform_t), intent(inout) :: self
+      real(RD), intent(in)              :: alpha
+      real(RD), intent(in)              :: beta
+      real(RD), intent(in)              :: gamma
+
+      real(RD) :: cos_alpha
+      real(RD) :: sin_alpha
+      real(RD) :: cos_beta
+      real(RD) :: sin_beta
+      real(RD) :: cos_gamma
+      real(RD) :: sin_gamma
+      real(RD) :: R(4,4)
+
+      ! Add a rotation, specified by Euler angles (in radians):
+      !
+      !  alpha : first rotation, about z-axis
+      !  beta  : second rotation, about y'-axis
+      !  gamma : third rotation, about z'-axis
+      !
+      ! This follows the convention by Korn & Korn (1968,
+      ! 'Mathematical Handbook for Scientists and Engineers')
+
+      cos_alpha = COS(alpha)
+      sin_alpha = SIN(alpha)
+
+      cos_beta = COS(beta)
+      sin_beta = SIN(beta)
+
+      cos_gamma = COS(gamma)
+      sin_gamma = SIN(gamma)
+
+      R(1,1) = cos_alpha*cos_beta*cos_gamma - sin_alpha*sin_gamma
+      R(2,1) = sin_alpha*cos_beta*cos_gamma + cos_alpha*sin_gamma
+      R(3,1) = -sin_beta*cos_gamma
+      R(4,1) = 0._RD
+
+      R(1,2) = -cos_alpha*cos_beta*sin_gamma - sin_alpha*cos_gamma
+      R(2,2) = -sin_alpha*cos_beta*sin_gamma + cos_alpha*cos_gamma
+      R(3,2) = sin_beta*sin_gamma
+      R(4,2) = 0._RD
+
+      R(1,3) = cos_alpha*sin_beta
+      R(2,3) = sin_alpha*sin_beta
+      R(3,3) = cos_beta
+      R(4,3) = 0._RD
+
+      R(1,4) = 0._RD
+      R(2,4) = 0._RD
+      R(3,4) = 0._RD
+      R(4,4) = 1._RD
+
+      self%T = MATMUL(R, self%T)
+
+      ! Finish
+
+      return
+
+   end subroutine rotate
+
+   !****
+
+   subroutine translate(self, dx, dy, dz)
+
+      class(transform_t), intent(inout) :: self
+      real(RD), intent(in)              :: dx
+      real(RD), intent(in)              :: dy
+      real(RD), intent(in)              :: dz
+
+      real(RD) :: D(4,4)
+
+      ! Add a translation by [dx, dy, dz]
+
+      D(:,1) = [1._RD, 0._RD, 0._RD, 0._RD]
+      D(:,2) = [0._RD, 1._RD, 0._RD, 0._RD]
+      D(:,3) = [0._RD, 0._RD, 1._RD, 0._RD]
+      D(:,4) = [dx,    dy,    dz,    1._RD]
+
+      self%T = MATMUL(D, self%T)
+
+      ! Finish
+
+      return
+
+   end subroutine translate
+
+   !****
+
+   subroutine scale(self, sx, sy, sz)
+
+      class(transform_t), intent(inout) :: self
+      real(RD), intent(in)              :: sx
+      real(RD), intent(in)              :: sy
+      real(RD), intent(in)              :: sz
+      
+      real(RD) :: S(4,4)
+
+      ! Add a scaling by [sx, sy, sz]
+
+      S(:,1) = [sx   , 0._RD, 0._RD, 0._RD]
+      S(:,2) = [0._RD, sy   , 0._RD, 0._RD]
+      S(:,3) = [0._RD, 0._RD, sz   , 0._RD]
+      S(:,4) = [0._RD, 0._RD, 0._RD, 1._RD]
+
+      self%T = MATMUL(S, self%T)
+
+      ! Finish
+
+   end subroutine scale
+
+   !****
+
+   subroutine apply_1_(self, h)
+
+      class(transform_t), intent(in) :: self
+      real(RD), intent(in)           :: h(:)
+
+      @:CHECK_BOUNDS(SIZE(h), 4)
+
+      ! Apply the transformation to a single homogeneous vector
+
+      h = MATMUL(self%T, h)
+
+      ! Finish
+
+      return
+
+   end subroutine apply_1_
+
+   !****
+
+   subroutine apply_2_(self, h)
+
+      class(transform_t), intent(in) :: self
+      real(RD), intent(in)           :: h(:,:)
+
+      @:CHECK_BOUNDS(SIZE(h, 1), 4)
+
+      ! Apply the transformation to an array of homogeneous vectors
+
+      h = MATMUL(self%T, h)
+
+      ! Finish
+
+      return
+
+   end subroutine apply_2_
+
+end module transform_m
