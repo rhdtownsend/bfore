@@ -13,7 +13,7 @@ submodule (mesh_m) mesh_build_sm
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Procedures
 

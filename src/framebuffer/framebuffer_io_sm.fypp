@@ -11,7 +11,7 @@ submodule (framebuffer_m) framebuffer_io_sm
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Procedures
 

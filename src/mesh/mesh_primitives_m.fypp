@@ -14,7 +14,7 @@ module mesh_primitives_m
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Accessibility
 

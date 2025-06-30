@@ -7,7 +7,7 @@ submodule (view_m) view_construct_sm
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Procedures
 

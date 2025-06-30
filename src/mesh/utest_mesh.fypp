@@ -18,7 +18,7 @@ program utest_mesh
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Run the tests
 

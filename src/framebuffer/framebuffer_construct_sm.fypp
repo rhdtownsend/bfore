@@ -7,7 +7,7 @@ submodule (framebuffer_m) framebuffer_construct_sm
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Procedures
 
