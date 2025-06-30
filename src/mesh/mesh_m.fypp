@@ -86,7 +86,7 @@ module mesh_m
          real(RD), intent(in) :: vert_points(:,:)
          type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
-      
+
       module function mesh_t_meshes_(meshes) result(mesh)
          implicit none (type, external)
          type(mesh_t), intent(in) :: meshes(:)
@@ -254,7 +254,7 @@ contains
       logical :: edge_mask(self%n_edge)
       integer :: v(self%n_vert)
       integer :: v_e(self%n_vert)
-      
+
       ! Validate the mesh
 
       associate( &

@@ -52,7 +52,7 @@ contains
          ! system
 
          A = tform_camera%vector_image(mesh%face_area(f))
-         
+
          ! Check for a forward-facing triangle
 
          if (A(3) > 0._RD) then
@@ -125,7 +125,7 @@ contains
 
       ! Calculate (twice) the projected area of the triangle,
       ! returning if it is small (indicating an edge-on triangle)
-      
+
       area2 = SUM(EF_c)
 
       if (ABS(area2) < EPSILON(0._RD)) return
@@ -142,7 +142,7 @@ contains
       y_loop: do i_y = i_y_min, i_y_max
 
          any_inside = .FALSE.
-         
+
          x_loop: do i_x = i_x_min, i_x_max
 
             ! Evaluate the edge functions

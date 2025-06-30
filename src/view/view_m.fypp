@@ -150,10 +150,3 @@ contains
    end function framebuffer_transform
 
 end module view_m
-
-   
-      
-
-      
-      
-

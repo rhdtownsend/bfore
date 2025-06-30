@@ -60,7 +60,7 @@ contains
       @:ASSERT_DEBUG(e_t /= BOUNDARY_EDGE, 'boundary edge')
 
       ! Identify edges and twins
-      
+
       e1 = e
       e2 = self%edge_next(e1)
       e3 = self%edge_prev(e1)
@@ -314,7 +314,7 @@ contains
       call expand_(self, self%n_vert+self%n_face, self%n_edge+6*self%n_face)
 
       allocate(v(self%n_face))
-      
+
       face_loop: do f = 1, self%n_face
          call self%refine_face(f, v(f))
       end do face_loop
@@ -324,7 +324,7 @@ contains
       return
 
    end procedure refine
-   
+
    !****
 
    module procedure refine_and_flip
@@ -404,4 +404,3 @@ contains
    end subroutine expand_
 
 end submodule mesh_modify_sm
-

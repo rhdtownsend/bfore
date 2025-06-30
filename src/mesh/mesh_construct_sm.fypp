@@ -56,7 +56,7 @@ contains
 
       @:CHECK_BOUNDS(SIZE(face_verts, 1), 3)
       @:CHECK_BOUNDS(SIZE(vert_points, 1), 3)
-   
+
       ! Construct the mesh_t from the supplied face-vertex list
 
       n_vert = SIZE(vert_points, 2)
@@ -166,7 +166,7 @@ contains
             end do
 
          end do face_1_loop
-         
+
       end block
 
       ! Set up the vertex-edge table
@@ -221,7 +221,7 @@ contains
       integer               :: e2
       integer               :: v1
       integer               :: v2
-   
+
       @:ASSERT_DEBUG(SIZE(meshes) >= 1)
 
       ! Construct the mesh_t by concatenating the meshes
@@ -264,4 +264,3 @@ contains
    end procedure mesh_t_meshes_
 
 end submodule mesh_construct_sm
-

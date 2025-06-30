@@ -20,7 +20,7 @@ contains
    module procedure read
 
       integer :: revision
-   
+
       ! Read the view_t
 
       call check_type(hdf5io, 'view_t', stat)
@@ -56,7 +56,7 @@ contains
          real(RD) :: C(3)
          real(RD) :: delta_x
          real(RD) :: delta_y
-      
+
          call hdf5io%read_dset('alpha', alpha)
          call hdf5io%read_dset('beta', beta)
          call hdf5io%read_dset('gamma', gamma)
@@ -84,7 +84,7 @@ contains
    end procedure read
 
    !****
-   
+
    module procedure write
 
       ! Write the view_t

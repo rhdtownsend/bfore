@@ -51,7 +51,7 @@ contains
       integer, allocatable :: v(:)
       integer, allocatable :: v_e(:)
       integer, allocatable :: e_v(:)
-      
+
       ! Test data-independent node operations:
       !
       !   edge_next
@@ -64,7 +64,7 @@ contains
       print *,'Checking mesh traversal'
 
       call build_mesh([1, 2, 3, 3, 2, 1], mesh)
-      
+
       ! Check edge-edge operations
 
       e = [(i, i=1, mesh%n_edge)]
@@ -243,7 +243,7 @@ contains
    !****
 
    subroutine test_modification()
- 
+
       type(mesh_t)         :: mesh
       integer              :: stat
       integer              :: v
@@ -254,18 +254,18 @@ contains
       mesh = two_face_mesh()
       call mesh%flip_edge(2)
       call mesh%validate(stat)
-      @:CHECK(stat == STAT_OK, 'flip_edge counter-clockwise on two_face_mesh -> valid') 
+      @:CHECK(stat == STAT_OK, 'flip_edge counter-clockwise on two_face_mesh -> valid')
 
       mesh = two_face_mesh()
       call mesh%flip_edge(2, clockwise=.TRUE.)
       call mesh%validate(stat)
-      @:CHECK(stat == STAT_OK, 'flip_edge clockwise on two_face_mesh -> valid') 
+      @:CHECK(stat == STAT_OK, 'flip_edge clockwise on two_face_mesh -> valid')
 
       mesh = two_face_mesh()
       call mesh%flip_edge(2)
       call mesh%flip_edge(2, clockwise=.TRUE.)
       call mesh%validate(stat)
-      @:CHECK(stat == STAT_OK, 'flip_edge counter+clockwise on two_face_mesh -> valid') 
+      @:CHECK(stat == STAT_OK, 'flip_edge counter+clockwise on two_face_mesh -> valid')
 
       mesh = two_face_mesh()
       call mesh%refine_face(1, v)
@@ -341,7 +341,7 @@ contains
       mesh%vert_point(4) = [0._RD, 0._RD, 2._RD]
       @:CHECK(ALL(mesh%vert_point(4) == [0._RD, 0._RD, 2._RD]), &
          'set vertex point of tetrahedron_mesh')
-      
+
       mesh = tetrahedron_mesh()
       edge_loop: do e = 1, 12
          v1 = mesh%edge_vert(e)

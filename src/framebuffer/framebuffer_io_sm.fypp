@@ -20,7 +20,7 @@ contains
    module procedure read
 
       integer :: revision
-   
+
       ! Read the framebuffer_t
 
       call check_type(hdf5io, 'framebuffer_t', stat)
@@ -57,7 +57,7 @@ contains
          integer, allocatable  :: PF(:,:)
          type(hdf5io_t)        :: hdf5io_view
          type(view_t)          :: view
-      
+
          call hdf5io%read_attr('n_x', n_x)
          call hdf5io%read_attr('n_y', n_y)
 
@@ -102,7 +102,7 @@ contains
    end procedure read
 
    !****
-   
+
    module procedure write
 
       type(hdf5io_t) :: hdf5io_view

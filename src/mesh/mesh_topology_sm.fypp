@@ -24,7 +24,7 @@ contains
       @:ASSERT(ALL(self%ET /= BOUNDARY_EDGE), 'invalid mesh')
 
       ! Evaluate the Euler characteristic
-      
+
       chi = self%n_face - self%n_edge/2 + self%n_vert
 
       ! Finish

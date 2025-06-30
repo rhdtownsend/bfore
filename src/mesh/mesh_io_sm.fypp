@@ -25,7 +25,7 @@ contains
    module procedure read
 
       integer :: revision
-   
+
       ! Read the mesh_t
 
       call check_type(hdf5io, 'mesh_t', stat)
@@ -62,7 +62,7 @@ contains
          integer, allocatable  :: ET(:)
          integer, allocatable  :: VE(:)
          real(RD), allocatable :: VP(:,:)
-      
+
          call hdf5io%read_attr('n_vert', n_vert)
          call hdf5io%read_attr('n_edge', n_edge)
          call hdf5io%read_attr('n_face', n_face)
@@ -103,7 +103,7 @@ contains
    end procedure read
 
    !****
-   
+
    module procedure write
 
       ! Write the mesh_t

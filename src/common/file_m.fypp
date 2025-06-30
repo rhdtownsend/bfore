@@ -34,7 +34,7 @@ contains
       integer, intent(out), optional :: stat
 
       character(TYPE_LEN) :: type_
-      
+
       ! Check the type attribute stored in the HDF5 group
 
       if (hdf5io%attr_exists('TYPE')) then

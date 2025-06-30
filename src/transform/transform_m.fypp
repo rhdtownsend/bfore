@@ -159,7 +159,7 @@ contains
       real(RD), intent(in)              :: sx
       real(RD), intent(in)              :: sy
       real(RD), intent(in)              :: sz
-      
+
       real(RD) :: S(4,4)
 
       ! Add a scaling by [sx, sy, sz]

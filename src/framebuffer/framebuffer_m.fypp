@@ -93,7 +93,7 @@ module framebuffer_m
          integer, intent(out), optional    :: stat
       end subroutine read
 
-      module subroutine write(self, hdf5io, stat) 
+      module subroutine write(self, hdf5io, stat)
          implicit none (type, external)
          class(framebuffer_t), intent(in) :: self
          type(hdf5io_t), intent(inout)    :: hdf5io
