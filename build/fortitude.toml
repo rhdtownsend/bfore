@@ -1,0 +1,10 @@
+# fortitude.toml -- config file for fortitude-lint
+# tested with 0.7.3
+
+[check]
+ignore = [
+ "C121", # only clause with use
+ "E001"  # syntax errors
+]
+respect-gitignore = false
+line-length = 132

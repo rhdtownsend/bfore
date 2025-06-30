@@ -60,14 +60,14 @@ endif
 
 # Rules
 
-all : install-forum install-msg
-	@$(MAKE) -C build
+install : build | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+	@$(MAKE) -C build $@
 
-install : all | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@$(MAKE) -C build install
+build : install-forum
+	@$(MAKE) -C build $@
 
 clean : clean-forum
-	@$(MAKE) -C build clean
+	@$(MAKE) -C build $@
 	@rm -rf $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
 
 ifeq ($(FORUM),yes)
@@ -109,7 +109,7 @@ else
 
 endif
 
-.PHONY: all install clean install-forum clean-forum install-msg clean-msg
+.PHONY: install build clean install-forum clean-forum install-msg clean-msg
 
 $(BIN_DIR) $(LIB_DIR) $(INC_DIR) :
 	@mkdir -p $@
