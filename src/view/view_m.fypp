@@ -48,6 +48,7 @@ module view_m
       ! In view_construct_sm
 
       module function view_t_data_(alpha, beta, gamma, C, delta_x, delta_y) result(view)
+         implicit none (type, external)
          real(RD), intent(in) :: alpha
          real(RD) ,intent(in) :: beta
          real(RD), intent(in) :: gamma
@@ -60,12 +61,14 @@ module view_m
       ! In view_io_sm
 
       module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
          class(view_t), intent(out)     :: self
          type(hdf5io_t), intent(inout)  :: hdf5io
          integer, intent(out), optional :: stat
       end subroutine read
 
       module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
          class(view_t), intent(in)      :: self
          type(hdf5io_t), intent(inout)  :: hdf5io
          integer, intent(out), optional :: stat

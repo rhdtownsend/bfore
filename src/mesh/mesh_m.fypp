@@ -72,6 +72,7 @@ module mesh_m
       ! In mesh_construct_sm
 
       module function mesh_t_data_(EV, ET, VE, VP) result(mesh)
+         implicit none (type, external)
          integer, intent(in)  :: EV(:)
          integer, intent(in)  :: ET(:)
          integer, intent(in)  :: VE(:)
@@ -80,12 +81,14 @@ module mesh_m
       end function mesh_t_data_
 
       module function mesh_t_face_verts_(face_verts, vert_points) result(mesh)
+         implicit none (type, external)
          integer, intent(in)  :: face_verts(:,:)
          real(RD), intent(in) :: vert_points(:,:)
          type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
       
       module function mesh_t_meshes_(meshes) result(mesh)
+         implicit none (type, external)
          type(mesh_t), intent(in) :: meshes(:)
          type(mesh_t)             :: mesh
       end function mesh_t_meshes_
@@ -93,30 +96,35 @@ module mesh_m
       ! In mesh_traverse_sm
 
       impure elemental module function edge_prev(self, e) result(e_p)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: e
          integer                   :: e_p
       end function edge_prev
 
       impure elemental module function edge_next(self, e) result(e_n)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: e
          integer                   :: e_n
       end function edge_next
 
       impure elemental module function edge_twin(self, e) result(e_t)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: e
          integer                   :: e_t
       end function edge_twin
 
       impure elemental module function vert_edge(self, v) result(v_e)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: v
          integer                   :: v_e
       end function vert_edge
 
       impure elemental module function vert_face(self, v) result(v_f)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: v
          integer                   :: v_f
@@ -124,24 +132,28 @@ module mesh_m
       end function vert_face
 
       impure elemental module function edge_vert(self, e) result(e_v)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: e
          integer                   :: e_v
       end function edge_vert
 
       impure elemental module function edge_face(self, e) result(e_f)
+         implicit none (type, external)
          class(mesh_t), intent(in)      :: self
          integer, intent(in)            :: e
          integer                        :: e_f
       end function edge_face
 
       impure elemental module function face_vert(self, f) result(f_v)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: f
          integer                   :: f_v
       end function face_vert
 
       impure elemental module function face_edge(self, f) result(f_e)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer, intent(in)       :: f
          integer                   :: f_e
@@ -150,23 +162,27 @@ module mesh_m
       ! In mesh_modify_sm
 
       module subroutine flip_edge(self, e, clockwise)
+         implicit none (type, external)
          class(mesh_t), intent(inout)  :: self
          integer, intent(in)           :: e
          logical, intent(in), optional :: clockwise
       end subroutine flip_edge
 
       module subroutine refine_face(self, f, v)
+         implicit none (type, external)
          class(mesh_t), intent(inout) :: self
          integer, intent(in)          :: f
          integer, intent(out)         :: v
       end subroutine refine_face
 
       module subroutine refine(self, v)
+         implicit none (type, external)
          class(mesh_t), intent(inout)      :: self
          integer, allocatable, intent(out) :: v(:)
       end subroutine refine
 
       module subroutine refine_and_flip(self, v, clockwise)
+         implicit none (type, external)
          class(mesh_t), intent(inout)      :: self
          integer, allocatable, intent(out) :: v(:)
          logical, intent(in), optional     :: clockwise
@@ -175,12 +191,14 @@ module mesh_m
       ! In mesh_geometry_sm
 
       module function vert_point(self, v) result(P)
+         implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: v
          real(RD), pointer, contiguous     :: P(:)
       end function vert_point
 
       module function face_area(self, f) result(A)
+         implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: f
          real(RD)                          :: A(3)
@@ -189,6 +207,7 @@ module mesh_m
       ! In mesh_topology_sm
 
       module function euler_characteristic(self) result(chi)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          integer                   :: chi
       end function euler_characteristic
@@ -196,12 +215,14 @@ module mesh_m
       ! In mesh_io_sm
 
       module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
          class(mesh_t), intent(out)     :: self
          type(hdf5io_t), intent(inout)  :: hdf5io
          integer, intent(out), optional :: stat
       end subroutine read
 
       module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
          class(mesh_t), intent(in)      :: self
          type(hdf5io_t), intent(inout)  :: hdf5io
          integer, intent(out), optional :: stat

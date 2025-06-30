@@ -53,6 +53,7 @@ module framebuffer_m
       ! In framebuffer_construct_sm
 
       module function framebuffer_t_data_(PD, PL, PF, view) result(fbuff)
+         implicit none (type, external)
          real(RD), intent(in)     :: PD(:,:)
          real(RD), intent(in)     :: PL(:,:,:)
          integer, intent(in)      :: PF(:,:)
@@ -61,6 +62,7 @@ module framebuffer_m
       end function framebuffer_t_data_
 
       module function framebuffer_t_dims_(n_x, n_y, view) result(fbuff)
+         implicit none (type, external)
          integer, intent(in)      :: n_x
          integer, intent(in)      :: n_y
          type(view_t), intent(in) :: view
@@ -70,11 +72,13 @@ module framebuffer_m
       ! In framebuffer_render_sm
 
       module subroutine render(self, mesh)
+         implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          type(mesh_t), intent(in)            :: mesh
       end subroutine render
 
       module subroutine render_triangle(self, P, f)
+         implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          real(RD), intent(in)                :: P(:,:)
          integer, intent(in)                 :: f
@@ -83,12 +87,14 @@ module framebuffer_m
       ! In framebuffer_io_sm
 
       module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
          class(framebuffer_t), intent(out) :: self
          type(hdf5io_t), intent(inout)     :: hdf5io
          integer, intent(out), optional    :: stat
       end subroutine read
 
-      module subroutine write(self, hdf5io, stat)
+      module subroutine write(self, hdf5io, stat) 
+         implicit none (type, external)
          class(framebuffer_t), intent(in) :: self
          type(hdf5io_t), intent(inout)    :: hdf5io
          integer, intent(out), optional   :: stat
