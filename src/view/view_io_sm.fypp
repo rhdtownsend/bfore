@@ -1,0 +1,112 @@
+! Submodule : view_io_sm
+! Purpose   : Input/output routines for view_t
+
+#:include 'forum.inc'
+
+submodule (view_m) view_io_sm
+
+   ! Uses
+
+   use file_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure read
+
+      integer :: revision
+   
+      ! Read the view_t
+
+      call check_type(hdf5io, 'view_t', stat)
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      call hdf5io%read_attr('REVISION', revision)
+
+      select case(revision)
+      case(1)
+         call read_rev1_()
+      case default
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_REVISION
+            return
+         else
+            @:ABORT('invalid group revision')
+         end if
+      end select
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_rev1_()
+
+         real(RD) :: alpha
+         real(RD) :: beta
+         real(RD) :: gamma
+         real(RD) :: C(3)
+         real(RD) :: delta_x
+         real(RD) :: delta_y
+      
+         call hdf5io%read_dset('alpha', alpha)
+         call hdf5io%read_dset('beta', beta)
+         call hdf5io%read_dset('gamma', gamma)
+
+         call hdf5io%read_dset('C', C)
+
+         call hdf5io%read_dset('delta_x', delta_y)
+         call hdf5io%read_dset('delta_y', delta_y)
+
+         select type(self)
+         type is(view_t)
+            self = view_t_data_(alpha, beta, gamma, C, delta_x, delta_y)
+         class default
+            @:ABORT('invalid type')
+         end select
+
+         ! Finish
+
+         if (PRESENT(stat)) stat = STAT_OK
+
+         return
+
+      end subroutine read_rev1_
+
+   end procedure read
+
+   !****
+   
+   module procedure write
+
+      ! Write the view_t
+
+      call hdf5io%write_attr('TYPE', 'view_t')
+      call hdf5io%write_attr('REVISION', 1)
+
+      call hdf5io%write_dset('alpha', self%alpha)
+      call hdf5io%write_dset('beta', self%beta)
+      call hdf5io%write_dset('gamma', self%gamma)
+
+      call hdf5io%write_dset('C', self%C)
+
+      call hdf5io%write_dset('delta_x', self%delta_x)
+      call hdf5io%write_dset('delta_y', self%delta_y)
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end procedure write
+
+end submodule view_io_sm

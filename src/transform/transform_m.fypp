@@ -1,5 +1,5 @@
 ! Module  : transform_m
-! Purpose : Define transform_t datatype, for applying transformations to homogeneous vectors
+! Purpose : Define transform_t datatype, for applying transformations
 
 #:include 'forum.inc'
 
@@ -19,16 +19,14 @@ module transform_m
 
    type :: transform_t
       private
-      real(RD) :: T(4,4) ! Transformation matrix
+      real(RD) :: T(4,4) ! Coordinate transformation matrix
    contains
       private
       procedure, public :: rotate
       procedure, public :: scale
       procedure, public :: translate
-      procedure         :: apply_1_
-      procedure         :: apply_2_
-      generic, public   :: apply => apply_1_, apply_2_
-      procedure, public :: normalize
+      procedure, public :: point_image
+      procedure, public :: vector_image
    end type transform_t
 
    ! Interfaces
@@ -41,7 +39,7 @@ module transform_m
 
    private
 
-   public :: transform
+   public :: transform_t
 
    ! Procedures
 
@@ -85,7 +83,7 @@ contains
       !
       !  alpha : first rotation, about z-axis
       !  beta  : second rotation, about y'-axis
-      !  gamma : third rotation, about z'-axis
+      !  gamma : third rotation, about z''-axis
       !
       ! This follows the convention by Korn & Korn (1968,
       ! 'Mathematical Handbook for Scientists and Engineers')
@@ -179,40 +177,56 @@ contains
 
    !****
 
-   subroutine apply_1_(self, h)
+   function point_image(self, P) result(P_prime)
 
       class(transform_t), intent(in) :: self
-      real(RD), intent(in)           :: h(:)
+      real(RD), intent(in)           :: P(:)
+      real(RD)                       :: P_prime(3)
 
-      @:CHECK_BOUNDS(SIZE(h), 4)
+      real(RD) :: H(4)
 
-      ! Apply the transformation to a single homogeneous vector
+      @:CHECK_BOUNDS(SIZE(P), 3)
 
-      h = MATMUL(self%T, h)
+      ! Evaluate the image of point P
+
+      H(1:3) = P
+      H(4) = 1._RD
+
+      H = MATMUL(self%T, H)
+
+      P_prime = H(1:3)
 
       ! Finish
 
       return
 
-   end subroutine apply_1_
+   end function point_image
 
    !****
 
-   subroutine apply_2_(self, h)
+   function vector_image(self, V) result(V_prime)
 
       class(transform_t), intent(in) :: self
-      real(RD), intent(in)           :: h(:,:)
+      real(RD), intent(in)           :: V(:)
+      real(RD)                       :: V_prime(3)
 
-      @:CHECK_BOUNDS(SIZE(h, 1), 4)
+      real(RD) :: H(4)
 
-      ! Apply the transformation to an array of homogeneous vectors
+      @:CHECK_BOUNDS(SIZE(V), 3)
 
-      h = MATMUL(self%T, h)
+      ! Evaluate the image of vector V
+
+      H(1:3) = V
+      H(4) = 0._RD
+
+      H = MATMUL(self%T, H)
+
+      V_prime = H(1:3)
 
       ! Finish
 
       return
 
-   end subroutine apply_2_
+   end function vector_image
 
 end module transform_m

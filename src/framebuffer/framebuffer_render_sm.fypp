@@ -1,0 +1,217 @@
+! Submodule : framebuffer_m
+! Purpose   : Rendering routines for framebuffer_t
+
+#:include 'forum.inc'
+
+submodule (framebuffer_m) framebuffer_render_sm
+
+   ! Uses
+
+   use transform_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure render
+
+      type(transform_t) :: tform_camera
+      type(transform_t) :: tform_fbuff
+      integer           :: v
+      real(RD)          :: P(3,mesh%n_vert)
+      integer           :: f
+      real(RD)          :: A(3)
+      integer           :: f_e
+      integer           :: v1
+      integer           :: v2
+      integer           :: v3
+
+      ! Set up transformations
+
+      tform_camera = self%view%camera_transform()
+      tform_fbuff = self%view%framebuffer_transform(self%n_x, self%n_y)
+
+      ! Extract vertex points from the mesh, and transform to the
+      ! framebuffer system
+
+      vert_loop: do v = 1, mesh%n_vert
+         P(:,v) = tform_fbuff%point_image(mesh%vert_point(v))
+      end do vert_loop
+
+      ! Loop through faces of mesh, rendering each one
+
+      face_loop: do f = 1, mesh%n_face
+
+         ! Get the face area vector, and transform to the camera
+         ! system
+
+         A = tform_camera%vector_image(mesh%face_area(f))
+         
+         ! Check for a forward-facing triangle
+
+         if (A(3) > 0._RD) then
+
+            print *,'render face', f
+ 
+            ! Render the face
+
+            f_e = mesh%face_edge(f)
+
+            v1 = mesh%edge_vert(f_e)
+            v2 = mesh%edge_vert(mesh%edge_next(f_e))
+            v3 = mesh%edge_vert(mesh%edge_prev(f_e))
+
+            call render_triangle_(self, P(:,[v1, v2, v3]), f)
+
+            print *,'done'
+
+         end if
+
+      end do face_loop
+
+      ! Finish
+
+      return
+
+   end procedure render
+
+   !****
+
+   module procedure render_triangle_
+
+      integer  :: i_x_min
+      integer  :: i_x_max
+      integer  :: i_y_min
+      integer  :: i_y_max
+      real(RD) :: EV(2,3)
+      real(RD) :: area2
+      real(RD) :: inv_area2
+      real(RD) :: EF_a(3)
+      real(RD) :: EF_b(3)
+      real(RD) :: EF_c(3)
+      logical  :: EF_tie(3)
+      integer  :: i_x
+      integer  :: i_y
+      real(RD) :: EF(3)
+      logical  :: inside
+      real(RD) :: lambda(3)
+      real(RD) :: z
+
+      integer :: n_written
+
+      @:CHECK_BOUNDS(SIZE(P, 1), 3)
+      @:CHECK_BOUNDS(SIZE(P, 2), 3)
+
+      ! Render a triangle with vertex points P(:,:). The index f is used
+      ! to indicate which face the triangle comes from
+
+      ! Determine the pixel bounding box
+
+      print *,'  points:', P
+
+      i_x_min = MAX(FLOOR(MINVAL(P(1,:))), 1)
+      i_x_max = MIN(CEILING(MAXVAL(P(1,:))), self%n_x)
+
+      i_y_min = MAX(FLOOR(MINVAL(P(2,:))), 1)
+      i_y_max = MIN(CEILING(MAXVAL(P(2,:))), self%n_y)
+
+      print *,'  i_x range:', i_x_min, i_x_max
+      print *,'  i_y range:', i_y_min, i_y_max
+
+      ! Check if the bounding box is null
+
+      if (i_x_min > i_x_max .OR. i_y_min > i_y_max) then
+         print *,'edge-on, skipping'
+         return
+      end if
+
+      print *,'  go render!'
+
+      ! Set up edge vectors
+
+      EV = P(1:2,[2,3,1]) - P(1:2,[1,2,3])
+
+      ! Calculate (twice) the projected area of the triangle,
+      ! returning if it is small (indicating an edge-on triangle)
+      
+      area2 = EV(2,1)*EV(1,3) - EV(1,1)*EV(2,3)
+
+      if (ABS(area2) < EPSILON(0._RD)) return
+
+      inv_area2 = 1._RD/area2
+
+      ! Calculate quantities used in edge-function evaluation
+
+!      EF_a = EV(2,:)
+!      EF_b = -EV(1,:)
+!      EF_c = -P(1,:)*EV(2,:) + P(2,:)*EV(1,:)
+      EF_a = P(2,[2, 3, 1]) - P(2,[3, 1, 2])
+      EF_b = P(1,[3, 1, 2]) - P(1,[2, 3, 1])
+      EF_c = P(1,[2, 3, 1])*P(2,[3, 1, 2]) - P(1,[3, 1, 2])*P(2,[2, 3, 1])
+
+      ! Calculate the tie-breaker function, based on Fig. 2 of McCool,
+      ! Wales & Moule (2002)
+
+      EF_tie = EF_a > 0._RD .OR. (EF_a == 0._RD .AND. EF_b > 0._RD)
+
+      ! Loop through the pixels within the bounding box
+
+      n_written = 0
+
+      y_loop: do i_y = i_y_min, i_y_max
+         x_loop: do i_x = i_x_min, i_x_max
+
+            ! Evaluate the edge functions
+
+            EF = i_x*EF_a + i_y*EF_b + EF_c
+
+            ! Determine if the pixel lies within the triangle
+
+            inside = ALL(EF > 0._RD .OR. (EF == 0_RD .AND. EF_tie))
+
+            if (inside) then
+
+               n_written = n_written + 1
+
+               ! Evaluate barycentric coordinates
+
+               lambda = inv_area2*EF
+
+               ! Perform the depth test
+
+               z = DOT_PRODUCT(lambda, P(3,:))
+
+               if (z > self%PD(i_x,i_y)) then
+
+                  self%PD(i_x,i_y) = z
+
+                  ! Store barycentric coordinates
+
+                  self%PL(:,i_x,i_y) = lambda
+
+                  ! Store the face index
+
+                  self%PF(i_x,i_y) = f
+
+               end if
+
+            end if
+
+         end do x_loop
+      end do y_loop
+
+      print *,'   n_written:', n_written, area2/2._RD
+
+      ! Finish
+
+      return
+
+   end procedure render_triangle_
+
+end submodule framebuffer_render_sm

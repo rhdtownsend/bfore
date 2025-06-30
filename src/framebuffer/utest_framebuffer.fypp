@@ -1,0 +1,66 @@
+! Program : utest_framebuffer
+! Purpose : Unit tests for framebuffer_m
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_framebuffer
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use mesh_primitives_m
+   use framebuffer_m
+   use view_m
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Run the tests
+
+   call test_rendering()
+
+   ! Finish
+
+contains
+
+   subroutine test_rendering()
+
+      type(mesh_t)        :: mesh
+      type(view_t)        :: view
+      type(framebuffer_t) :: fbuff
+      type(hdf5io_t)      :: hdf5io
+      integer, allocatable :: v_new(:)
+
+      ! Test rendering operations
+
+      print *,'Checking framebuffer rendering'
+
+      mesh = icosahedron_mesh()
+      call mesh%refine_and_flip(v_new)
+
+      view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
+         [0._RD, 0._RD, 0._RD], &
+         4._RD, 4._RD)
+
+      fbuff = framebuffer_t(1024, 1024, view)
+
+      call fbuff%render(mesh)
+
+      hdf5io = hdf5io_t('fbuff.h5', CREATE_FILE)
+      call fbuff%write(hdf5io)
+      call hdf5io%final()
+
+      ! Finish
+
+      return
+
+   end subroutine test_rendering
+
+end program utest_framebuffer

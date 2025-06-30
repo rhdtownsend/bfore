@@ -1,0 +1,137 @@
+! Submodule : framebuffer_io_sm
+! Purpose   : Input/output routines for framebuffer_t
+
+#:include 'forum.inc'
+
+submodule (framebuffer_m) framebuffer_io_sm
+
+   ! Uses
+
+   use file_m
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure read
+
+      integer :: revision
+   
+      ! Read the framebuffer_t
+
+      call check_type(hdf5io, 'framebuffer_t', stat)
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      call hdf5io%read_attr('REVISION', revision)
+
+      select case(revision)
+      case(1)
+         call read_rev1_()
+      case default
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_REVISION
+            return
+         else
+            @:ABORT('invalid group revision')
+         end if
+      end select
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_rev1_()
+
+         integer               :: n_x
+         integer               :: n_y
+         real(RD), allocatable :: PD(:,:)
+         real(RD), allocatable :: PL(:,:,:)
+         integer, allocatable  :: PF(:,:)
+         type(hdf5io_t)        :: hdf5io_view
+         type(view_t)          :: view
+      
+         call hdf5io%read_attr('n_x', n_x)
+         call hdf5io%read_attr('n_y', n_y)
+
+         call hdf5io%alloc_read_dset('pixel_depths', PD)
+         call hdf5io%alloc_read_dset('pixel_lambdas', PL)
+         call hdf5io%alloc_read_dset('pixel_faces', PF)
+
+         if (.NOT. &
+            ALL(SHAPE(PD) == [n_x, n_y]) .AND. &
+            ALL(SHAPE(PL) == [3, n_x, n_y]) .AND. &
+            ALL(SHAPE(PF) == [n_x, n_y])) then
+            if (PRESENT(stat)) then
+               stat = STAT_INVALID_DATASET_DIM
+               return
+            else
+               @:ABORT('invalid dataset dimension')
+            end if
+         end if
+
+         hdf5io_view = hdf5io_t(hdf5io, 'view')
+         call view%read(hdf5io_view, stat)
+         call hdf5io_view%final()
+         if (PRESENT(stat)) then
+            if (stat /= STAT_OK) return
+         end if
+
+         select type(self)
+         type is(framebuffer_t)
+            self = framebuffer_t_data_(PD, PL, PF, view)
+         class default
+            @:ABORT('invalid type')
+         end select
+
+         ! Finish
+
+         if (PRESENT(stat)) stat = STAT_OK
+
+         return
+
+      end subroutine read_rev1_
+
+   end procedure read
+
+   !****
+   
+   module procedure write
+
+      type(hdf5io_t) :: hdf5io_view
+
+      ! Write the framebuffer_t
+
+      call hdf5io%write_attr('TYPE', 'framebuffer_t')
+      call hdf5io%write_attr('REVISION', 1)
+
+      call hdf5io%write_attr('n_x', self%n_x)
+      call hdf5io%write_attr('n_y', self%n_y)
+
+      call hdf5io%write_dset('pixel_depths', self%PD)
+      call hdf5io%write_dset('pixel_lambdas', self%PL)
+      call hdf5io%write_dset('pixel_faces', self%PF)
+
+      hdf5io_view = hdf5io_t(hdf5io, 'view')
+      call self%view%write(hdf5io_view, stat)
+      call hdf5io_view%final()
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end procedure write
+
+end submodule framebuffer_io_sm

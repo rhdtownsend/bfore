@@ -1,5 +1,5 @@
 ! Submodule : mesh_construct_sm
-! Purpose   : Constructors for mesh_t types
+! Purpose   : Constructor routines for mesh_t
 
 #:include 'forum.inc'
 
@@ -19,6 +19,31 @@ submodule (mesh_m) mesh_construct_sm
 
 contains
 
+   module procedure mesh_t_data_
+
+      @:CHECK_BOUNDS(SIZE(ET), SIZE(EV))
+
+      @:CHECK_BOUNDS(SIZE(VP, 1), 3)
+
+      ! Construct the mesh_t from the supplied data
+
+      mesh%n_vert = SIZE(VP, 2)
+      mesh%n_edge = SIZE(EV)
+      mesh%n_face = SIZE(EV)/3
+
+      mesh%EV = EV
+      mesh%ET = ET
+      mesh%VE = VE
+      mesh%VP = VP
+
+      ! Finish
+
+      return
+
+   end procedure mesh_t_data_
+
+   !****
+
    module procedure mesh_t_face_verts_
 
       integer               :: n_vert
@@ -27,14 +52,14 @@ contains
       integer, allocatable  :: EV(:)
       integer, allocatable  :: ET(:)
       integer, allocatable  :: VE(:)
-      real(RD), allocatable :: VC(:,:)
+      real(RD), allocatable :: VP(:,:)
 
       @:CHECK_BOUNDS(SIZE(face_verts, 1), 3)
-      @:CHECK_BOUNDS(SIZE(vert_coords, 1), 3)
+      @:CHECK_BOUNDS(SIZE(vert_points, 1), 3)
    
       ! Construct the mesh_t from the supplied face-vertex list
 
-      n_vert = SIZE(vert_coords, 2)
+      n_vert = SIZE(vert_points, 2)
       n_edge = 3*SIZE(face_verts, 2)
       n_face = SIZE(face_verts, 2)
 
@@ -166,13 +191,13 @@ contains
 
       end block
 
-      ! Set up the vertex-coordinate table
+      ! Set up the vertex-point table
 
-      VC = vert_coords
+      VP = vert_points
 
       ! Create the mesh_t
 
-      mesh = mesh_t_(EV, ET, VE, VC)
+      mesh = mesh_t_data_(EV, ET, VE, VP)
 
       ! Finish
 
@@ -190,7 +215,7 @@ contains
       integer, allocatable  :: EV(:)
       integer, allocatable  :: ET(:)
       integer, allocatable  :: VE(:)
-      real(RD), allocatable :: VC(:,:)
+      real(RD), allocatable :: VP(:,:)
       integer               :: m
       integer               :: e1
       integer               :: e2
@@ -210,7 +235,7 @@ contains
       allocate(EV(n_edge))
       allocate(ET(n_edge))
       allocate(VE(n_vert))
-      allocate(VC(3,n_vert))
+      allocate(VP(3,n_vert))
 
       mesh_loop: do m = 1, SIZE(meshes)
 
@@ -224,13 +249,13 @@ contains
          v2 = v1 + meshes(m)%n_vert - 1
 
          VE(v1:v2) = meshes(m)%VE + SUM(meshes(:m-1)%n_edge)
-         VC(:,v1:v2) = meshes(m)%VC
+         VP(:,v1:v2) = meshes(m)%VP
 
       end do mesh_loop
 
       ! Create the mesh_t
 
-      mesh = mesh_t_(EV, ET, VE, VC)
+      mesh = mesh_t_data_(EV, ET, VE, VP)
 
       ! Finish
 

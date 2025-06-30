@@ -1,6 +1,6 @@
 ! Module  : framebuffer_m
-! Purpose : Define framebuffer_t datatype, for representing a framebuffer
-!           for rasterizing geo_mesh_t meshes
+! Purpose : Define framebuffer_t datatype, representing a framebuffer
+!           for rasterizing mesh_t types
 
 #:include 'forum.inc'
 
@@ -10,8 +10,9 @@ module framebuffer_m
 
    use forum_m
 
-   use geo_mesh_m
+   use mesh_m
    use stat_m
+   use view_m
 
    use ISO_FORTRAN_ENV
 
@@ -21,20 +22,22 @@ module framebuffer_m
 
    ! Parameters
 
-   integer, parameter :: NULL_TAG = -HUGE(0)
+   integer, parameter :: NULL_FACE = -HUGE(0)
 
    ! Derived-type definitions
 
    type :: framebuffer_t
       private
       real(RD), allocatable :: PD(:,:)   ! Pixel depth buffer
-      real(RD), allocatable :: PA(:,:,:) ! Pixel attrubte buffer
-      integer, allocatable  :: PT(:,:)   ! Pixel tag buffer
-      integer, public       :: n_pix_x
-      integer, public       :: n_pix_y
-      integer, public       :: n_attr
+      real(RD), allocatable :: PL(:,:,:) ! Pixel barycentric coordinates buffer
+      integer, allocatable  :: PF(:,:)   ! Pixel face buffer
+      type(view_t)          :: view
+      integer, public       :: n_x
+      integer, public       :: n_y
    contains
       private
+      procedure, public :: render
+      procedure         :: render_triangle_
       procedure, public :: read
       procedure, public :: write
    end type framebuffer_t
@@ -42,99 +45,66 @@ module framebuffer_m
    ! Interfaces
 
    interface framebuffer_t
-      module procedure frambuffer_t_
+      module procedure framebuffer_t_dims_
    end interface framebuffer_t
+
+   interface
+
+      ! In framebuffer_construct_sm
+
+      module function framebuffer_t_data_(PD, PL, PF, view) result(fbuff)
+         real(RD), intent(in)     :: PD(:,:)
+         real(RD), intent(in)     :: PL(:,:,:)
+         integer, intent(in)      :: PF(:,:)
+         type(view_t), intent(in) :: view
+         type(framebuffer_t)      :: fbuff
+      end function framebuffer_t_data_
+
+      module function framebuffer_t_dims_(n_x, n_y, view) result(fbuff)
+         integer, intent(in)      :: n_x
+         integer, intent(in)      :: n_y
+         type(view_t), intent(in) :: view
+         type(framebuffer_t)      :: fbuff
+      end function framebuffer_t_dims_
+
+      ! In framebuffer_render_sm
+
+      module subroutine render(self, mesh)
+         class(framebuffer_t), intent(inout) :: self
+         type(mesh_t), intent(in)            :: mesh
+      end subroutine render
+
+      module subroutine render_triangle_(self, P, f)
+         class(framebuffer_t), intent(inout) :: self
+         real(RD), intent(in)                :: P(:,:)
+         integer, intent(in)                 :: f
+      end subroutine render_triangle_
+
+      ! In framebuffer_io_sm
+
+      module subroutine read(self, hdf5io, stat)
+         class(framebuffer_t), intent(out) :: self
+         type(hdf5io_t), intent(inout)     :: hdf5io
+         integer, intent(out), optional    :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         class(framebuffer_t), intent(in) :: self
+         type(hdf5io_t), intent(inout)    :: hdf5io
+         integer, intent(out), optional   :: stat
+      end subroutine write
+
+   end interface
 
    ! Accessibility
 
    private
 
+   public :: NULL_FACE
    public :: framebuffer_t
 
    ! Procedures
 
 contains
-
-   function framebuffer_t_(n_x, n_y, n_attr, view) result(fbuff)
-
-      integer, intent(in)      :: n_x
-      integer, intent(in)      :: n_y
-      integer, intent(in)      :: n_attr
-      type(view_t), intent(in) :: view
-      type(framebuffer_t)      :: fbuff
-
-      ! Construct the framebuffer_t
-
-      allocate(fbuff%PD(n_x, n_y)
-      allocate(fbuff%PA(n_attr, n_x, n_y)
-      allocate(fbuff%PT(n_x, n_y)
-
-      fbuff%PA = 0._RD
-      fbuff%PA = 0._RD
-      fbuff%PT = NULL_TAG
-
-      fbuff%n_x = n_x
-      fbuff%n_y = n_y
-      fbuff%n_attr = n_attr
-      
-      ! Finish
-
-      return
-
-   end function framebuffer_t_
-
-   !****
-
-   subroutine render(self, mesh, view, tag, shader)
-
-      class(framebuffer_t), intent(inout) :: fbuff
-      class(geo_mesh_t), intent(in)       :: mesh
-      class(view_t), intent(in)           :: view
-      integer, intent(in)                 :: tag
-      interface
-         subroutine shade_pixel(f, alpha, beta, gamma, attrs)
-            integer, intent(in)   :: f
-            real(RD), intent(in)  :: alpha
-            real(RD), intent(in)  :: beta
-            real(RD), intent(in)  :: gamma
-            real(RD), intent(out) :: attrs(:)
-         end subroutine shader
-      end interface
-
-      ! Loop through faces, rendering each one into the framebuffer_t
-
-      face_loop: do f = 1, mesh%n_face
-
-         ! Get the face orientation
-
-         S = mesh%face_vect_area(f)
-
-         S = transform_to_window(S)
-
-         ! Check for visibility
-
-         if (S(3) > 0._RD) then
-
-            ! Render the face
-
-            call render_face_(c1, c2, c3)
-
-         end if
-
-      end do face_loop
-
-      ! Finish
-
-      return
-
-   end subroutine render
-
-   !****
-
-   subroutine render_face(self, mesh, view, tag, shader, f)
-
-      
-
-   end subroutine render_face
 
 end module framebuffer_m

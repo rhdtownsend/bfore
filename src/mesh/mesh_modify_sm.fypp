@@ -287,9 +287,9 @@ contains
 
       self%VE(v) = e3
 
-      ! Update the vertex-coordinate table
+      ! Update the vertex-point table
 
-      self%VC(:,v) = (self%VC(:,v1) + self%VC(:,v2) + self%VC(:,v3))/3._RD
+      self%VP(:,v) = (self%VP(:,v1) + self%VP(:,v2) + self%VP(:,v3))/3._RD
 
       ! Update the mesh dimensions
 
@@ -380,20 +380,20 @@ contains
       if (d_vert > mesh%n_vert) then
 
          call reallocate(mesh%VE, [d_vert])
-         mesh%VE(mesh%n_vert+1:) = 0
+!         mesh%VE(mesh%n_vert+1:) = 0
 
-         call reallocate(mesh%VC, [3, d_vert])
-         mesh%VC(:,mesh%n_vert+1:) = 0._RD
+         call reallocate(mesh%VP, [3, d_vert])
+!         mesh%VP(:,mesh%n_vert+1:) = 0._RD
 
       end if
 
       if (d_edge > mesh%n_edge) then
 
          call reallocate(mesh%EV, [d_edge])
-         mesh%EV(mesh%n_edge+1:) = 0
+!         mesh%EV(mesh%n_edge+1:) = 0
 
          call reallocate(mesh%ET, [d_edge])
-         mesh%ET(mesh%n_edge+1:) = 0
+!         mesh%ET(mesh%n_edge+1:) = 0
 
       end if
 

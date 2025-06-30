@@ -1,0 +1,64 @@
+! Submodule : framebuffer_construct_sm
+! Purpose   : Constructor routines for framebuffer_t
+
+#:include 'forum.inc'
+
+submodule (framebuffer_m) framebuffer_construct_sm
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure framebuffer_t_data_
+
+      @:CHECK_BOUNDS(SIZE(PL, 1), 3)
+      @:CHECK_BOUNDS(SIZE(PL, 2), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PL, 3), SIZE(PD, 2))
+
+      @:CHECK_BOUNDS(SIZE(PF, 1), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PF, 2), SIZE(PD, 2))
+
+      ! Construct the framebuffer_t from the data
+
+      fbuff%PD = PD
+      fbuff%PL = PL
+      fbuff%PF = PF
+
+      fbuff%view = view
+
+      fbuff%n_x = SIZE(PD, 1)
+      fbuff%n_y = SIZE(PD, 2)
+
+      ! Finish
+
+      return
+
+   end procedure framebuffer_t_data_
+
+   !****
+
+   module procedure framebuffer_t_dims_
+
+      real(RD) :: PD(n_x,n_y)
+      real(RD) :: PL(3,n_x,n_y)
+      integer  :: PF(n_x,n_y)
+
+      ! Construct the framebuffer_t from the dimensiones and view
+
+      PD = -HUGE(0._RD)
+      PL = 0._RD
+      PF = NULL_FACE
+
+      fbuff = framebuffer_t_data_(PD, PL, PF, view)
+
+      ! Finish
+
+      return
+
+   end procedure framebuffer_t_dims_
+
+end submodule framebuffer_construct_sm

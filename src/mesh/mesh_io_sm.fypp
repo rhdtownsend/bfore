@@ -1,5 +1,5 @@
 ! Submodule : mesh_io_sm
-! Purpose   : Input/output for mesh_t types
+! Purpose   : Input/output routines for mesh_t
 
 #:include 'forum.inc'
 
@@ -61,22 +61,22 @@ contains
          integer, allocatable  :: EV(:)
          integer, allocatable  :: ET(:)
          integer, allocatable  :: VE(:)
-         real(RD), allocatable :: VC(:,:)
+         real(RD), allocatable :: VP(:,:)
       
          call hdf5io%read_attr('n_vert', n_vert)
          call hdf5io%read_attr('n_edge', n_edge)
          call hdf5io%read_attr('n_face', n_face)
 
-         call hdf5io%alloc_read_dset('EV', EV)
-         call hdf5io%alloc_read_dset('ET', ET)
-         call hdf5io%alloc_read_dset('VE', VE)
-         call hdf5io%alloc_read_dset('VC', VC)
+         call hdf5io%alloc_read_dset('edge_verts', EV)
+         call hdf5io%alloc_read_dset('edge_twins', ET)
+         call hdf5io%alloc_read_dset('vert_edges', VE)
+         call hdf5io%alloc_read_dset('vert_points', VP)
 
-         if (SIZE(EV) /= n_edge .OR. &
-            SIZE(ET) /= n_edge .OR. &
-            SIZE(VE) /= n_vert .OR. &
-            SIZE(VC, 1) /= 3 .OR. &
-            SIZE(VC, 2) /= n_vert) then
+         if (.NOT. &
+            ALL(SHAPE(EV) == [n_edge]) .AND. &
+            ALL(SHAPE(ET) == [n_edge]) .AND. &
+            ALL(SHAPE(VE) == [n_vert]) .AND. &
+            ALL(SHAPE(VP) == [3, n_vert])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -87,14 +87,14 @@ contains
 
          select type(self)
          type is(mesh_t)
-            self = mesh_t_(EV, ET, VE, VC)
+            self = mesh_t_data_(EV, ET, VE, VP)
          class default
             @:ABORT('invalid type')
          end select
 
-         call self%validate(stat)
-
          ! Finish
+
+         if (PRESENT(stat)) stat = STAT_OK
 
          return
 
@@ -115,10 +115,10 @@ contains
       call hdf5io%write_attr('n_edge', self%n_edge)
       call hdf5io%write_attr('n_face', self%n_face)
 
-      call hdf5io%write_dset('EV', self%EV)
-      call hdf5io%write_dset('ET', self%ET)
-      call hdf5io%write_dset('VE', self%VE)
-      call hdf5io%write_dset('VC', self%VC)
+      call hdf5io%write_dset('edge_verts', self%EV)
+      call hdf5io%write_dset('edge_twins', self%ET)
+      call hdf5io%write_dset('vert_edges', self%VE)
+      call hdf5io%write_dset('vert_points', self%VP)
 
       ! Finish
 

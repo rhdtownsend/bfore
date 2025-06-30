@@ -117,7 +117,7 @@ contains
       type(mesh_t) :: mesh
 
       integer  :: face_verts(3,0)
-      real(RD) :: vert_coords(3,0)
+      real(RD) :: vert_points(3,0)
       integer  :: stat
       integer  :: loc
 
@@ -127,7 +127,7 @@ contains
 
       ! "Good" meshes
 
-      mesh = mesh_t(face_verts, vert_coords)
+      mesh = mesh_t(face_verts, vert_points)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'no faces -> valid')
 
@@ -329,33 +329,33 @@ contains
       integer      :: v1
       integer      :: v2
       integer      :: f
-      real(RD)     :: area(4)
+      real(RD)     :: A(3,4)
 
       print *, 'Checking mesh geometry'
 
       mesh = tetrahedron_mesh()
-      @:CHECK(ALL(ABS(mesh%vert_coord(4) - [0._RD, 0._RD, 1._RD]) < TOL), &
-         'get vertex coord of tetrahedron_mesh')
+      @:CHECK(ALL(ABS(mesh%vert_point(4) - [0._RD, 0._RD, 1._RD]) < TOL), &
+         'get vertex point of tetrahedron_mesh')
 
       mesh = tetrahedron_mesh()
-      mesh%vert_coord(4) = [0._RD, 0._RD, 2._RD]
-      @:CHECK(ALL(mesh%vert_coord(4) == [0._RD, 0._RD, 2._RD]), &
-         'set vertex coord of tetrahedron_mesh')
+      mesh%vert_point(4) = [0._RD, 0._RD, 2._RD]
+      @:CHECK(ALL(mesh%vert_point(4) == [0._RD, 0._RD, 2._RD]), &
+         'set vertex point of tetrahedron_mesh')
       
       mesh = tetrahedron_mesh()
       edge_loop: do e = 1, 12
          v1 = mesh%edge_vert(e)
          v2 = mesh%edge_vert(mesh%edge_next(e))
-         length(e) = NORM2(mesh%vert_coord(v2) - mesh%vert_coord(v1))
+         length(e) = NORM2(mesh%vert_point(v2) - mesh%vert_point(v1))
       end do edge_loop
       @:CHECK(ALL(ABS(length - 2._RD*SQRT(6._RD)/3._RD) < TOL), &
          'edge lengths of tetrahedron_mesh')
 
       mesh = tetrahedron_mesh()
       face_loop: do f = 1, 4
-         area(f) = mesh%face_area(f)
+         A(:,f) = mesh%face_area(f)
       end do face_loop
-      @:CHECK(ALL(ABS(area - 2._RD/SQRT(3._RD)) < TOL), &
+      @:CHECK(ALL(ABS(NORM2(A, DIM=1) - 2._RD/SQRT(3._RD)) < TOL), &
          'face areas of tetrahedron_mesh')
 
       ! Finish
@@ -368,10 +368,11 @@ contains
 
    subroutine test_io()
 
-      type(mesh_t)   :: write_mesh
-      type(mesh_t)   :: read_mesh
-      type(hdf5io_t) :: hdf5io
-      integer        :: stat
+      type(mesh_t)         :: write_mesh
+      type(mesh_t)         :: read_mesh
+      type(hdf5io_t)       :: hdf5io
+      integer              :: stat
+      integer, allocatable :: v_new(:)
 
       print *, 'Checking mesh i/o'
 
@@ -386,6 +387,21 @@ contains
       call read_mesh%read(hdf5io, stat)
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'read icosahedron_mesh from file')
+
+      @:CHECK(compare(write_mesh, read_mesh), 'read mesh equals written mesh')
+
+      write_mesh = icosahedron_mesh()
+      call write_mesh%refine_and_flip(v_new)
+
+      hdf5io = hdf5io_t('mesh_tmp.h5', CREATE_FILE)
+      call write_mesh%write(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'write refined icosahedron_mesh to file')
+
+      hdf5io = hdf5io_t('mesh_tmp.h5', OPEN_FILE_RO)
+      call read_mesh%read(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'read refined icosahedron_mesh from file')
 
       @:CHECK(compare(write_mesh, read_mesh), 'read mesh equals written mesh')
 
@@ -408,7 +424,7 @@ contains
       @:ASSERT(MODULO(SIZE(edge_verts), 3) == 0, 'invalid dimension')
 
       ! Build a simple mesh from the supplied edge-vertex list. All
-      ! vertex coordinates are set to the origin
+      ! vertex point are set to the origin
 
       n_vert = MAXVAL(edge_verts)
 

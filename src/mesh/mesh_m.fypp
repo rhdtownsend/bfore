@@ -29,7 +29,7 @@ module mesh_m
       integer, allocatable  :: EV(:)   ! Edge-vertex table
       integer, allocatable  :: ET(:)   ! Edge-twin table
       integer, allocatable  :: VE(:)   ! Vertex-edge table
-      real(RD), allocatable :: VC(:,:) ! Vertex-coordinate table
+      real(RD), allocatable :: VP(:,:) ! Vertex-point table
       integer, public       :: n_vert
       integer, public       :: n_edge
       integer, public       :: n_face
@@ -49,10 +49,8 @@ module mesh_m
       procedure, public :: refine_face
       procedure, public :: refine
       procedure, public :: refine_and_flip
-      procedure, public :: vert_coord
+      procedure, public :: vert_point
       procedure, public :: face_area
-      procedure, public :: face_varea
-      procedure, public :: face_vnormal
       procedure, public :: euler_characteristic
       procedure, public :: read
       procedure, public :: write
@@ -73,9 +71,17 @@ module mesh_m
 
       ! In mesh_construct_sm
 
-      module function mesh_t_face_verts_(face_verts, vert_coords) result(mesh)
+      module function mesh_t_data_(EV, ET, VE, VP) result(mesh)
+         integer, intent(in)  :: EV(:)
+         integer, intent(in)  :: ET(:)
+         integer, intent(in)  :: VE(:)
+         real(RD), intent(in) :: VP(:,:)
+         type(mesh_t)         :: mesh
+      end function mesh_t_data_
+
+      module function mesh_t_face_verts_(face_verts, vert_points) result(mesh)
          integer, intent(in)  :: face_verts(:,:)
-         real(RD), intent(in) :: vert_coords(:,:)
+         real(RD), intent(in) :: vert_points(:,:)
          type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
       
@@ -83,6 +89,63 @@ module mesh_m
          type(mesh_t), intent(in) :: meshes(:)
          type(mesh_t)             :: mesh
       end function mesh_t_meshes_
+
+      ! In mesh_traverse_sm
+
+      impure elemental module function edge_prev(self, e) result(e_p)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: e
+         integer                   :: e_p
+      end function edge_prev
+
+      impure elemental module function edge_next(self, e) result(e_n)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: e
+         integer                   :: e_n
+      end function edge_next
+
+      impure elemental module function edge_twin(self, e) result(e_t)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: e
+         integer                   :: e_t
+      end function edge_twin
+
+      impure elemental module function vert_edge(self, v) result(v_e)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: v
+         integer                   :: v_e
+      end function vert_edge
+
+      impure elemental module function vert_face(self, v) result(v_f)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: v
+         integer                   :: v_f
+         integer :: v_e
+      end function vert_face
+
+      impure elemental module function edge_vert(self, e) result(e_v)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: e
+         integer                   :: e_v
+      end function edge_vert
+
+      impure elemental module function edge_face(self, e) result(e_f)
+         class(mesh_t), intent(in)      :: self
+         integer, intent(in)            :: e
+         integer                        :: e_f
+      end function edge_face
+
+      impure elemental module function face_vert(self, f) result(f_v)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: f
+         integer                   :: f_v
+      end function face_vert
+
+      impure elemental module function face_edge(self, f) result(f_e)
+         class(mesh_t), intent(in) :: self
+         integer, intent(in)       :: f
+         integer                   :: f_e
+      end function face_edge
 
       ! In mesh_modify_sm
 
@@ -111,29 +174,17 @@ module mesh_m
 
       ! In mesh_geometry_sm
 
-      module function vert_coord(self, v) result(c)
+      module function vert_point(self, v) result(P)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: v
-         real(RD), pointer, contiguous     :: c(:)
-      end function vert_coord
+         real(RD), pointer, contiguous     :: P(:)
+      end function vert_point
 
       module function face_area(self, f) result(A)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: f
-         real(RD)                          :: A
+         real(RD)                          :: A(3)
       end function face_area
-
-      module function face_varea(self, f) result(vA)
-         class(mesh_t), intent(in), target :: self
-         integer, intent(in)               :: f
-         real(RD)                          :: vA(3)
-      end function face_varea
-
-      module function face_vnormal(self, f) result(vN)
-         class(mesh_t), intent(in), target :: self
-         integer, intent(in)               :: f
-         real(RD)                          :: vN(3)
-      end function face_vnormal
 
       ! In mesh_topology_sm
 
@@ -164,232 +215,11 @@ module mesh_m
 
    public :: BOUNDARY_EDGE
    public :: mesh_t
-   public :: mesh_t_ ! Required for submodules to see mesh_t_
    public :: compare
 
    ! Procedures
 
 contains
-
-   function mesh_t_(EV, ET, VE, VC) result(mesh)
-
-      integer, intent(in)  :: EV(:)
-      integer, intent(in)  :: ET(:)
-      integer, intent(in)  :: VE(:)
-      real(RD), intent(in) :: VC(:,:)
-      type(mesh_t)         :: mesh
-
-      @:CHECK_BOUNDS(SIZE(ET), SIZE(EV))
-
-      @:CHECK_BOUNDS(SIZE(VC, 1), 3)
-
-      ! Construct the mesh_t from the supplied compact half-edge
-      ! tables
-
-      mesh%n_vert = SIZE(VC, 2)
-      mesh%n_edge = SIZE(EV)
-      mesh%n_face = SIZE(EV)/3
-
-      mesh%EV = EV
-      mesh%ET = ET
-      mesh%VE = VE
-      mesh%VC = VC
-
-      ! Finish
-
-      return
-
-   end function mesh_t_
-
-   !****
-
-   impure elemental function edge_prev(self, e) result(e_p)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: e
-      integer                   :: e_p
-
-      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
-
-      ! Get the previous edge of edge e
-
-      e_p = 3*(self%edge_face(e) - 1) + 1 + MODULO(e + 1, 3)
-
-      ! Finish
-
-      return
-
-   end function edge_prev
-
-   !****
-
-   impure elemental function edge_next(self, e) result(e_n)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: e
-      integer                   :: e_n
-
-      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
-
-      ! Get the next edge of edge e
-
-      e_n = 3*(self%edge_face(e) - 1) + 1 + MODULO(e, 3)
-
-      ! Finish
-
-      return
-
-   end function edge_next
-
-   !****
-
-   impure elemental function edge_twin(self, e) result(e_t)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: e
-      integer                   :: e_t
-
-      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
-
-      ! Get the twin edge of edge e
-
-      e_t = self%ET(e)
-
-      ! Finish
-
-      return
-
-   end function edge_twin
-
-   !****
-
-   impure elemental function vert_edge(self, v) result(v_e)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: v
-      integer                   :: v_e
-
-      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
-         
-      ! Get one of the outbound edges of vertex v
-
-      v_e = self%VE(v)
-
-      ! Finish
-
-      return
-
-   end function vert_edge
-
-   !****
-
-   impure elemental function vert_face(self, v) result(v_f)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: v
-      integer                   :: v_f
-
-      integer :: v_e
-
-      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
-
-      ! Get one of the faces of vertex v
-
-      v_e = self%vert_edge(v)
-
-      v_f = self%edge_face(v_e)
-
-      ! Finish
-
-      return
-
-   end function vert_face
-
-   !****
-
-   impure elemental function edge_vert(self, e) result(e_v)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: e
-      integer                   :: e_v
-
-      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
-
-      ! Get the starting vertex of edge e
-
-      e_v = self%EV(e)
-
-      ! Finish
-
-      return
-
-   end function edge_vert
-
-   !****
-      
-   impure elemental function edge_face(self, e) result(e_f)
-
-      class(mesh_t), intent(in)      :: self
-      integer, intent(in)            :: e
-      integer                        :: e_f
-
-      @:ASSERT_DEBUG(e >= 1 .AND. e <= self%n_edge, 'invalid edge')
-         
-      ! Get the face of edge e
-
-      e_f = (e - 1)/3 + 1
-
-      ! Finish
-
-      return
-
-   end function edge_face
-
-   !****
-
-   impure elemental function face_vert(self, f) result(f_v)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: f
-      integer                   :: f_v
-
-      integer :: f_e
-
-      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid face')
-
-      ! Get the first vertex of face f
-
-      f_e = self%face_edge(f)
-
-      f_v = self%edge_vert(f_e)
-
-      ! Finish
-
-      return
-
-   end function face_vert
-
-   !****
-
-   impure elemental function face_edge(self, f) result(f_e)
-
-      class(mesh_t), intent(in) :: self
-      integer, intent(in)       :: f
-      integer                   :: f_e
-
-      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid face')
-         
-      ! Get the first edge of face f
-
-      f_e = 3*(f - 1) + 1
-
-      ! Finish
-
-      return
-
-   end function face_edge
-
-   !****
 
    subroutine validate(self, stat, loc)
 
@@ -513,7 +343,7 @@ contains
          ALL(mesh_a%EV == mesh_b%EV) .AND. &
          ALL(mesh_a%ET == mesh_b%ET) .AND. &
          ALL(mesh_a%VE == mesh_b%VE) .AND. &
-         ALL(mesh_a%VC == mesh_b%VC)
+         ALL(mesh_a%VP == mesh_b%VP)
 
       ! Finish
 

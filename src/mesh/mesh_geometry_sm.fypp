@@ -21,32 +21,32 @@ submodule (mesh_m) mesh_geometry_sm
 
 contains
 
-   module procedure vert_coord
+   module procedure vert_point
 
       @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vertex')
 
-      ! Get the coordinates of vertex v. Can also be used to set the
-      ! coordinates
+      ! Get the point (coordinates) associated with vertex v. Can also
+      ! be used to set the point
 
-      c => self%VC(:,v)
+      P => self%VP(:,v)
 
       ! Finish
 
       return
 
-   end procedure vert_coord
-      
+   end procedure vert_point
+
    !****
 
-   module procedure face_varea
+   module procedure face_area
 
       integer  :: f_e
       integer  :: v1
       integer  :: v2
       integer  :: v3
-      real(RD) :: c1(3)
-      real(RD) :: c2(3)
-      real(RD) :: c3(3)
+      real(RD) :: P1(3)
+      real(RD) :: P2(3)
+      real(RD) :: P3(3)
 
       ! Get the area vector of face f
 
@@ -56,52 +56,16 @@ contains
       v2 = self%edge_vert(self%edge_next(f_e))
       v3 = self%edge_vert(self%edge_prev(f_e))
 
-      c1 = self%vert_coord(v1)
-      c2 = self%vert_coord(v2)
-      c3 = self%vert_coord(v3)
+      P1 = self%vert_point(v1)
+      P2 = self%vert_point(v2)
+      P3 = self%vert_point(v3)
 
-      vA = 0.5_RD*cross_product(c2-c1, c3-c1)
-
-      ! Finish
-
-      return
-
-   end procedure face_varea
-
-   !****
-
-   module procedure face_area
-
-      real(RD) :: vA(3)
-
-      ! Get the area of face f
-
-      vA = self%face_varea(f)
-
-      A = NORM2(vA)
+      A = 0.5_RD*cross_product(P2-P1, P3-P1)
 
       ! Finish
 
       return
 
    end procedure face_area
-
-   !****
-
-   module procedure face_vnormal
-
-      real(RD) :: vA(3)
-
-      ! Get the normal vector of face f
-
-      vA = self%face_varea(f)
-
-      vN = vA/NORM2(vA)
-
-      ! Finish
-
-      return
-      
-   end procedure face_vnormal
 
 end submodule mesh_geometry_sm

@@ -1,0 +1,35 @@
+! Submodule : view_construct_sm
+! Purpose   : Constructor routines for view_t
+
+#:include 'forum.inc'
+
+submodule (view_m) view_construct_sm
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Procedures
+
+contains
+
+   module procedure view_t_data_
+
+      ! Construct the view_t from the supplied data
+
+      view%alpha = alpha
+      view%beta = beta
+      view%gamma = gamma
+
+      view%C = C
+
+      view%delta_x = delta_x
+      view%delta_y = delta_y
+
+      ! Finish
+
+      return
+
+   end procedure view_t_data_
+
+end submodule view_construct_sm
