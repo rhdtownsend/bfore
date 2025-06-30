@@ -37,7 +37,7 @@ module framebuffer_m
    contains
       private
       procedure, public :: render
-      procedure         :: render_triangle_
+      procedure         :: render_triangle
       procedure, public :: read
       procedure, public :: write
    end type framebuffer_t
@@ -74,11 +74,11 @@ module framebuffer_m
          type(mesh_t), intent(in)            :: mesh
       end subroutine render
 
-      module subroutine render_triangle_(self, P, f)
+      module subroutine render_triangle(self, P, f)
          class(framebuffer_t), intent(inout) :: self
          real(RD), intent(in)                :: P(:,:)
          integer, intent(in)                 :: f
-      end subroutine render_triangle_
+      end subroutine render_triangle
 
       ! In framebuffer_io_sm
 
