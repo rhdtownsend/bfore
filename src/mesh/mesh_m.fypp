@@ -60,7 +60,7 @@ module mesh_m
 
    interface mesh_t
       module procedure mesh_t_face_verts_
-      module procedure mesh_t_meshes_
+      module procedure mesh_t_merge_
    end interface mesh_t
 
    interface compare
@@ -87,11 +87,11 @@ module mesh_m
          type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
 
-      module function mesh_t_meshes_(meshes) result(mesh)
+      module function mesh_t_merge_(meshes) result(mesh)
          implicit none (type, external)
          type(mesh_t), intent(in) :: meshes(:)
          type(mesh_t)             :: mesh
-      end function mesh_t_meshes_
+      end function mesh_t_merge_
 
       ! In mesh_traverse_sm
 
