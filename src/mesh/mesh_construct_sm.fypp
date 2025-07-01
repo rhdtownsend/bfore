@@ -207,7 +207,7 @@ contains
 
    !****
 
-   module procedure mesh_t_meshes_
+   module procedure mesh_t_merge_
 
       integer               :: n_vert
       integer               :: n_face
@@ -216,7 +216,7 @@ contains
       integer, allocatable  :: ET(:)
       integer, allocatable  :: VE(:)
       real(RD), allocatable :: VP(:,:)
-      integer               :: m
+      integer               :: i
       integer               :: e1
       integer               :: e2
       integer               :: v1
@@ -224,7 +224,7 @@ contains
 
       @:ASSERT_DEBUG(SIZE(meshes) >= 1)
 
-      ! Construct the mesh_t by concatenating the meshes
+      ! Construct the mesh_t by merging meshes
 
       n_vert = SUM(meshes%n_vert)
       n_edge = SUM(meshes%n_edge)
@@ -237,19 +237,19 @@ contains
       allocate(VE(n_vert))
       allocate(VP(3,n_vert))
 
-      mesh_loop: do m = 1, SIZE(meshes)
+      mesh_loop: do i = 1, SIZE(meshes)
 
-         e1 = SUM(meshes(:m-1)%n_edge) + 1
-         e2 = e1 + meshes(m)%n_edge - 1
+         e1 = SUM(meshes(:i-1)%n_edge) + 1
+         e2 = e1 + meshes(i)%n_edge - 1
 
-         EV(e1:e2) = meshes(m)%EV + SUM(meshes(:m-1)%n_vert)
-         ET(e1:e2) = MERGE(meshes(m)%ET + SUM(meshes(:m-1)%n_edge), meshes(m)%ET, meshes(m)%ET /= BOUNDARY_EDGE)
+         EV(e1:e2) = meshes(i)%EV + SUM(meshes(:i-1)%n_vert)
+         ET(e1:e2) = MERGE(meshes(i)%ET + SUM(meshes(:i-1)%n_edge), meshes(i)%ET, meshes(i)%ET /= BOUNDARY_EDGE)
 
-         v1 = SUM(meshes(:m-1)%n_vert) + 1
-         v2 = v1 + meshes(m)%n_vert - 1
+         v1 = SUM(meshes(:i-1)%n_vert) + 1
+         v2 = v1 + meshes(i)%n_vert - 1
 
-         VE(v1:v2) = meshes(m)%VE + SUM(meshes(:m-1)%n_edge)
-         VP(:,v1:v2) = meshes(m)%VP
+         VE(v1:v2) = meshes(i)%VE + SUM(meshes(:i-1)%n_edge)
+         VP(:,v1:v2) = meshes(i)%VP
 
       end do mesh_loop
 
@@ -261,6 +261,6 @@ contains
 
       return
 
-   end procedure mesh_t_meshes_
+   end procedure mesh_t_merge_
 
 end submodule mesh_construct_sm
