@@ -22,22 +22,21 @@ module framebuffer_m
 
    ! Parameters
 
-   integer, parameter :: NULL_FACE = -HUGE(0)
+   integer, parameter :: NULL_FACE = 0
 
    ! Derived-type definitions
 
    type :: framebuffer_t
-      private
+      !private
       real(RD), allocatable :: PD(:,:)   ! Pixel depth buffer
       real(RD), allocatable :: PL(:,:,:) ! Pixel barycentric coordinates buffer
       integer, allocatable  :: PF(:,:)   ! Pixel face buffer
-      type(view_t)          :: view
       integer, public       :: n_x
       integer, public       :: n_y
    contains
       private
       procedure, public :: render
-      procedure         :: render_triangle
+      procedure, public :: render_triangle
       procedure, public :: read
       procedure, public :: write
    end type framebuffer_t
@@ -48,33 +47,36 @@ module framebuffer_m
       module procedure framebuffer_t_dims_
    end interface framebuffer_t
 
+   interface compare
+      module procedure compare_
+   end interface compare
+
    interface
 
       ! In framebuffer_construct_sm
 
-      module function framebuffer_t_data_(PD, PL, PF, view) result(fbuff)
+      module function framebuffer_t_data_(PD, PL, PF) result(fbuff)
          implicit none (type, external)
          real(RD), intent(in)     :: PD(:,:)
          real(RD), intent(in)     :: PL(:,:,:)
          integer, intent(in)      :: PF(:,:)
-         type(view_t), intent(in) :: view
          type(framebuffer_t)      :: fbuff
       end function framebuffer_t_data_
 
-      module function framebuffer_t_dims_(n_x, n_y, view) result(fbuff)
+      module function framebuffer_t_dims_(n_x, n_y) result(fbuff)
          implicit none (type, external)
          integer, intent(in)      :: n_x
          integer, intent(in)      :: n_y
-         type(view_t), intent(in) :: view
          type(framebuffer_t)      :: fbuff
       end function framebuffer_t_dims_
 
       ! In framebuffer_render_sm
 
-      module subroutine render(self, mesh)
+      module subroutine render(self, mesh, view)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          type(mesh_t), intent(in)            :: mesh
+         type(view_t), intent(in)            :: view
       end subroutine render
 
       module subroutine render_triangle(self, P, f)
@@ -108,9 +110,35 @@ module framebuffer_m
 
    public :: NULL_FACE
    public :: framebuffer_t
+   public :: compare
 
    ! Procedures
 
 contains
+
+   function compare_(fbuff_a, fbuff_b) result(same)
+
+      type(framebuffer_t), intent(in) :: fbuff_a
+      type(framebuffer_t), intent(in) :: fbuff_b
+      logical                         :: same
+
+      ! Compare the two meshes
+
+      same = &
+         fbuff_a%n_x == fbuff_b%n_x .AND. &
+         fbuff_a%n_y == fbuff_b%n_y
+
+      if (.NOT. same) return
+
+      same = &
+         ALL(fbuff_a%PD == fbuff_b%PD) .AND. &
+         ALL(fbuff_a%PL == fbuff_b%PL) .AND. &
+         ALL(fbuff_a%PF == fbuff_b%PF)
+
+      ! Finish
+
+      return
+
+   end function compare_
 
 end module framebuffer_m
