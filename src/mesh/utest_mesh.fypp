@@ -24,6 +24,7 @@ program utest_mesh
 
    call test_traversal()
    call test_validation()
+   call test_construction
    call test_primitives()
    call test_modification()
    call test_topology()
@@ -121,8 +122,6 @@ contains
       integer  :: stat
       integer  :: loc
 
-      ! Check validity of good & bad meshes
-
       print *, 'Checking mesh validation'
 
       ! "Good" meshes
@@ -211,6 +210,25 @@ contains
 
    !****
 
+   subroutine test_construction()
+
+      type(mesh_t) :: mesh
+      integer      :: stat
+
+      print *, 'Checking mesh construction'
+
+      mesh = mesh_t([two_face_mesh(), two_face_mesh()])
+      call mesh%validate(stat)
+      @:CHECK(stat == STAT_OK, 'merge two two_face_mesh -> valid')
+
+      ! Finish
+
+      return
+
+   end subroutine test_construction
+
+   !****
+
    subroutine test_primitives()
 
       type(mesh_t) :: mesh
@@ -256,10 +274,14 @@ contains
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'flip_edge counter-clockwise on two_face_mesh -> valid')
 
+      !
+
       mesh = two_face_mesh()
       call mesh%flip_edge(2, clockwise=.TRUE.)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'flip_edge clockwise on two_face_mesh -> valid')
+
+      !
 
       mesh = two_face_mesh()
       call mesh%flip_edge(2)
@@ -267,29 +289,33 @@ contains
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK, 'flip_edge counter+clockwise on two_face_mesh -> valid')
 
+      !
+
       mesh = two_face_mesh()
       call mesh%refine_face(1, v)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK .AND. v == 5, 'refine_face on two_face_mesh -> valid')
+
+      !
 
       mesh = two_face_mesh()
       call mesh%refine(vv)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine on two_face_mesh -> valid')
 
-      mesh = two_face_mesh()
-      call mesh%refine_and_flip(vv)
-      call mesh%validate(stat)
-      @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine_and_flip on two_face_mesh -> valid')
+      !
 
       mesh = two_face_mesh()
       call mesh%refine_and_flip(vv)
       call mesh%validate(stat)
       @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine_and_flip on two_face_mesh -> valid')
 
-      mesh = mesh_t([two_face_mesh(), two_face_mesh()])
+      !
+
+      mesh = two_face_mesh()
+      call mesh%refine_and_flip(vv)
       call mesh%validate(stat)
-      @:CHECK(stat == STAT_OK, 'append_mesh on two two_face_mesh -> valid')
+      @:CHECK(stat == STAT_OK .AND. ALL(vv == [5, 6]), 'refine_and_flip on two_face_mesh -> valid')
 
       ! Finish
 
@@ -307,6 +333,8 @@ contains
 
       mesh = tetrahedron_mesh()
       @:CHECK(mesh%euler_characteristic() == 2, 'Euler formula for tetrahedron_mesh')
+
+      !
 
       mesh = mesh_t([tetrahedron_mesh(), tetrahedron_mesh()])
       @:CHECK(mesh%euler_characteristic() == 4, 'Euler formula for two tetrahedra_mesh')
@@ -368,42 +396,26 @@ contains
 
    subroutine test_io()
 
-      type(mesh_t)         :: write_mesh
-      type(mesh_t)         :: read_mesh
-      type(hdf5io_t)       :: hdf5io
-      integer              :: stat
-      integer, allocatable :: v_new(:)
+      type(mesh_t)   :: mesh_out
+      type(mesh_t)   :: mesh_in
+      type(hdf5io_t) :: hdf5io
+      integer        :: stat
 
       print *, 'Checking mesh i/o'
 
-      write_mesh = icosahedron_mesh()
+      mesh_out = sphere_mesh(2)
 
       hdf5io = hdf5io_t('utest_mesh.h5', CREATE_FILE)
-      call write_mesh%write(hdf5io, stat)
+      call mesh_out%write(hdf5io, stat)
       call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'write icosahedron_mesh to file')
+      @:CHECK(stat == STAT_OK, 'write sphere_mesh to file')
 
       hdf5io = hdf5io_t('utest_mesh.h5', OPEN_FILE_RO)
-      call read_mesh%read(hdf5io, stat)
+      call mesh_in%read(hdf5io, stat)
       call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'read icosahedron_mesh from file')
+      @:CHECK(stat == STAT_OK, 'read sphere_mesh from file')
 
-      @:CHECK(compare(write_mesh, read_mesh), 'read mesh equals written mesh')
-
-      write_mesh = icosahedron_mesh()
-      call write_mesh%refine_and_flip(v_new)
-
-      hdf5io = hdf5io_t('utest_mesh.h5', CREATE_FILE)
-      call write_mesh%write(hdf5io, stat)
-      call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'write refined icosahedron_mesh to file')
-
-      hdf5io = hdf5io_t('utest_mesh.h5', OPEN_FILE_RO)
-      call read_mesh%read(hdf5io, stat)
-      call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'read refined icosahedron_mesh from file')
-
-      @:CHECK(compare(write_mesh, read_mesh), 'read mesh equals written mesh')
+      @:CHECK(compare(mesh_out, mesh_in), 'read mesh equals written mesh')
 
       ! Finish
 
