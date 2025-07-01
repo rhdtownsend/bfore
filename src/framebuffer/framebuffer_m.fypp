@@ -45,6 +45,7 @@ module framebuffer_m
 
    interface framebuffer_t
       module procedure framebuffer_t_dims_
+      module procedure framebuffer_t_merge_
    end interface framebuffer_t
 
    interface compare
@@ -69,6 +70,12 @@ module framebuffer_m
          integer, intent(in)      :: n_y
          type(framebuffer_t)      :: fbuff
       end function framebuffer_t_dims_
+
+      module function framebuffer_t_merge_(fbuffs) result(fbuff)
+         implicit none (type, external)
+         type(framebuffer_t), intent(in) :: fbuffs(:)
+         type(framebuffer_t)             :: fbuff
+      end function framebuffer_t_merge_
 
       ! In framebuffer_render_sm
 

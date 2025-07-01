@@ -59,4 +59,41 @@ contains
 
    end procedure framebuffer_t_dims_
 
+   !****
+
+   module procedure framebuffer_t_merge_
+
+      integer              :: n_x
+      integer              :: n_y
+      integer              :: i
+      logical, allocatable :: mask(:,:)
+
+      ! Construct the framebuffer_t by merging fbuffs
+
+      n_x = MINVAL(fbuffs%n_x)
+      n_y = MINVAL(fbuffs%n_y)
+
+      @:ASSERT_DEBUG(ALL(fbuffs%n_x == n_x), 'mismatched dimensions')
+      @:ASSERT_DEBUG(ALL(fbuffs%n_y == n_y), 'mismatched dimensions')
+
+      fbuff = framebuffer_t(n_x, n_y)
+
+      allocate(mask(n_x, n_y))
+
+      fbuff_loop: do i = 1, SIZE(fbuffs)
+
+         mask = fbuffs(i)%PD > fbuff%PD
+
+         fbuff%PD = MERGE(fbuffs(i)%PD, fbuff%PD, mask)
+         fbuff%PL = MERGE(fbuffs(i)%PL, fbuff%PL, SPREAD(mask, DIM=1, NCOPIES=3))
+         fbuff%PF = MERGE(fbuffs(i)%PF, fbuff%PF, mask)
+
+      end do fbuff_loop
+
+      ! Finish
+
+      return
+
+   end procedure framebuffer_t_merge_
+
 end submodule framebuffer_construct_sm
