@@ -135,8 +135,8 @@ contains
       inv_area2 = 1._RD/area2
 
       ! Calculate the tie-breaker function, based on Fig. 2 of McCool,
-      ! Wales & Moule (2002), modified to follow the OpenGL convention
-      ! that top/left edges are drawn
+      ! Wales & Moule (2002), modified to follow the OpenGL fill-rule
+      ! convention that top/left edges are drawn
 
       EF_tie = EF_a > 0._RD .OR. (EF_a == 0._RD .AND. EF_b < 0._RD)
 
