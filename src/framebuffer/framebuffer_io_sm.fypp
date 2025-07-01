@@ -55,8 +55,6 @@ contains
          real(RD), allocatable :: PD(:,:)
          real(RD), allocatable :: PL(:,:,:)
          integer, allocatable  :: PF(:,:)
-         type(hdf5io_t)        :: hdf5io_view
-         type(view_t)          :: view
 
          call hdf5io%read_attr('n_x', n_x)
          call hdf5io%read_attr('n_y', n_y)
@@ -77,16 +75,9 @@ contains
             end if
          end if
 
-         hdf5io_view = hdf5io_t(hdf5io, 'view')
-         call view%read(hdf5io_view, stat)
-         call hdf5io_view%final()
-         if (PRESENT(stat)) then
-            if (stat /= STAT_OK) return
-         end if
-
          select type(self)
          type is(framebuffer_t)
-            self = framebuffer_t_data_(PD, PL, PF, view)
+            self = framebuffer_t_data_(PD, PL, PF)
          class default
             @:ABORT('invalid type')
          end select
@@ -105,8 +96,6 @@ contains
 
    module procedure write
 
-      type(hdf5io_t) :: hdf5io_view
-
       ! Write the framebuffer_t
 
       call hdf5io%write_attr('TYPE', 'framebuffer_t')
@@ -118,13 +107,6 @@ contains
       call hdf5io%write_dset('pixel_depths', self%PD)
       call hdf5io%write_dset('pixel_lambdas', self%PL)
       call hdf5io%write_dset('pixel_faces', self%PF)
-
-      hdf5io_view = hdf5io_t(hdf5io, 'view')
-      call self%view%write(hdf5io_view, stat)
-      call hdf5io_view%final()
-      if (PRESENT(stat)) then
-         if (stat /= STAT_OK) return
-      end if
 
       ! Finish
 

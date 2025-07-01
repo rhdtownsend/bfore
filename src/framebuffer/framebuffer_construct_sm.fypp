@@ -28,8 +28,6 @@ contains
       fbuff%PL = PL
       fbuff%PF = PF
 
-      fbuff%view = view
-
       fbuff%n_x = SIZE(PD, 1)
       fbuff%n_y = SIZE(PD, 2)
 
@@ -47,13 +45,13 @@ contains
       real(RD) :: PL(3,n_x,n_y)
       integer  :: PF(n_x,n_y)
 
-      ! Construct the framebuffer_t from the dimensiones and view
+      ! Construct the framebuffer_t from the dimensions
 
       PD = -HUGE(0._RD)
       PL = 0._RD
       PF = NULL_FACE
 
-      fbuff = framebuffer_t_data_(PD, PL, PF, view)
+      fbuff = framebuffer_t_data_(PD, PL, PF)
 
       ! Finish
 
