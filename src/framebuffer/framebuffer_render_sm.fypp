@@ -22,7 +22,7 @@ contains
    module procedure render
 
       type(transform_t) :: tform_camera
-      type(transform_t) :: tform_fbuff
+      type(transform_t) :: tform_pixel
       integer           :: v
       real(RD)          :: P(3,mesh%n_vert)
       integer           :: f
@@ -35,13 +35,13 @@ contains
       ! Set up transformations
 
       tform_camera = view%camera_transform()
-      tform_fbuff = view%framebuffer_transform(self%n_x, self%n_y)
+      tform_pixel = view%pixel_transform(self%n_x, self%n_y)
 
       ! Extract vertex points from the mesh, and transform to the
-      ! framebuffer system
+      ! pixel system
 
       vert_loop: do v = 1, mesh%n_vert
-         P(:,v) = tform_fbuff%point_image(mesh%vert_point(v))
+         P(:,v) = tform_pixel%point_image(mesh%vert_point(v))
       end do vert_loop
 
       ! Loop through faces of mesh, rendering each one
@@ -65,7 +65,7 @@ contains
             v2 = mesh%edge_vert(mesh%edge_next(f_e))
             v3 = mesh%edge_vert(mesh%edge_prev(f_e))
 
-            call render_triangle(self, P(:,[v1, v2, v3]), f)
+            call render_triangle(self, P(:,[v1, v2, v3]), [v1, v2, v3])
 
          end if
 
@@ -102,10 +102,14 @@ contains
       @:CHECK_BOUNDS(SIZE(P, 1), 3)
       @:CHECK_BOUNDS(SIZE(P, 2), 3)
 
+      if (PRESENT(v)) then
+         @:CHECK_BOUNDS(SIZE(v), 3)
+      end if
+
       ! Render a triangle with vertex points P(:,:) (in the
       ! framebuffer system). The algorithm largely follows that
-      ! described by Pineda (1988). The index f is used to indicate
-      ! which face the triangle comes from. The
+      ! described by Pineda (1988). If present, v indicates which
+      ! vertices the triangle comes from
 
       ! Determine the pixel bounding box
 
@@ -166,19 +170,19 @@ contains
 
                z = DOT_PRODUCT(lambda, P(3,:))
 
-               if (z > self%PD(i_x,i_y)) then
+               if (z > self%PZ(i_x,i_y)) then
 
                   ! Store the depth
 
-                  self%PD(i_x,i_y) = z
+                  self%PZ(i_x,i_y) = z
 
                   ! Store barycentric coordinates
 
                   self%PL(:,i_x,i_y) = lambda
 
-                  ! Store the face index
+                  ! Store the vertex indices
 
-                  self%PF(i_x,i_y) = f
+                  if (PRESENT(v)) self%PV(:,i_x,i_y) = v
 
                   ! Flag that at least one pixel on this scanline was
                   ! inside

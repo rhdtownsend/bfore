@@ -22,6 +22,10 @@ program utest_framebuffer
 
    implicit none (type, external)
 
+   ! Parameter definitions
+
+   real(RD), parameter :: Z_MIN = -HUGE(0._RD)
+
    ! Run the tests
 
    call test_triangle()
@@ -35,29 +39,21 @@ contains
 
    subroutine test_triangle()
 
-      type(framebuffer_t) :: fbuff
-      integer             :: PF(3,3)
+      type(framebuffer_t)   :: fbuff
+      real(RD), allocatable :: z(:,:)
 
       print *, 'Checking framebuffer triangle rendering'
 
       fbuff = framebuffer_t(3, 3)
 
-      call fbuff%render_triangle(RESHAPE([ &
-         0.5_RD, 0.5_RD, 0._RD, &
-         3.5_RD, 0.5_RD, 0._RD, &
-         3.5_RD, 3.5_RD, 0._RD], &
-         SHAPE=[3, 3]), 1)
-      call fbuff%render_triangle(RESHAPE([ &
-         0.5_RD, 0.5_RD, 1._RD, &
-         3.5_RD, 3.5_RD, 1._RD, &
-         0.5_RD, 3.5_RD, 1._RD], &
-         SHAPE=[3, 3]), 1)
-      PF = RESHAPE([ &
-         1, 1, 1, &
-         1, 1, 1, &
-         1, 1, 1], &
+      call render_tri(fbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'BR')
+      call render_tri(fbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'TL')
+      z = RESHAPE([ &
+         0._RD, 0._RD, 0._RD, &
+         0._RD, 0._RD, 0._RD, &
+         0._RD, 0._RD, 0._RD], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'two triangles making a square')
+      @:CHECK(check_depths(fbuff, z), 'two triangles making a square')
 
       ! Finish
 
@@ -70,35 +66,27 @@ contains
 
    subroutine test_construction()
 
-      type(framebuffer_t) :: fbuff_a
-      type(framebuffer_t) :: fbuff_b
-      type(framebuffer_t) :: fbuff
-      integer             :: PF(3,3)
+      type(framebuffer_t)   :: fbuff_a
+      type(framebuffer_t)   :: fbuff_b
+      type(framebuffer_t)   :: fbuff
+      real(RD), allocatable :: z(:,:)
 
       print *, 'Checking framebuffer construction'
 
       fbuff_a = framebuffer_t(3, 3)
-      fbuff_b = framebuffer_t(3, 3)
+      call render_tri(fbuff_a, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'BR')
 
-      call fbuff_a%render_triangle(RESHAPE([ &
-         0.5_RD, 0.5_RD, 0._RD, &
-         3.5_RD, 0.5_RD, 0._RD, &
-         3.5_RD, 3.5_RD, 0._RD], &
-         SHAPE=[3, 3]), 1)
-      call fbuff_b%render_triangle(RESHAPE([ &
-         0.5_RD, 3.5_RD, 1._RD, &
-         0.5_RD, 0.5_RD, 1._RD, &
-         3.5_RD, 0.5_RD, 1._RD], &
-         SHAPE=[3, 3]), 2)
+      fbuff_b = framebuffer_t(3, 3)
+      call render_tri(fbuff_b, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 1._RD, 'BL')
 
       fbuff = framebuffer_t([fbuff_a, fbuff_b])
 
-      PF = RESHAPE([ &
-         2, 2, 1, &
-         2, 1, 1, &
-         0, 0, 1], &
+      z = RESHAPE([ &
+         1._RD, 1._RD, 0._RD, &
+         1._RD, 0._RD, 0._RD, &
+         Z_MIN, Z_MIN, 0._RD], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'merge two triangle framebuffers')
+      @:CHECK(check_depths(fbuff, z), 'merge two triangle framebuffers')
 
       ! Finish
 
@@ -110,79 +98,88 @@ contains
 
    subroutine test_fill_rules()
 
-      type(framebuffer_t) :: fbuff
-      integer             :: PF(3,3)
+      type(framebuffer_t)   :: fbuff
+      real(RD), allocatable :: z(:,:)
 
-      ! Test triangle rendering
+      ! Test fill rules (see
+      ! https://learn.microsoft.com/en-us/windows/win32/direct3d9/rasterization-rules)
 
       print *, 'Checking framebuffer fill rules'
 
       fbuff = framebuffer_t(3, 3)
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TL')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         1, 0, 0, &
-         1, 1, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'L')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ top-left right-angle')
+      @:CHECK(check_depths(fbuff, z), 'left triangle')
 
-      !****
+      !
 
       fbuff = framebuffer_t(3, 3)
-
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TR')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         0, 1, 0, &
-         1, 1, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'B')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ top-right right-angle')
+      @:CHECK(check_depths(fbuff, z), 'bot triangle')
 
-      !****
+      !
 
       fbuff = framebuffer_t(3, 3)
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BL')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         1, 0, 0, &
-         0, 0, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'T')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ bot-left right-angle')
+      @:CHECK(check_depths(fbuff, z), 'top triangle')
 
-      !****
+      !
 
       fbuff = framebuffer_t(3, 3)
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BR')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         0, 1, 0, &
-         0, 0, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TL')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, Z_MIN, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ bot-right right-angle')
+      @:CHECK(check_depths(fbuff, z), 'top-left triangle')
 
-      !****
+      !
 
       fbuff = framebuffer_t(3, 3)
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TL')
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 2, 'BR')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         1, 2, 0, &
-         1, 1, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BL')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, Z_MIN, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'two triangles w/ top-left/bot-right right-angles')
+      @:CHECK(check_depths(fbuff, z), 'bot-left triangle')
 
-      !****
+      !
 
       fbuff = framebuffer_t(3, 3)
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BL')
-      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 2, 'TR')
-      PF = RESHAPE([ &
-         0, 0, 0, &
-         1, 2, 0, &
-         2, 2, 0], &
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BR')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
          SHAPE=[3,3])
-      @:CHECK(ALL(fbuff%PF == PF), 'two triangles w/ bot-left/top-right right-angles')
+      @:CHECK(check_depths(fbuff, z), 'bot-right triangle')
+
+      !
+
+      fbuff = framebuffer_t(3, 3)
+      call render_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TR')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(fbuff, z), 'top-right triangle')
 
       ! Finish
 
@@ -234,7 +231,7 @@ contains
 
    !****
 
-   subroutine render_right_tri(fbuff, x_min, x_max, y_min, y_max, z, f, orient)
+   subroutine render_tri(fbuff, x_min, x_max, y_min, y_max, z, orient)
 
       type(framebuffer_t)      :: fbuff
       real(RD), intent(in)     :: x_min
@@ -242,29 +239,46 @@ contains
       real(RD), intent(in)     :: y_min
       real(RD), intent(in)     :: y_max
       real(RD), intent(in)     :: z
-      integer, intent(in)      :: f
       character(*), intent(in) :: orient
 
-      real(RD) :: rect_points(3,4)
+      real(RD) :: x_mid
+      real(RD) :: y_mid
+      real(RD) :: rect_points(3,9)
 
-      ! Render a right-angle triangle
+      ! Render a triangle within the supplid bounding box
+
+      x_mid = 0.5_RD*(x_min + x_max)
+      y_mid = 0.5_RD*(y_min + y_max)
 
       rect_points = RESHAPE([ &
          x_min, y_min, z, &
+         x_mid, y_min, z, &
          x_max, y_min, z, &
+         x_min, y_mid, z, &
+         x_mid, y_mid, z, &
+         x_max, y_mid, z, &
          x_min, y_max, z, &
+         x_mid, y_max, z, &
          x_max, y_max, z], &
-         SHAPE=[3, 4])
+         SHAPE=[3, 9])
 
       select case(orient)
+      case('L')
+         call fbuff%render_triangle(rect_points(:,[7, 1, 6]))
+      case('B')
+         call fbuff%render_triangle(rect_points(:,[1, 3, 8]))
+      case('R')
+         call fbuff%render_triangle(rect_points(:,[3, 9, 4]))
+      case('T')
+         call fbuff%render_triangle(rect_points(:,[9, 7, 2]))
       case('TL')
-         call fbuff%render_triangle(rect_points(:,[3, 1, 4]), f)
-      case('TR')
-         call fbuff%render_triangle(rect_points(:,[3, 2, 4]), f)
+         call fbuff%render_triangle(rect_points(:,[7, 1, 9]))
       case('BL')
-         call fbuff%render_triangle(rect_points(:,[3, 1, 2]), f)
+         call fbuff%render_triangle(rect_points(:,[1, 3, 7]))
       case('BR')
-         call fbuff%render_triangle(rect_points(:,[1, 2, 4]), f)
+         call fbuff%render_triangle(rect_points(:,[3, 9, 1]))
+      case('TR')
+         call fbuff%render_triangle(rect_points(:,[9, 7, 3]))
       case default
          @:ABORT('invalid orient')
       end select
@@ -273,6 +287,36 @@ contains
 
       return
 
-   end subroutine render_right_tri
+   end subroutine render_tri
+
+   !****
+
+   function check_depths(fbuff, z) result(same)
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(framebuffer_t), intent(in) :: fbuff
+      real(RD), intent(in)            :: z(:,:)
+      logical                         :: same
+
+      integer  :: i_x
+      integer  :: i_y
+      real(RD) :: fbuff_z(fbuff%n_x,fbuff%n_y)
+
+      ! Check the framebuffer depth buffer
+
+      do i_y = 1, fbuff%n_y
+         do i_x = 1, fbuff%n_x
+            fbuff_z(i_x,i_y) = fbuff%pixel_depth(i_x, i_y)
+         end do
+      end do
+
+      same = ALL(ABS(fbuff_z - z) < TOL)
+
+      ! Finish
+
+      return
+
+   end function check_depths
 
 end program utest_framebuffer
