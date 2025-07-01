@@ -34,7 +34,7 @@ module view_m
       procedure, public :: write
       procedure, public :: camera_transform
       procedure, public :: normal_transform
-      procedure, public :: framebuffer_transform
+      procedure, public :: pixel_transform
    end type view_t
 
    ! Interfaces
@@ -128,7 +128,7 @@ contains
 
    !****
 
-   function framebuffer_transform(self, n_x, n_y) result(tform)
+   function pixel_transform(self, n_x, n_y) result(tform)
 
       class(view_t), intent(in) :: self
       integer, intent(in)       :: n_x
@@ -136,7 +136,7 @@ contains
       type(transform_t)         :: tform
 
       ! Construct a transform_t for mapping from world coordinates to
-      ! frambuffer coordinates
+      ! pixel coordinates
 
       tform = self%normal_transform()
 
@@ -147,6 +147,6 @@ contains
 
       return
 
-   end function framebuffer_transform
+   end function pixel_transform
 
 end module view_m
