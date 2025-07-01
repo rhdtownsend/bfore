@@ -34,8 +34,8 @@ contains
 
       ! Set up transformations
 
-      tform_camera = self%view%camera_transform()
-      tform_fbuff = self%view%framebuffer_transform(self%n_x, self%n_y)
+      tform_camera = view%camera_transform()
+      tform_fbuff = view%framebuffer_transform(self%n_x, self%n_y)
 
       ! Extract vertex points from the mesh, and transform to the
       ! framebuffer system
@@ -102,8 +102,10 @@ contains
       @:CHECK_BOUNDS(SIZE(P, 1), 3)
       @:CHECK_BOUNDS(SIZE(P, 2), 3)
 
-      ! Render a triangle with vertex points P(:,:). The index f is used
-      ! to indicate which face the triangle comes from
+      ! Render a triangle with vertex points P(:,:) (in the
+      ! framebuffer system). The algorithm largely follows that
+      ! described by Pineda (1988). The index f is used to indicate
+      ! which face the triangle comes from. The
 
       ! Determine the pixel bounding box
 
@@ -119,9 +121,9 @@ contains
 
       ! Calculate quantities used in edge-function evaluation
 
-      EF_a = P(2,[2, 3, 1]) - P(2,[3, 1, 2])
-      EF_b = P(1,[3, 1, 2]) - P(1,[2, 3, 1])
-      EF_c = P(1,[2, 3, 1])*P(2,[3, 1, 2]) - P(1,[3, 1, 2])*P(2,[2, 3, 1])
+      EF_a = P(2,[1, 2, 3]) - P(2,[2, 3, 1])
+      EF_b = P(1,[2, 3, 1]) - P(1,[1, 2, 3])
+      EF_c = P(1,[1, 2, 3])*P(2,[2, 3, 1]) - P(1,[2, 3, 1])*P(2,[1, 2, 3])
 
       ! Calculate (twice) the projected area of the triangle,
       ! returning if it is small (indicating an edge-on triangle)
@@ -133,9 +135,10 @@ contains
       inv_area2 = 1._RD/area2
 
       ! Calculate the tie-breaker function, based on Fig. 2 of McCool,
-      ! Wales & Moule (2002)
+      ! Wales & Moule (2002), modified to follow the OpenGL convention
+      ! that top/left edges are drawn
 
-      EF_tie = EF_a > 0._RD .OR. (EF_a == 0._RD .AND. EF_b > 0._RD)
+      EF_tie = EF_a > 0._RD .OR. (EF_a == 0._RD .AND. EF_b < 0._RD)
 
       ! Loop through the pixels within the bounding box
 
@@ -151,7 +154,7 @@ contains
 
             ! Determine if the pixel lies within the triangle
 
-            inside = ALL(EF > 0._RD .OR. (EF == 0_RD .AND. EF_tie))
+            inside = ALL(EF > 0._RD .OR. (EF == 0._RD .AND. EF_tie))
 
             if (inside) then
 
