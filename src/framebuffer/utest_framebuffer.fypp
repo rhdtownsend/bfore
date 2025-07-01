@@ -24,43 +24,255 @@ program utest_framebuffer
 
    ! Run the tests
 
-   call test_rendering()
+   call test_triangle()
+   call test_construction()
+   call test_fill_rules()
+   call test_io()
 
    ! Finish
 
 contains
 
-   subroutine test_rendering()
+   subroutine test_triangle()
 
-      type(mesh_t)        :: mesh
-      type(view_t)        :: view
       type(framebuffer_t) :: fbuff
-      type(hdf5io_t)      :: hdf5io
-      integer, allocatable :: v_new(:)
+      integer             :: PF(3,3)
 
-      ! Test rendering operations
+      print *, 'Checking framebuffer triangle rendering'
 
-      print *,'Checking framebuffer rendering'
+      fbuff = framebuffer_t(3, 3)
 
-      mesh = icosahedron_mesh()
-      call mesh%refine_and_flip(v_new)
-
-      view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
-         [0._RD, 0._RD, 0._RD], &
-         4._RD, 4._RD)
-
-      fbuff = framebuffer_t(1024, 1024, view)
-
-      call fbuff%render(mesh)
-
-      hdf5io = hdf5io_t('fbuff.h5', CREATE_FILE)
-      call fbuff%write(hdf5io)
-      call hdf5io%final()
+      call fbuff%render_triangle(RESHAPE([ &
+         0.5_RD, 0.5_RD, 0._RD, &
+         3.5_RD, 0.5_RD, 0._RD, &
+         3.5_RD, 3.5_RD, 0._RD], &
+         SHAPE=[3, 3]), 1)
+      call fbuff%render_triangle(RESHAPE([ &
+         0.5_RD, 0.5_RD, 1._RD, &
+         3.5_RD, 3.5_RD, 1._RD, &
+         0.5_RD, 3.5_RD, 1._RD], &
+         SHAPE=[3, 3]), 1)
+      PF = RESHAPE([ &
+         1, 1, 1, &
+         1, 1, 1, &
+         1, 1, 1], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'two triangles making a square')
 
       ! Finish
 
       return
 
-   end subroutine test_rendering
+   end subroutine test_triangle
+
+
+   !****
+
+   subroutine test_construction()
+
+      type(framebuffer_t) :: fbuff_a
+      type(framebuffer_t) :: fbuff_b
+      type(framebuffer_t) :: fbuff
+      integer             :: PF(3,3)
+
+      print *, 'Checking framebuffer construction'
+
+      fbuff_a = framebuffer_t(3, 3)
+      fbuff_b = framebuffer_t(3, 3)
+
+      call fbuff_a%render_triangle(RESHAPE([ &
+         0.5_RD, 0.5_RD, 0._RD, &
+         3.5_RD, 0.5_RD, 0._RD, &
+         3.5_RD, 3.5_RD, 0._RD], &
+         SHAPE=[3, 3]), 1)
+      call fbuff_b%render_triangle(RESHAPE([ &
+         0.5_RD, 3.5_RD, 1._RD, &
+         0.5_RD, 0.5_RD, 1._RD, &
+         3.5_RD, 0.5_RD, 1._RD], &
+         SHAPE=[3, 3]), 2)
+
+      fbuff = framebuffer_t([fbuff_a, fbuff_b])
+
+      PF = RESHAPE([ &
+         2, 2, 1, &
+         2, 1, 1, &
+         0, 0, 1], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'merge two triangle framebuffers')
+
+      ! Finish
+
+      return
+
+   end subroutine test_construction
+
+   !****
+
+   subroutine test_fill_rules()
+
+      type(framebuffer_t) :: fbuff
+      integer             :: PF(3,3)
+
+      ! Test triangle rendering
+
+      print *, 'Checking framebuffer fill rules'
+
+      fbuff = framebuffer_t(3, 3)
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TL')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         1, 0, 0, &
+         1, 1, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ top-left right-angle')
+
+      !****
+
+      fbuff = framebuffer_t(3, 3)
+
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TR')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         0, 1, 0, &
+         1, 1, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ top-right right-angle')
+
+      !****
+
+      fbuff = framebuffer_t(3, 3)
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BL')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         1, 0, 0, &
+         0, 0, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ bot-left right-angle')
+
+      !****
+
+      fbuff = framebuffer_t(3, 3)
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BR')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         0, 1, 0, &
+         0, 0, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'triangle w/ bot-right right-angle')
+
+      !****
+
+      fbuff = framebuffer_t(3, 3)
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'TL')
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 2, 'BR')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         1, 2, 0, &
+         1, 1, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'two triangles w/ top-left/bot-right right-angles')
+
+      !****
+
+      fbuff = framebuffer_t(3, 3)
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 1, 'BL')
+      call render_right_tri(fbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 2, 'TR')
+      PF = RESHAPE([ &
+         0, 0, 0, &
+         1, 2, 0, &
+         2, 2, 0], &
+         SHAPE=[3,3])
+      @:CHECK(ALL(fbuff%PF == PF), 'two triangles w/ bot-left/top-right right-angles')
+
+      ! Finish
+
+      return
+
+   end subroutine test_fill_rules
+
+   !****
+
+   subroutine test_io()
+
+      type(mesh_t)        :: mesh
+      type(view_t)        :: view
+      type(framebuffer_t) :: fbuff_out
+      type(framebuffer_t) :: fbuff_in
+      type(hdf5io_t)      :: hdf5io
+      integer             :: stat
+
+      ! Test rendering operations
+
+      print *,'Checking framebuffer i/o'
+
+      mesh = sphere_mesh(2)
+
+      view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
+         [0._RD, 0._RD, 0._RD], &
+         2.4_RD, 2.4_RD)
+
+      fbuff_out = framebuffer_t(1024, 1024)
+      call fbuff_out%render(mesh, view)
+
+      hdf5io = hdf5io_t('utest_framebuffer.h5', CREATE_FILE)
+      call fbuff_out%write(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'write framebuffer to file')
+
+      hdf5io = hdf5io_t('utest_framebuffer.h5', OPEN_FILE_RO)
+      call fbuff_in%read(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'read framebuffer from file')
+
+      @:CHECK(compare(fbuff_out, fbuff_in), 'read framebuffer equals written framebuffer')
+
+      ! Finish
+
+      return
+
+   end subroutine test_io
+
+   !****
+
+   subroutine render_right_tri(fbuff, x_min, x_max, y_min, y_max, z, f, orient)
+
+      type(framebuffer_t)      :: fbuff
+      real(RD), intent(in)     :: x_min
+      real(RD), intent(in)     :: x_max
+      real(RD), intent(in)     :: y_min
+      real(RD), intent(in)     :: y_max
+      real(RD), intent(in)     :: z
+      integer, intent(in)      :: f
+      character(*), intent(in) :: orient
+
+      real(RD) :: rect_points(3,4)
+
+      ! Render a right-angle triangle
+
+      rect_points = RESHAPE([ &
+         x_min, y_min, z, &
+         x_max, y_min, z, &
+         x_min, y_max, z, &
+         x_max, y_max, z], &
+         SHAPE=[3, 4])
+
+      select case(orient)
+      case('TL')
+         call fbuff%render_triangle(rect_points(:,[3, 1, 4]), f)
+      case('TR')
+         call fbuff%render_triangle(rect_points(:,[3, 2, 4]), f)
+      case('BL')
+         call fbuff%render_triangle(rect_points(:,[3, 1, 2]), f)
+      case('BR')
+         call fbuff%render_triangle(rect_points(:,[1, 2, 4]), f)
+      case default
+         @:ABORT('invalid orient')
+      end select
+
+      ! Finish
+
+      return
+
+   end subroutine render_right_tri
 
 end program utest_framebuffer
