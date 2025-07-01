@@ -24,6 +24,7 @@ module mesh_primitives_m
    public :: two_face_mesh
    public :: tetrahedron_mesh
    public :: icosahedron_mesh
+   public :: sphere_mesh
 
    ! Procedures
 
@@ -125,8 +126,8 @@ contains
       integer  :: face_verts(3, 20)
       real(RD) :: vert_coords(3, 12)
 
-      ! Create an icosahedron geo_mesh_t (to fit inside cube with side
-      ! length 2*phi)
+      ! Create an icosahedron mesh_t (to fit inside cube with side
+      ! length 2*PHI)
 
       face_verts(:,1) = [1, 12, 6]
       face_verts(:,2) = [1, 6, 2]
@@ -169,5 +170,47 @@ contains
       return
 
    end function icosahedron_mesh
+
+   !****
+
+   function sphere_mesh(n) result(mesh)
+
+      integer, intent(in) :: n
+      type(mesh_t)        :: mesh
+
+      integer              :: i
+      integer, allocatable :: v(:)
+
+      ! Create a unit-sphere mesh_t by refining an icosahedron n times
+      ! (pushing out to r=1 after each refine)
+
+      mesh = icosahedron_mesh()
+
+      call push_out_([(i, i=1,12)])
+
+      refline_loop: do i = 1, n
+         call mesh%refine_and_flip(v)
+         call push_out_(v)
+      end do refline_loop
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine push_out_(v)
+
+         integer, intent(in) :: v(:)
+
+         integer :: j
+
+         do j = 1, SIZE(v)
+            mesh%vert_point(v(j)) = mesh%vert_point(v(j))/NORM2(mesh%vert_point(v(j)))
+         end do
+
+      end subroutine push_out_
+
+   end function sphere_mesh
 
 end module mesh_primitives_m
