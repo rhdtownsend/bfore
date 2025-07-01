@@ -378,12 +378,12 @@ contains
 
       write_mesh = icosahedron_mesh()
 
-      hdf5io = hdf5io_t('mesh_tmp.h5', CREATE_FILE)
+      hdf5io = hdf5io_t('utest_mesh.h5', CREATE_FILE)
       call write_mesh%write(hdf5io, stat)
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'write icosahedron_mesh to file')
 
-      hdf5io = hdf5io_t('mesh_tmp.h5', OPEN_FILE_RO)
+      hdf5io = hdf5io_t('utest_mesh.h5', OPEN_FILE_RO)
       call read_mesh%read(hdf5io, stat)
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'read icosahedron_mesh from file')
@@ -393,12 +393,12 @@ contains
       write_mesh = icosahedron_mesh()
       call write_mesh%refine_and_flip(v_new)
 
-      hdf5io = hdf5io_t('mesh_tmp.h5', CREATE_FILE)
+      hdf5io = hdf5io_t('utest_mesh.h5', CREATE_FILE)
       call write_mesh%write(hdf5io, stat)
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'write refined icosahedron_mesh to file')
 
-      hdf5io = hdf5io_t('mesh_tmp.h5', OPEN_FILE_RO)
+      hdf5io = hdf5io_t('utest_mesh.h5', OPEN_FILE_RO)
       call read_mesh%read(hdf5io, stat)
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'read refined icosahedron_mesh from file')
