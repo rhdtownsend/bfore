@@ -354,7 +354,7 @@ contains
       ! Compare the two meshes
 
       same = &
-         mesh_a%n_vert == mesh_a%n_vert .AND. &
+         mesh_a%n_vert == mesh_b%n_vert .AND. &
          mesh_a%n_edge == mesh_b%n_edge .AND. &
          mesh_a%n_face == mesh_b%n_face
 
