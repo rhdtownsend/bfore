@@ -49,20 +49,20 @@ contains
 
    !****
 
-   module procedure pixel_vert
+   module procedure pixel_origin
 
       @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
       @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
 
-      ! Get the vertices associated with pixel (i_x,i_y). Can also be
-      ! used to set the vertices
+      ! Get the origin associated with pixel (i_x,i_y). Can also be
+      ! used to set the origin
 
-      v = self%PV(:,i_x,i_y)
+      origin = self%PO(i_x,i_y)
 
       ! Finish
 
       return
 
-   end procedure pixel_vert
+   end procedure pixel_origin
 
 end submodule framebuffer_pixel_sm

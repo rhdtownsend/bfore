@@ -26,14 +26,14 @@ module framebuffer_m
       private
       real(RD), allocatable :: PZ(:,:)   ! Pixel depth buffer
       real(RD), allocatable :: PL(:,:,:) ! Pixel normalized barycentric coordinates buffer
-      integer, allocatable  :: PV(:,:,:) ! Pixel vertex buffer
+      integer, allocatable  :: PO(:,:)   ! Pixel origin buffer
       integer, public       :: n_x
       integer, public       :: n_y
    contains
       private
       procedure, public :: pixel_depth
       procedure, public :: pixel_lambda
-      procedure, public :: pixel_vert
+      procedure, public :: pixel_origin
       procedure, public :: render
       procedure, public :: render_triangle
       procedure, public :: read
@@ -55,11 +55,11 @@ module framebuffer_m
 
       ! In framebuffer_construct_sm
 
-      module function framebuffer_t_data_(PZ, PL, PV) result(fbuff)
+      module function framebuffer_t_data_(PZ, PL, PO) result(fbuff)
          implicit none (type, external)
          real(RD), intent(in) :: PZ(:,:)
          real(RD), intent(in) :: PL(:,:,:)
-         integer, intent(in)  :: PV(:,:,:)
+         integer, intent(in)  :: PO(:,:)
          type(framebuffer_t)  :: fbuff
       end function framebuffer_t_data_
 
@@ -94,13 +94,13 @@ module framebuffer_m
          real(RD), pointer                        :: lambda(:)
       end function pixel_lambda
 
-      module function pixel_vert(self, i_x, i_y) result(v)
+      module function pixel_origin(self, i_x, i_y) result(origin)
          implicit none (type, external)
          class(framebuffer_t), intent(in), target :: self
          integer, intent(in)                      :: i_x
          integer, intent(in)                      :: i_y
-         integer, pointer                         :: v(:)
-      end function pixel_vert
+         integer, pointer                         :: origin
+      end function pixel_origin
 
       ! In framebuffer_render_sm
 
@@ -111,11 +111,11 @@ module framebuffer_m
          type(view_t), intent(in)            :: view
       end subroutine render
 
-      module subroutine render_triangle(self, P, v)
+      module subroutine render_triangle(self, P, origin)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          real(RD), intent(in)                :: P(:,:)
-         integer, intent(in), optional       :: v(:)
+         integer, intent(in), optional       :: origin
       end subroutine render_triangle
 
       ! In framebuffer_io_sm
@@ -164,7 +164,7 @@ contains
       same = &
          ALL(fbuff_a%PZ == fbuff_b%PZ) .AND. &
          ALL(fbuff_a%PL == fbuff_b%PL) .AND. &
-         ALL(fbuff_a%PV == fbuff_b%PV)
+         ALL(fbuff_a%PO == fbuff_b%PO)
 
       ! Finish
 

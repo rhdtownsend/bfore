@@ -54,19 +54,19 @@ contains
          integer               :: n_y
          real(RD), allocatable :: PZ(:,:)
          real(RD), allocatable :: PL(:,:,:)
-         integer, allocatable  :: PV(:,:,:)
+         integer, allocatable  :: PO(:,:)
 
          call hdf5io%read_attr('n_x', n_x)
          call hdf5io%read_attr('n_y', n_y)
 
          call hdf5io%alloc_read_dset('pixel_depths', PZ)
          call hdf5io%alloc_read_dset('pixel_lambdas', PL)
-         call hdf5io%alloc_read_dset('pixel_verts', PV)
+         call hdf5io%alloc_read_dset('pixel_origins', PO)
 
          if (.NOT. &
             ALL(SHAPE(PZ) == [n_x, n_y]) .AND. &
             ALL(SHAPE(PL) == [3, n_x, n_y]) .AND. &
-            ALL(SHAPE(PV) == [3, n_x, n_y])) then
+            ALL(SHAPE(PO) == [n_x, n_y])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -77,7 +77,7 @@ contains
 
          select type(self)
          type is(framebuffer_t)
-            self = framebuffer_t_data_(PZ, PL, PV)
+            self = framebuffer_t_data_(PZ, PL, PO)
          class default
             @:ABORT('invalid type')
          end select
@@ -106,7 +106,7 @@ contains
 
       call hdf5io%write_dset('pixel_depths', self%PZ)
       call hdf5io%write_dset('pixel_lambdas', self%PL)
-      call hdf5io%write_dset('pixel_verts', self%PV)
+      call hdf5io%write_dset('pixel_origins', self%PO)
 
       ! Finish
 
