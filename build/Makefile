@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_mesh utest_framebuffer
+   BIN_TARGETS += utest_mesh utest_framebuffer utest_surface utest_map
 endif
 
 # Source file lists & related variables
@@ -28,7 +28,8 @@ mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_modify_sm.fypp mesh_traverse
 	    stat_m.fypp file_m.fypp math_m.fypp \
             transform_m.fypp \
             view_m.fypp view_construct_sm.fypp view_io_sm.fypp \
-            framebuffer_m.fypp framebuffer_construct_sm.fypp framebuffer_render_sm.fypp framebuffer_io_sm.fypp
+            framebuffer_m.fypp framebuffer_construct_sm.fypp framebuffer_render_sm.fypp framebuffer_pixel_sm.fypp framebuffer_io_sm.fypp \
+            map_m.fypp map_construct_sm.fypp map_render_sm.fypp map_pixel_sm.fypp map_io_sm.fypp
 
 utest_mesh_SRCS = utest_mesh.fypp $(mesh_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
@@ -37,6 +38,14 @@ utest_mesh_LIBS =
 utest_framebuffer_SRCS = utest_framebuffer.fypp $(mesh_SRCS)
 utest_framebuffer_USES = $(utest_framebuffer_SRCS)
 utest_framebuffer_LIBS = 
+
+utest_map_SRCS = utest_map.fypp $(mesh_SRCS)
+utest_map_USES = $(utest_map_SRCS)
+utest_map_LIBS = 
+
+utest_surface_SRCS = utest_surface.fypp surface_m.fypp roche_surface_m.fypp
+utest_surface_USES = $(utest_roche_surface_SRCS)
+utest_surface_LIBS = 
 
 # Build flags
 

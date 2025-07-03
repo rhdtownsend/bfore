@@ -49,9 +49,6 @@ class Framebuffer:
             if type != 'framebuffer_t':
                 raise Exception(f'invalid type {type}')
 
-            self.n_vert = f[group].attrs['n_x']
-            self.n_edge = f[group].attrs['n_y']
-
             self.PD = f[group]['pixel_depths'][...]
             self.PL = f[group]['pixel_lambdas'][...]
             self.PF = f[group]['pixel_faces'][...]
@@ -67,6 +64,31 @@ class Framebuffer:
         # Return the pixel-lambdas buffer
 
         return self.PL
+    
+class Map:
+
+    def __init__(self, file_name, group='/'):
+
+        with h5.File(file_name, 'r') as f:
+
+            type = f[group].attrs[f'TYPE'].decode('utf-8')
+            if type != 'map_t':
+                raise Exception(f'invalid type {type}')
+
+            self.PS = f[group]['pixel_scalars'][...]
+            self.PV = f[group]['pixel_vectors'][...]
+
+    def pixel_scalar(self, i_s):
+
+        # Return the pixel-scalar
+
+        return self.PS[:,:,i_s]
+
+    def pixel_vector(self, i_v):
+
+        # Return the pixel-lambdas buffer
+
+        return self.PV[:,:,i_v,:]
     
 
         

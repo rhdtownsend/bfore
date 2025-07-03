@@ -1,0 +1,85 @@
+! Program : utest_map
+! Purpose : Unit tests for map_m
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_map
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use mesh_primitives_m
+   use map_m
+   use view_m
+   use stat_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Run the tests
+
+   call test_io()
+
+   ! Finish
+
+contains
+
+   subroutine test_io()
+
+      type(mesh_t) :: mesh
+      type(view_t) :: view
+      integer       :: v
+      real(RD), allocatable :: vert_scalars(:,:)
+      real(RD), allocatable :: vert_vectors(:,:,:)
+      type(map_t)   :: map
+      type(hdf5io_t) :: hdf5io
+      integer :: stat
+
+      integer :: start, end, count
+
+      print *, 'Checking map stuff'
+
+      mesh = sphere_mesh(6)
+
+      view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
+         [0._RD, 0._RD, 0._RD], &
+         2.4_RD, 2.4_RD)
+
+      print *,'n_vert',mesh%n_vert
+
+      allocate(vert_scalars(3, mesh%n_vert))
+      allocate(vert_vectors(3, 1, mesh%n_vert))
+
+      do v = 1, mesh%n_vert
+         vert_scalars(:,v) = mesh%vert_point(v)
+         vert_vectors(:,1,v) = mesh%vert_point(v)
+      end do
+
+      map = map_t(3, 1, 8192, 8192)
+
+      print *,'made map'
+
+      !print *,'go postprocess'
+      !call map%render_postprocess(mesh, vert_scalars, vert_vectors, view)
+
+      print *,'go process'
+      call map%render(mesh, vert_scalars, vert_vectors, view)
+
+      hdf5io = hdf5io_t('utest_map.h5', CREATE_FILE)
+      call map%write(hdf5io, stat)
+      call hdf5io%final()
+      @:CHECK(stat == STAT_OK, 'write map to file')
+
+      ! Finish
+
+      return
+
+   end subroutine test_io
+
+end program utest_map

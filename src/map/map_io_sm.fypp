@@ -1,0 +1,122 @@
+! Submodule : map_io_sm
+! Purpose   : Input/output routines for map_t
+
+#:include 'forum.inc'
+
+submodule (map_m) map_io_sm
+
+   ! Uses
+
+   use file_m
+   use stat_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure read
+
+      integer :: revision
+
+      ! Read the map_t
+
+      call check_type(hdf5io, 'map_t', stat)
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      call hdf5io%read_attr('REVISION', revision)
+
+      select case(revision)
+      case(1)
+         call read_rev1_()
+      case default
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_REVISION
+            return
+         else
+            @:ABORT('invalid group revision')
+         end if
+      end select
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_rev1_()
+
+         integer               :: n_s
+         integer               :: n_v
+         integer               :: n_x
+         integer               :: n_y
+         real(RD), allocatable :: PS(:,:,:)
+         real(RD), allocatable :: PV(:,:,:,:)
+
+         call hdf5io%read_attr('n_s', n_s)
+         call hdf5io%read_attr('n_v', n_v)
+         call hdf5io%read_attr('n_x', n_x)
+         call hdf5io%read_attr('n_y', n_y)
+
+         call hdf5io%alloc_read_dset('pixel_scalars', PS)
+         call hdf5io%alloc_read_dset('pixel_vectors', PV)
+
+         if (.NOT. &
+            ALL(SHAPE(PS) == [n_s, n_x, n_y]) .AND. &
+            ALL(SHAPE(PV) == [3, n_v, n_x, n_y])) then
+            if (PRESENT(stat)) then
+               stat = STAT_INVALID_DATASET_DIM
+               return
+            else
+               @:ABORT('invalid dataset dimension')
+            end if
+         end if
+
+         select type(self)
+         type is(map_t)
+            self = map_t_data_(PS, PV)
+         class default
+            @:ABORT('invalid type')
+         end select
+
+         ! Finish
+
+         if (PRESENT(stat)) stat = STAT_OK
+
+         return
+
+      end subroutine read_rev1_
+
+   end procedure read
+
+   !****
+
+   module procedure write
+
+      ! Write the map_t
+
+      call hdf5io%write_attr('TYPE', 'map_t')
+      call hdf5io%write_attr('REVISION', 1)
+
+      call hdf5io%write_attr('n_x', self%n_x)
+      call hdf5io%write_attr('n_y', self%n_y)
+      call hdf5io%write_attr('n_s', self%n_s)
+      call hdf5io%write_attr('n_v', self%n_v)
+
+      call hdf5io%write_dset('pixel_scalars', self%PS)
+      call hdf5io%write_dset('pixel_vectors', self%PV)
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end procedure write
+
+end submodule map_io_sm
