@@ -15,18 +15,9 @@ contains
 
    module procedure framebuffer_t_data_
 
-      @:CHECK_BOUNDS(SIZE(PL, 1), 3)
-      @:CHECK_BOUNDS(SIZE(PL, 2), SIZE(PZ, 1))
-      @:CHECK_BOUNDS(SIZE(PL, 3), SIZE(PZ, 2))
-
-      @:CHECK_BOUNDS(SIZE(PO, 1), SIZE(PZ, 1))
-      @:CHECK_BOUNDS(SIZE(PO, 2), SIZE(PZ, 2))
-
       ! Construct the framebuffer_t from the data
 
       fbuff%PZ = PZ
-      fbuff%PL = PL
-      fbuff%PO = PO
 
       fbuff%n_x = SIZE(PZ, 1)
       fbuff%n_y = SIZE(PZ, 2)
@@ -42,16 +33,12 @@ contains
    module procedure framebuffer_t_dims_
 
       real(RD) :: PZ(n_x,n_y)
-      real(RD) :: PL(3,n_x,n_y)
-      integer  :: PO(n_x,n_y)
 
       ! Construct the framebuffer_t from the dimensions
 
       PZ = -HUGE(0._RD)
-      PL = 0._RD
-      PO = 0
 
-      fbuff = framebuffer_t_data_(PZ, PL, PO)
+      fbuff = framebuffer_t_data_(PZ)
 
       ! Finish
 
@@ -85,8 +72,6 @@ contains
          mask = fbuffs(i)%PZ > fbuff%PZ
 
          fbuff%PZ = MERGE(fbuffs(i)%PZ, fbuff%PZ, mask)
-         fbuff%PL = MERGE(fbuffs(i)%PL, fbuff%PL, SPREAD(mask, DIM=1, NCOPIES=3))
-         fbuff%PO = MERGE(fbuffs(i)%PO, fbuff%PO, mask)
 
       end do fbuff_loop
 

@@ -11,7 +11,6 @@ module framebuffer_m
    use forum_m
 
    use mesh_m
-   use stat_m
    use view_m
 
    use ISO_FORTRAN_ENV
@@ -25,15 +24,11 @@ module framebuffer_m
    type :: framebuffer_t
       private
       real(RD), allocatable :: PZ(:,:)   ! Pixel depth buffer
-      real(RD), allocatable :: PL(:,:,:) ! Pixel normalized barycentric coordinates buffer
-      integer, allocatable  :: PO(:,:)   ! Pixel origin buffer
       integer, public       :: n_x
       integer, public       :: n_y
    contains
       private
       procedure, public :: pixel_depth
-      procedure, public :: pixel_lambda
-      procedure, public :: pixel_origin
       procedure, public :: render
       procedure, public :: render_triangle
       procedure, public :: read
@@ -55,11 +50,9 @@ module framebuffer_m
 
       ! In framebuffer_construct_sm
 
-      module function framebuffer_t_data_(PZ, PL, PO) result(fbuff)
+      module function framebuffer_t_data_(PZ) result(fbuff)
          implicit none (type, external)
          real(RD), intent(in) :: PZ(:,:)
-         real(RD), intent(in) :: PL(:,:,:)
-         integer, intent(in)  :: PO(:,:)
          type(framebuffer_t)  :: fbuff
       end function framebuffer_t_data_
 
@@ -86,36 +79,42 @@ module framebuffer_m
          real(RD), pointer                        :: z
       end function pixel_depth
 
-      module function pixel_lambda(self, i_x, i_y) result(lambda)
-         implicit none (type, external)
-         class(framebuffer_t), intent(in), target :: self
-         integer, intent(in)                      :: i_x
-         integer, intent(in)                      :: i_y
-         real(RD), pointer                        :: lambda(:)
-      end function pixel_lambda
-
-      module function pixel_origin(self, i_x, i_y) result(origin)
-         implicit none (type, external)
-         class(framebuffer_t), intent(in), target :: self
-         integer, intent(in)                      :: i_x
-         integer, intent(in)                      :: i_y
-         integer, pointer                         :: origin
-      end function pixel_origin
-
       ! In framebuffer_render_sm
 
-      module subroutine render(self, mesh, view)
+      module subroutine render(self, mesh, view, process_pixel)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          type(mesh_t), intent(in)            :: mesh
          type(view_t), intent(in)            :: view
+         optional                            :: process_pixel
+         interface
+            subroutine process_pixel(i_x, i_y, lambda, origin)
+               use forum_m
+               implicit none (type, external)
+               integer, intent(in)  :: i_x
+               integer, intent(in)  :: i_y
+               real(RD), intent(in) :: lambda(3)
+               integer, intent(in)  :: origin
+            end subroutine process_pixel
+         end interface
       end subroutine render
 
-      module subroutine render_triangle(self, P, origin)
+      module subroutine render_triangle(self, P, process_pixel, origin)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          real(RD), intent(in)                :: P(:,:)
+         optional                            :: process_pixel
          integer, intent(in), optional       :: origin
+         interface
+            subroutine process_pixel(i_x, i_y, lambda, origin)
+               use forum_m
+               implicit none (type, external)
+               integer, intent(in)  :: i_x
+               integer, intent(in)  :: i_y
+               real(RD), intent(in) :: lambda(3)
+               integer, intent(in)  :: origin
+            end subroutine process_pixel
+         end interface
       end subroutine render_triangle
 
       ! In framebuffer_io_sm
@@ -161,10 +160,7 @@ contains
 
       if (.NOT. same) return
 
-      same = &
-         ALL(fbuff_a%PZ == fbuff_b%PZ) .AND. &
-         ALL(fbuff_a%PL == fbuff_b%PL) .AND. &
-         ALL(fbuff_a%PO == fbuff_b%PO)
+      same = ALL(fbuff_a%PZ == fbuff_b%PZ)
 
       ! Finish
 

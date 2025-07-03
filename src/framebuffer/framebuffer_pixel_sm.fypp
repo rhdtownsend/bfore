@@ -29,40 +29,4 @@ contains
 
    end procedure pixel_depth
 
-   !****
-
-   module procedure pixel_lambda
-
-      @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
-      @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
-
-      ! Get the normalized barycentric coordinates associated with
-      ! pixel (i_x,i_y). Can also be used to set the coordinates
-
-      lambda => self%PL(:,i_x,i_y)
-
-      ! Finish
-
-      return
-
-   end procedure pixel_lambda
-
-   !****
-
-   module procedure pixel_origin
-
-      @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
-      @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
-
-      ! Get the origin associated with pixel (i_x,i_y). Can also be
-      ! used to set the origin
-
-      origin = self%PO(i_x,i_y)
-
-      ! Finish
-
-      return
-
-   end procedure pixel_origin
-
 end submodule framebuffer_pixel_sm
