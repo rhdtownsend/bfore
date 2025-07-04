@@ -1,9 +1,9 @@
-! Submodule : framebuffer_m
-! Purpose   : Pixel-level access routines for framebuffer_t
+! Submodule : renderbuff_m
+! Purpose   : Pixel routines for renderbuff_t
 
 #:include 'forum.inc'
 
-submodule (framebuffer_m) framebuffer_pixel_sm
+submodule (renderbuff_m) renderbuff_pixel_sm
 
    ! No implicit typing
 
@@ -67,4 +67,4 @@ contains
 
    end procedure pixel_vector
 
-end submodule framebuffer_pixel_sm
+end submodule renderbuff_pixel_sm

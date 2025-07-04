@@ -1,0 +1,37 @@
+! Submodule : renderbuff_operate_sm
+! Purpose   : Operators for renderbuff_t
+
+#:include 'forum.inc'
+
+submodule(renderbuff_m) renderbuff_operate_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure equals_
+
+      ! Test the renderbuffs for equality
+
+      equals = &
+         self%n_scalar == other%n_scalar .AND. &
+         self%n_vector == other%n_vector .AND. &
+         self%n_x == other%n_x .AND. &
+         self%n_y == other%n_y
+
+      if (.NOT. equals) return
+
+      equals = &
+         ALL(self%PD == other%PD) .AND. &
+         ALL(self%PS == other%PS) .AND. &
+         ALL(self%PV == other%PV)
+
+      ! Finish
+
+   end procedure equals_
+
+end submodule renderbuff_operate_sm

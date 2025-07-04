@@ -55,7 +55,7 @@ class Mesh:
 
 #
     
-class Framebuffer:
+class Renderbuff:
 
     def __init__(self, file_name, group='/'):
 

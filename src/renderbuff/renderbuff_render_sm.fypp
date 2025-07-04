@@ -1,9 +1,9 @@
-! Submodule : framebuffer_m
-! Purpose   : Rendering routines for framebuffer_t
+! Submodule : renderbuff_m
+! Purpose   : Rendering routines for renderbuff_t
 
 #:include 'forum.inc'
 
-submodule(framebuffer_m) framebuffer_render_sm
+submodule(renderbuff_m) renderbuff_render_sm
 
    ! Uses
 
@@ -46,6 +46,8 @@ contains
 
       ! Extract vertex data from the mesh
 
+      print *,'extract verts'
+
       vert_loop: do v = 1, mesh%n_vert
 
          points(v) = mesh%vert_point(v)
@@ -62,15 +64,28 @@ contains
 
       ! Apply transformations
 
+      print *,'transform'
+
       tform_camera = view%camera_transform()
+      print *,'made cam tform',self%n_x,self%n_y
+
       tform_pixel = view%pixel_transform(self%n_x, self%n_y)
 
+      print *,'made tforms'
+
+      print *,'tform point'
       points = points%image(tform_pixel)
+
+      print *,'tform vect'
       vectors = vectors%image(tform_camera)
 
       ! Loop through faces of mesh, rendering each one
 
+      print *,'go faces'
+
       face_loop: do f = 1, mesh%n_face
+
+         print *,f
 
          ! Get the face area vector, and transform to the camera
          ! system
@@ -78,25 +93,28 @@ contains
          A = mesh%face_area(f)
          A = A%image(tform_camera)
 
-         ! Check for a forward-facing triangle (i.e., backface
-         ! culling)
+         print *,f,A
 
-         if (A%z > 0._RD) then
+         ! Cull back-faces
 
-            ! Render the face
+         if (A%z <= 0._RD) cycle face_loop
 
-            f_e = mesh%face_edge(f)
+         ! Render the face
 
-            v1 = mesh%edge_vert(f_e)
-            v2 = mesh%edge_vert(mesh%edge_next(f_e))
-            v3 = mesh%edge_vert(mesh%edge_prev(f_e))
+         f_e = mesh%face_edge(f)
 
-            call render_triangle(self, &
-               points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
+         v1 = mesh%edge_vert(f_e)
+         v2 = mesh%edge_vert(mesh%edge_next(f_e))
+         v3 = mesh%edge_vert(mesh%edge_prev(f_e))
 
-         end if
+         print *,v1,v2,v3
+
+         call render_triangle(self, &
+            points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
 
       end do face_loop
+
+      print *,'done faces'
 
       call SYSTEM_CLOCK(end)
 
@@ -160,8 +178,8 @@ contains
       EF_b = points([3, 1, 2])%x - points([2, 3, 1])%x
       EF_c = points([2, 3, 1])%x*points([3, 1, 2])%y - points([3, 1, 2])%x*points([2, 3, 1])%y
 
-      ! Calculate (twice) the projected area of the triangle,
-      ! returning if it is small (indicating an edge-on triangle)
+      ! Calculate twice the projected area of the triangle, returning
+      ! if it is small (indicating an edge-on triangle)
 
       area2 = SUM(EF_c)
 
@@ -241,4 +259,4 @@ contains
 
    end procedure render_triangle
 
-end submodule framebuffer_render_sm
+end submodule renderbuff_render_sm

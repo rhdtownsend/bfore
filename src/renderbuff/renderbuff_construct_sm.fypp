@@ -1,0 +1,138 @@
+! Submodule : renderbuff_construct_sm
+! Purpose   : Constructor routines for renderbuff_t
+
+#:include 'forum.inc'
+
+submodule (renderbuff_m) renderbuff_construct_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure renderbuff_t_data_
+
+      @:CHECK_BOUNDS(SIZE(PS, 2), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PS, 3), SIZE(PD, 2))
+
+      @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PD, 2))
+
+      ! Construct the renderbuff from the data
+
+      rbuff%PD = PD
+      rbuff%PS = PS
+      rbuff%PV = PV
+
+      rbuff%n_scalar = SIZE(PS, 1)
+      rbuff%n_vector = SIZE(PV, 1)
+      rbuff%n_x = SIZE(PD, 1)
+      rbuff%n_y = SIZE(PD, 2)
+
+      ! Finish
+
+      return
+
+   end procedure renderbuff_t_data_
+
+   !****
+
+   module procedure renderbuff_t_dims_
+
+      integer                     :: n_scalar_
+      integer                     :: n_vector_
+      real(RD)                    :: PD(n_x,n_y)
+      real(RD), allocatable       :: PS(:,:,:)
+      type(vector_t), allocatable :: PV(:,:,:)
+
+      if (PRESENT(n_scalar)) then
+         n_scalar_ = n_scalar
+      else
+         n_scalar_ = 0
+      end if
+
+      if (PRESENT(n_vector)) then
+         n_vector_ = n_vector
+      else
+         n_vector_ = 0
+      end if
+
+      ! Construct the renderbuff from the dimensions
+
+      PD = -HUGE(0._RD)
+
+      allocate(PS(n_scalar_,n_x,n_y))
+      PS = 0._RD
+
+      allocate(PV(n_vector_,n_x,n_y))
+      PV = vector_t(0._RD, 0._RD, 0._RD)
+
+      rbuff = renderbuff_t_data_(PD, PS, PV)
+
+      ! Finish
+
+      return
+
+   end procedure renderbuff_t_dims_
+
+   !****
+
+   module procedure renderbuff_t_merge_
+
+      integer                     :: n_x
+      integer                     :: n_y
+      integer                     :: n_scalar
+      integer                     :: n_vector
+      real(RD), allocatable       :: PD(:,:)
+      real(RD), allocatable       :: PS(:,:,:)
+      type(vector_t), allocatable :: PV(:,:,:)
+      logical, allocatable        :: mask(:,:)
+      integer                     :: i
+
+      @:ASSERT_DEBUG(SIZE(rbuffs) >= 1, 'invalid dimension')
+
+      @:ASSERT_DEBUG(ALL(rbuffs%n_x == rbuffs(1)%n_x), 'dimension mismatch')
+      @:ASSERT_DEBUG(ALL(rbuffs%n_y == rbuffs(1)%n_y), 'dimension mismatch')
+
+      @:ASSERT_DEBUG(ALL(rbuffs%n_scalar == rbuffs(1)%n_scalar), 'dimension mismatch')
+      @:ASSERT_DEBUG(ALL(rbuffs%n_vector == rbuffs(1)%n_vector), 'dimension mismatch')
+
+      ! Construct the renderbuff by merging rbuffs
+
+      n_x = MINVAL(rbuffs%n_x)
+      n_y = MINVAL(rbuffs%n_y)
+      n_scalar = rbuffs(1)%n_scalar
+      n_vector = rbuffs(1)%n_vector
+
+      allocate(PD(n_x,n_y))
+      allocate(PS(n_scalar,n_x,n_y))
+      allocate(PV(n_vector,n_x,n_y))
+
+      PD = rbuffs(1)%PD
+      PS = rbuffs(1)%PS
+      PV = rbuffs(1)%PV
+
+      allocate(mask(n_x,n_y))
+
+      rbuff_loop: do i = 2, SIZE(rbuffs)
+
+         mask = rbuffs(i)%PD > PD
+
+         PD = MERGE(rbuffs(i)%PD, PD, mask)
+         PS = MERGE(rbuffs(i)%PS, PS, SPREAD(mask, DIM=1, NCOPIES=n_scalar))
+         PV = MERGE(rbuffs(i)%PV, PV, SPREAD(mask, DIM=1, NCOPIES=n_vector))
+
+      end do rbuff_loop
+
+      rbuff = renderbuff_t_data_(PD, PS, PV)
+
+      ! Finish
+
+      return
+
+   end procedure renderbuff_t_merge_
+
+end submodule renderbuff_construct_sm

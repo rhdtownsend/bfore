@@ -1,0 +1,160 @@
+! Module  : renderbuff_m
+! Purpose : Define renderbuff_t datatype, representing a renderbuff
+!           for rasterizing mesh_t types
+
+#:include 'forum.inc'
+
+module renderbuff_m
+
+   ! Uses
+
+   use forum_m
+
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type :: renderbuff_t
+      private
+      real(RD), allocatable       :: PD(:,:)   ! Pixel depth buffer
+      real(RD), allocatable       :: PS(:,:,:) ! Pixel scalar buffer
+      type(vector_t), allocatable :: PV(:,:,:) ! Pixel vector buffert
+      integer, public             :: n_scalar
+      integer, public             :: n_vector
+      integer, public             :: n_x
+      integer, public             :: n_y
+   contains
+      private
+      procedure         :: equals_
+      generic, public   :: operator(==) => equals_
+      procedure, public :: pixel_depth
+      procedure, public :: pixel_scalar
+      procedure, public :: pixel_vector
+      procedure, public :: render
+      procedure, public :: render_triangle
+      procedure, public :: read
+      procedure, public :: write
+   end type renderbuff_t
+
+   ! Interfaces
+
+   interface renderbuff_t
+      module procedure renderbuff_t_dims_
+      module procedure renderbuff_t_merge_
+   end interface renderbuff_t
+
+   interface
+
+      ! In renderbuff_construct_sm
+
+      module function renderbuff_t_data_(PD, PS, PV) result(rbuff)
+         implicit none (type, external)
+         real(RD), intent(in)       :: PD(:,:)
+         real(RD), intent(in)       :: PS(:,:,:)
+         type(vector_t), intent(in) :: PV(:,:,:)
+         type(renderbuff_t)         :: rbuff
+      end function renderbuff_t_data_
+
+      module function renderbuff_t_dims_(n_x, n_y, n_scalar, n_vector) result(rbuff)
+         implicit none (type, external)
+         integer, intent(in)           :: n_x
+         integer, intent(in)           :: n_y
+         integer, intent(in), optional :: n_scalar
+         integer, intent(in), optional :: n_vector
+         type(renderbuff_t)            :: rbuff
+      end function renderbuff_t_dims_
+
+      module function renderbuff_t_merge_(rbuffs) result(rbuff)
+         implicit none (type, external)
+         type(renderbuff_t), intent(in) :: rbuffs(:)
+         type(renderbuff_t)             :: rbuff
+      end function renderbuff_t_merge_
+
+      ! In renderbuff_operate_sm
+
+      module function equals_(self, other) result(equals)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in) :: self
+         type(renderbuff_t), intent(in)  :: other
+         logical                         :: equals
+      end function equals_
+
+      ! In renderbuff_pixel_sm
+
+      module function pixel_depth(self, i_x, i_y) result(depth)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in), target :: self
+         integer, intent(in)                     :: i_x
+         integer, intent(in)                     :: i_y
+         real(RD), pointer                       :: depth
+      end function pixel_depth
+
+      module function pixel_scalar(self, i, i_x, i_y) result(scalar)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in), target :: self
+         integer, intent(in)                     :: i
+         integer, intent(in)                     :: i_x
+         integer, intent(in)                     :: i_y
+         real(RD), pointer                       :: scalar
+      end function pixel_scalar
+
+      module function pixel_vector(self, i, i_x, i_y) result(vector)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in), target :: self
+         integer, intent(in)                     :: i
+         integer, intent(in)                     :: i_x
+         integer, intent(in)                     :: i_y
+         type(vector_t), pointer                 :: vector
+      end function pixel_vector
+
+      ! In renderbuff_render_sm
+
+      module subroutine render(self, mesh, view)
+         use mesh_m
+         use view_m
+         implicit none (type, external)
+         class(renderbuff_t), intent(inout) :: self
+         type(mesh_t), intent(in)           :: mesh
+         type(view_t), intent(in)           :: view
+      end subroutine render
+
+      module subroutine render_triangle(self, points, scalars, vectors)
+         use point_m
+         implicit none (type, external)
+         class(renderbuff_t), intent(inout) :: self
+         type(point_t), intent(in)          :: points(:)
+         real(RD), intent(in)               :: scalars(:,:)
+         type(vector_t), intent(in)         :: vectors(:,:)
+      end subroutine render_triangle
+
+      ! In renderbuff_io_sm
+
+      module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
+         class(renderbuff_t), intent(out) :: self
+         type(hdf5io_t), intent(inout)    :: hdf5io
+         integer, intent(out), optional   :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in) :: self
+         type(hdf5io_t), intent(inout)   :: hdf5io
+         integer, intent(out), optional  :: stat
+      end subroutine write
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: renderbuff_t
+
+end module renderbuff_m

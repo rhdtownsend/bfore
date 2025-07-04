@@ -1,9 +1,9 @@
-! Submodule : framebuffer_io_sm
-! Purpose   : Input/output routines for framebuffer_t
+! Submodule : renderbuff_io_sm
+! Purpose   : Input/output routines for renderbuff_t
 
 #:include 'forum.inc'
 
-submodule (framebuffer_m) framebuffer_io_sm
+submodule (renderbuff_m) renderbuff_io_sm
 
    ! Uses
 
@@ -22,9 +22,9 @@ contains
 
       integer :: revision
 
-      ! Read the framebuffer_t
+      ! Read the renderbuff
 
-      call check_type(hdf5io, 'framebuffer_t', stat)
+      call check_type(hdf5io, 'renderbuff_t', stat)
       if (PRESENT(stat)) then
          if (stat /= STAT_OK) return
       end if
@@ -85,8 +85,8 @@ contains
          end if
 
          select type(self)
-         type is(framebuffer_t)
-            self = framebuffer_t_data_(PD, PS, PV)
+         type is(renderbuff_t)
+            self = renderbuff_t_data_(PD, PS, PV)
          class default
             @:ABORT('invalid type')
          end select
@@ -107,9 +107,9 @@ contains
 
       real(RD), allocatable :: pixel_vector_comps(:,:,:,:)
 
-      ! Write the framebuffer_t
+      ! Write the renderbuff
 
-      call hdf5io%write_attr('TYPE', 'framebuffer_t')
+      call hdf5io%write_attr('TYPE', 'renderbuff_t')
       call hdf5io%write_attr('REVISION', 1)
 
       call hdf5io%write_attr('n_x', self%n_x)
@@ -132,4 +132,4 @@ contains
 
    end procedure write
 
-end submodule framebuffer_io_sm
+end submodule renderbuff_io_sm
