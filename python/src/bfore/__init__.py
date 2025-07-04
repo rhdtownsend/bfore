@@ -26,6 +26,8 @@ class Mesh:
             self.ET = f[group]['edge_twins'][...]
             self.VE = f[group]['vert_edges'][...]
             self.VP = f[group]['vert_points'][...]
+            self.VS = f[group]['vert_scalars'][...]
+            self.VV = f[group]['vert_vectors'][...]
 
     def face_verts(self):
 
@@ -39,6 +41,20 @@ class Mesh:
 
         return self.VP
 
+    def vert_scalars(self, i):
+
+        # Return the i'th vertex-scalar list
+
+        return self.VS[:,i]
+
+    def vert_scalars(self, i):
+
+        # Return the i'th vertex-vector list
+
+        return self.VV[:,i,:]
+
+#
+    
 class Framebuffer:
 
     def __init__(self, file_name, group='/'):
@@ -50,8 +66,8 @@ class Framebuffer:
                 raise Exception(f'invalid type {type}')
 
             self.PD = f[group]['pixel_depths'][...]
-            self.PL = f[group]['pixel_lambdas'][...]
-            self.PF = f[group]['pixel_faces'][...]
+            self.PS = f[group]['pixel_scalars'][...]
+            self.PV = f[group]['pixel_vectors'][...]
 
     def pixel_depths(self):
 
@@ -59,36 +75,15 @@ class Framebuffer:
 
         return self.PD
 
-    def pixel_lambdas(self):
+    def pixel_scalars(self, i):
 
-        # Return the pixel-lambdas buffer
+        # Return the i'th pixel-scalar buffer
 
-        return self.PL
+        return self.PS[:,:,i]
+
+    def pixel_vectors(self, i):
+
+        # Return the i'th ixel-vector buffer
+
+        return self.PV[:,:,i,:]
     
-class Map:
-
-    def __init__(self, file_name, group='/'):
-
-        with h5.File(file_name, 'r') as f:
-
-            type = f[group].attrs[f'TYPE'].decode('utf-8')
-            if type != 'map_t':
-                raise Exception(f'invalid type {type}')
-
-            self.PS = f[group]['pixel_scalars'][...]
-            self.PV = f[group]['pixel_vectors'][...]
-
-    def pixel_scalar(self, i_s):
-
-        # Return the pixel-scalar
-
-        return self.PS[:,:,i_s]
-
-    def pixel_vector(self, i_v):
-
-        # Return the pixel-lambdas buffer
-
-        return self.PV[:,:,i_v,:]
-    
-
-        
