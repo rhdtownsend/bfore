@@ -37,16 +37,6 @@ module point_m
 
    interface
 
-      ! In point_construct_sm
-
-      elemental module function point_t_data_(x, y, z) result(point)
-         implicit none (type, external)
-         real(RD), intent(in) :: x
-         real(RD), intent(in) :: y
-         real(RD), intent(in) :: z
-         type(point_t)        :: point
-      end function point_t_data_
-
       ! In point_operate_sm
 
       elemental module function equals_(self, other) result(equals)
