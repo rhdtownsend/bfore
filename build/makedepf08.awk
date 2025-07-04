@@ -31,10 +31,6 @@ tolower($0) ~ /^[[:blank:]]*submodule/{
     gsub(/[[:blank:]]+/,"",$0)
     gsub(/!.*$/,"",$0)
     n = split(tolower($0),arr,/[):(]/)
-    printf("# when processing %s\n", file)
-    for (i = 1; i <= n; i++) {
-        print "# arr[" i "] = " arr[i]
-    }    
     name = arr[2]"@"arr[n]
     smod[name]=file
     ancestor[name] = arr[2]
