@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_mesh #utest_framebuffer
+   BIN_TARGETS += utest_mesh utest_renderbuff
 endif
 
 # Source file lists & related variables
@@ -26,19 +26,19 @@ point_SRCS = point_m.fypp point_operate_sm.fypp point_transform_sm.fypp
 vector_SRCS = vector_m.fypp vector_operate_sm.fypp vector_transform_sm.fypp
 mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_modify_sm.fypp mesh_traverse_sm.fypp \
             mesh_vert_sm.fypp mesh_face_sm.fypp mesh_topology_sm.fypp mesh_io_sm.fypp mesh_primitives_m.fypp
-framebuffer_SRCS = framebuffer_m.fypp framebuffer_construct_sm.fypp framebuffer_operate_sm.fypp \
-                   framebuffer_render_sm.fypp framebuffer_pixel_sm.fypp framebuffer_io_sm.fypp
+renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_operate_sm.fypp \
+                  renderbuff_render_sm.fypp renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_io_sm.fypp
 other_SRCS = transform_m.fypp stat_m.fypp file_m.fypp math_m.fypp
-all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(framebuffer_SRCS) $(view_SRCS) $(other_SRCS)
+all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(other_SRCS)
 
-utest_mesh_SRCS = utest_mesh.fypp $(mesh_SRCS) $(vector_SRCS) $(point_SRCS) $(other_SRCS)
+utest_mesh_SRCS = utest_mesh.fypp $(all_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
 utest_mesh_LIBS = 
 
-utest_framebuffer_SRCS = utest_framebuffer.fypp $(all_SRCS)
-utest_framebuffer_USES = $(utest_framebuffer_SRCS)
-utest_framebuffer_LIBS = 
+utest_renderbuff_SRCS = utest_renderbuff.fypp $(all_SRCS)
+utest_renderbuff_USES = $(utest_renderbuff_SRCS)
+utest_renderbuff_LIBS =
 
 # Build flags
 
