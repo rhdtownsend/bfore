@@ -102,8 +102,8 @@ contains
 
       ! Construct the renderbuff by merging rbuffs
 
-      n_x = MINVAL(rbuffs%n_x)
-      n_y = MINVAL(rbuffs%n_y)
+      n_x = rbuffs(1)%n_x
+      n_y = rbuffs(1)%n_y
       n_scalar = rbuffs(1)%n_scalar
       n_vector = rbuffs(1)%n_vector
 
