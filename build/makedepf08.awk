@@ -27,10 +27,14 @@ tolower($1) == "module" && tolower($0) !~ /^[^!]+(subroutine|function|procedure)
     sub(/!.*$/,"",name)
     mod[name]=file
 }
-tolower($1) == "submodule"{
+tolower($0) ~ /^[[:blank:]]*submodule/{
     gsub(/[[:blank:]]+/,"",$0)
     gsub(/!.*$/,"",$0)
     n = split(tolower($0),arr,/[):(]/)
+    printf("# when processing %s\n", file)
+    for (i = 1; i <= n; i++) {
+        print "# arr[" i "] = " arr[i]
+    }    
     name = arr[2]"@"arr[n]
     smod[name]=file
     ancestor[name] = arr[2]
@@ -88,7 +92,7 @@ END{
 
     ## Rule 5: the anchor of a source file depends on the anchor of
     ## all the non-intrinsic modules it uses
-    split("", filuniq)
+    split("", filuniq, ":")
     for (i in usedmod){
 	if ((i in mod) && mod[i]){
 	    for (j=1;j<=usedmod[i];j++){
