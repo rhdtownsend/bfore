@@ -394,8 +394,8 @@ contains
          call reallocate(mesh%VE, [d_vert])
          call reallocate(mesh%VP, [d_vert])
 
-         call reallocate(mesh%VS, [mesh%n_scalar,d_vert])
-         call reallocate(mesh%VV, [mesh%n_vector,d_vert])
+         call reallocate(mesh%VS, [mesh%n_scalar, d_vert])
+         call reallocate(mesh%VV, [mesh%n_vector, d_vert])
 
       end if
 
