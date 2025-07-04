@@ -1,0 +1,43 @@
+! Submodule : vector_transform_m
+! Purpose   : Transformations for vector_t
+
+#:include 'forum.inc'
+
+submodule(vector_m) vector_transform_sm
+
+   ! Uses
+
+   use transform_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure image
+
+      real(RD) :: H(4)
+
+      ! Evaluate the image vector resulting from the transformation
+
+      H(1) = self%x
+      H(2) = self%y
+      H(3) = self%z
+      H(4) = 0._RD
+
+      H = tform%image(H)
+
+      vector%x = H(1)
+      vector%y = H(2)
+      vector%z = H(3)
+
+      ! Finish
+
+      return
+
+   end procedure image
+
+end submodule vector_transform_sm

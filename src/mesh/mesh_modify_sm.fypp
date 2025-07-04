@@ -9,6 +9,8 @@ submodule (mesh_m) mesh_modify_sm
 
    use forum_m
 
+   use vector_m
+
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -289,7 +291,7 @@ contains
 
       ! Update the vertex-point table
 
-      self%VP(:,v) = (self%VP(:,v1) + self%VP(:,v2) + self%VP(:,v3))/3._RD
+      self%VP(v) = affine_sum(self%VP([v1, v2, v3]), [1._RD/3._RD, 1._RD/3._RD, 1._RD/3._RD])
 
       ! Update the mesh dimensions
 
@@ -382,7 +384,7 @@ contains
          call reallocate(mesh%VE, [d_vert])
 !         mesh%VE(mesh%n_vert+1:) = 0
 
-         call reallocate(mesh%VP, [3, d_vert])
+         call reallocate(mesh%VP, [d_vert])
 !         mesh%VP(:,mesh%n_vert+1:) = 0._RD
 
       end if

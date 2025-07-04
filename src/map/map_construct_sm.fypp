@@ -15,8 +15,8 @@ contains
 
    module procedure map_t_data_
 
-      @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PS, 2))
-      @:CHECK_BOUNDS(SIZE(PV, 4), SIZE(PS, 3))
+      @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PS, 2))
+      @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PS, 3))
 
       ! Construct the map_t from the data
 
@@ -24,7 +24,7 @@ contains
       map%PV = PV
 
       map%n_s = SIZE(PS, 1)
-      map%n_v = SIZE(PV, 2)
+      map%n_v = SIZE(PV, 1)
       map%n_x = SIZE(PS, 2)
       map%n_y = SIZE(PS, 3)
 
@@ -38,13 +38,13 @@ contains
 
    module procedure map_t_dims_
 
-      real(RD) :: PS(n_s,n_x,n_y)
-      real(RD) :: PV(3,n_v,n_x,n_y)
+      real(RD)       :: PS(n_s,n_x,n_y)
+      type(vector_t) :: PV(n_v,n_x,n_y)
 
       ! Construct the map_t from the dimensions
 
       PS = 0._RD
-      PV = 0._RD
+      PV = vector_t(0._RD, 0._RD, 0._RD)
 
       map = map_t_data_(PS, PV)
 

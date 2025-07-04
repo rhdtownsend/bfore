@@ -1,0 +1,39 @@
+! Submodule : point_transform_m
+! Purpose   : Transformations for point_t
+
+#:include 'forum.inc'
+
+submodule(point_m) point_transform_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure image
+
+      real(RD) :: H(4)
+
+      ! Evaluate the image point resulting from the transformation
+
+      H(1) = self%x
+      H(2) = self%y
+      H(3) = self%z
+      H(4) = 1._RD
+
+      H = tform%image(H)
+
+      point%x = H(1)
+      point%y = H(2)
+      point%z = H(3)
+
+      ! Finish
+
+      return
+
+   end procedure image
+
+end submodule point_transform_sm

@@ -9,7 +9,7 @@ submodule (mesh_m) mesh_geometry_sm
 
    use forum_m
 
-   use math_m
+   !use math_m
 
    use ISO_FORTRAN_ENV
 
@@ -28,7 +28,7 @@ contains
       ! Get the point (coordinates) associated with vertex v. Can also
       ! be used to set the point
 
-      P => self%VP(:,v)
+      P => self%VP(v)
 
       ! Finish
 
@@ -40,13 +40,13 @@ contains
 
    module procedure face_area
 
-      integer  :: f_e
-      integer  :: v1
-      integer  :: v2
-      integer  :: v3
-      real(RD) :: P1(3)
-      real(RD) :: P2(3)
-      real(RD) :: P3(3)
+      integer                 :: f_e
+      integer                 :: v1
+      integer                 :: v2
+      integer                 :: v3
+      type(point_t), pointer  :: P1
+      type(point_t), pointer  :: P2
+      type(point_t), pointer  :: P3
 
       ! Get the area vector of face f
 
@@ -56,9 +56,9 @@ contains
       v2 = self%edge_vert(self%edge_next(f_e))
       v3 = self%edge_vert(self%edge_prev(f_e))
 
-      P1 = self%vert_point(v1)
-      P2 = self%vert_point(v2)
-      P3 = self%vert_point(v3)
+      P1 => self%vert_point(v1)
+      P2 => self%vert_point(v2)
+      P3 => self%vert_point(v3)
 
       A = 0.5_RD*cross_product(P2-P1, P3-P1)
 

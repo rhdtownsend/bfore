@@ -1,0 +1,97 @@
+! Submodule : vector_operate_m
+! Purpose   : Operators for vector_t
+
+#:include 'forum.inc'
+
+submodule(vector_m) vector_operate_sm
+
+   ! Uses
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure add_vector_vector_
+
+      ! Add the vectors
+   
+      vector%x = self%x + other%x
+      vector%y = self%y + other%y
+      vector%z = self%z + other%z
+
+      ! Finish
+
+      return
+
+   end procedure add_vector_vector_
+
+   !****
+
+   module procedure sub_vector_vector_
+
+      ! Subtract the vectors
+   
+      vector%x = self%x - other%x
+      vector%y = self%y - other%y
+      vector%z = self%z - other%z
+
+      ! Finish
+
+      return
+
+   end procedure sub_vector_vector_
+
+   !****
+
+   module procedure mul_vector_scalar_
+
+      ! Post-multiply the vector by the scalar
+   
+      vector%x = self%x * scalar
+      vector%y = self%y * scalar
+      vector%z = self%z * scalar
+
+      ! Finish
+
+      return
+
+   end procedure mul_vector_scalar_
+
+
+   !****
+
+   module procedure mul_scalar_vector_
+
+      ! Pre-multiply the vector by the scalar
+   
+      vector%x = scalar * self%x
+      vector%y = scalar * self%y
+      vector%z = scalar * self%z
+
+      ! Finish
+
+      return
+
+   end procedure mul_scalar_vector_
+
+   !****
+
+   module procedure div_vector_scalar_
+
+      ! Divide the vector by the scalar
+   
+      vector%x = self%x / scalar
+      vector%y = self%y / scalar
+      vector%z = self%z / scalar
+
+      ! Finish
+
+      return
+
+   end procedure div_vector_scalar_
+   
+end submodule vector_operate_sm

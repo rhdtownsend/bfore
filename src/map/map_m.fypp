@@ -12,6 +12,7 @@ module map_m
 
    use mesh_m
    use view_m
+   use vector_m
 
    use ISO_FORTRAN_ENV
 
@@ -23,8 +24,8 @@ module map_m
 
    type :: map_t
       private
-      real(RD), allocatable :: PS(:,:,:)   ! Pixel scalar attributes buffer
-      real(RD), allocatable :: PV(:,:,:,:) ! Pixel vector attributes buffer
+      real(RD), allocatable       :: PS(:,:,:)   ! Pixel scalar attributes buffer
+      type(vector_t), allocatable :: PV(:,:,:) ! Pixel vector attributes buffer
       integer, public       :: n_s
       integer, public       :: n_v
       integer, public       :: n_x
@@ -51,7 +52,7 @@ module map_m
       module function map_t_data_(PS, PV) result(map)
          implicit none (type, external)
          real(RD), intent(in) :: PS(:,:,:)
-         real(RD), intent(in) :: PV(:,:,:,:)
+         type(vector_t), intent(in) :: PV(:,:,:)
          type(map_t) :: map
       end function map_t_data_
 
@@ -81,7 +82,7 @@ module map_m
          integer, intent(in)                      :: i_v
          integer, intent(in)                      :: i_x
          integer, intent(in)                      :: i_y
-         real(RD), pointer                        :: v(:)
+         type(vector_t), pointer                  :: v
       end function pixel_vector
 
       ! In map_render_sm
@@ -91,7 +92,7 @@ module map_m
          class(map_t), intent(inout) :: self
          type(mesh_t), intent(in)    :: mesh
          real(RD), intent(in)        :: vert_scalars(:,:)
-         real(RD), intent(in)        :: vert_vectors(:,:,:)
+         type(vector_t), intent(in)  :: vert_vectors(:,:)
          type(view_t), intent(in)    :: view
       end subroutine render
 

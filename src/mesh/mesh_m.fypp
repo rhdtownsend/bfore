@@ -11,6 +11,8 @@ module mesh_m
    use forum_m
 
    use stat_m
+   use point_m
+   use vector_m
 
    use ISO_FORTRAN_ENV
 
@@ -26,15 +28,17 @@ module mesh_m
 
    type :: mesh_t
       private
-      integer, allocatable  :: EV(:)   ! Edge-vertex table
-      integer, allocatable  :: ET(:)   ! Edge-twin table
-      integer, allocatable  :: VE(:)   ! Vertex-edge table
-      real(RD), allocatable :: VP(:,:) ! Vertex-point table
+      integer, allocatable       :: EV(:) ! Edge-vertex table
+      integer, allocatable       :: ET(:) ! Edge-twin table
+      integer, allocatable       :: VE(:) ! Vertex-edge table
+      type(point_t), allocatable :: VP(:) ! Vertex-point table
       integer, public       :: n_vert
       integer, public       :: n_edge
       integer, public       :: n_face
    contains
       private
+      procedure         :: equals_
+      generic, public   :: operator(==) => equals_
       procedure, public :: edge_prev
       procedure, public :: edge_next
       procedure, public :: edge_twin
@@ -63,27 +67,23 @@ module mesh_m
       module procedure mesh_t_merge_
    end interface mesh_t
 
-   interface compare
-      module procedure compare_
-   end interface compare
-
    interface
 
       ! In mesh_construct_sm
 
       module function mesh_t_data_(EV, ET, VE, VP) result(mesh)
          implicit none (type, external)
-         integer, intent(in)  :: EV(:)
-         integer, intent(in)  :: ET(:)
-         integer, intent(in)  :: VE(:)
-         real(RD), intent(in) :: VP(:,:)
-         type(mesh_t)         :: mesh
+         integer, intent(in)       :: EV(:)
+         integer, intent(in)       :: ET(:)
+         integer, intent(in)       :: VE(:)
+         type(point_t), intent(in) :: VP(:)
+         type(mesh_t)              :: mesh
       end function mesh_t_data_
 
-      module function mesh_t_face_verts_(face_verts, vert_points) result(mesh)
+      module function mesh_t_face_verts_(face_verts, vert_coords) result(mesh)
          implicit none (type, external)
          integer, intent(in)  :: face_verts(:,:)
-         real(RD), intent(in) :: vert_points(:,:)
+         real(RD), intent(in) :: vert_coords(:,:)
          type(mesh_t)         :: mesh
       end function mesh_t_face_verts_
 
@@ -92,6 +92,14 @@ module mesh_m
          type(mesh_t), intent(in) :: meshes(:)
          type(mesh_t)             :: mesh
       end function mesh_t_merge_
+
+      ! In mesh_operate_sm
+
+      module function equals_(self, other) result(equals)
+         class(mesh_t), intent(in) :: self
+         type(mesh_t), intent(in)  :: other
+         logical                   :: equals
+      end function equals_
 
       ! In mesh_traverse_sm
 
@@ -194,14 +202,14 @@ module mesh_m
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: v
-         real(RD), pointer, contiguous     :: P(:)
+         type(point_t), pointer            :: P
       end function vert_point
 
       module function face_area(self, f) result(A)
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: f
-         real(RD)                          :: A(3)
+         type(vector_t)                    :: A
       end function face_area
 
       ! In mesh_topology_sm
@@ -236,7 +244,6 @@ module mesh_m
 
    public :: BOUNDARY_EDGE
    public :: mesh_t
-   public :: compare
 
    ! Procedures
 
@@ -342,34 +349,5 @@ contains
       end subroutine validate_cond_
 
    end subroutine validate
-
-   !****
-
-   function compare_(mesh_a, mesh_b) result(same)
-
-      type(mesh_t), intent(in) :: mesh_a
-      type(mesh_t), intent(in) :: mesh_b
-      logical                  :: same
-
-      ! Compare the two meshes
-
-      same = &
-         mesh_a%n_vert == mesh_b%n_vert .AND. &
-         mesh_a%n_edge == mesh_b%n_edge .AND. &
-         mesh_a%n_face == mesh_b%n_face
-
-      if (.NOT. same) return
-
-      same = &
-         ALL(mesh_a%EV == mesh_b%EV) .AND. &
-         ALL(mesh_a%ET == mesh_b%ET) .AND. &
-         ALL(mesh_a%VE == mesh_b%VE) .AND. &
-         ALL(mesh_a%VP == mesh_b%VP)
-
-      ! Finish
-
-      return
-
-   end function compare_
 
 end module mesh_m

@@ -46,7 +46,7 @@ LIB_DIR ?= $(CURDIR)/lib
 INC_DIR ?= $(CURDIR)/include
 
 SRC_DIR = $(CURDIR)/src
-SRC_DIRS = $(addprefix $(SRC_DIR)/,mesh common framebuffer view transform surface map include)
+SRC_DIRS = $(addprefix $(SRC_DIR)/,mesh common framebuffer view transform vector point surface map include)
 
 ifeq ($(FORUM),yes)
    FORUM_LIB_DIR = $(LIB_DIR)

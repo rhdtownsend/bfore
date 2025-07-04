@@ -1,0 +1,236 @@
+! Module  : vector_m
+! Purpose : Define vector_t datatype, for representing vectors
+
+#:include 'forum.inc'
+
+module vector_m
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type :: vector_t
+      real(RD) :: x
+      real(RD) :: y
+      real(RD) :: z
+   contains
+      private
+      procedure, public     :: image
+      procedure             :: add_vector_vector_
+      generic, public       :: operator(+) => add_vector_vector_
+      procedure             :: sub_vector_vector_
+      generic, public       :: operator(-) => sub_vector_vector_
+      procedure             :: mul_vector_scalar_
+      procedure, pass(self) :: mul_scalar_vector_
+      generic, public       :: operator(*) => mul_vector_scalar_, mul_scalar_vector_
+      procedure             :: div_vector_scalar_
+      generic, public       :: operator(/) => div_vector_scalar_
+   end type vector_t
+
+   ! Interfaces
+
+   interface
+
+      ! In vector_operate_sm
+
+      elemental module function add_vector_vector_(self, other) result(vector)
+         class(vector_t), intent(in) :: self
+         type(vector_t), intent(in)  :: other
+         type(vector_t)              :: vector
+      end function add_vector_vector_
+
+      elemental module function sub_vector_vector_(self, other) result(vector)
+         class(vector_t), intent(in) :: self
+         type(vector_t), intent(in)  :: other
+         type(vector_t)              :: vector
+      end function sub_vector_vector_
+
+      elemental module function mul_vector_scalar_(self, scalar) result(vector)
+         class(vector_t), intent(in) :: self
+         real(RD), intent(in)        :: scalar
+         type(vector_t)              :: vector
+      end function mul_vector_scalar_
+
+      elemental module function mul_scalar_vector_(scalar, self) result(vector)
+         real(RD), intent(in)        :: scalar
+         class(vector_t), intent(in) :: self
+         type(vector_t)              :: vector
+      end function mul_scalar_vector_
+
+      elemental module function div_vector_scalar_(self, scalar) result(vector)
+         class(vector_t), intent(in) :: self
+         real(RD), intent(in)        :: scalar
+         type(vector_t)              :: vector
+      end function div_vector_scalar_
+
+      ! In vector_transform_sm
+
+      impure elemental module function image(self, tform) result(vector)
+         use transform_m
+         class(vector_t), intent(in)   :: self
+         type(transform_t), intent(in) :: tform
+         type(vector_t)                :: vector
+      end function image
+
+   end interface
+
+   interface norm2
+      module procedure norm2_
+   end interface norm2
+
+   interface cross_product
+      module procedure cross_product_
+   end interface cross_product
+
+   interface affine_sum
+      module procedure affine_sum_
+   end interface affine_sum
+
+   interface to_array
+      #:for rank in range(1, RANK_MAX)
+         module procedure to_array_${rank}$_
+      #:endfor
+   end interface to_array
+
+   interface from_array
+      #:for rank in range(1, RANK_MAX)
+         module procedure from_array_${rank}$_
+      #:endfor
+   end interface from_array
+
+   ! Accessibility
+
+   private
+
+   public :: vector_t
+   public :: norm2
+   public :: cross_product
+   public :: affine_sum
+   public :: to_array
+   public :: from_array
+
+contains
+
+   elemental function norm2_(self)
+
+      class(vector_t), intent(in) :: self
+      real(RD)                    :: norm2_
+
+      ! Evaluate the vector 2-norm
+
+      norm2_ = NORM2([self%x, self%y, self%z])
+
+      ! Finish
+
+      return
+
+   end function norm2_
+
+   !****
+
+   elemental function cross_product_(vector_a, vector_b) result(vector)
+
+      type(vector_t), intent(in) :: vector_a
+      type(vector_t), intent(in) :: vector_b
+      type(vector_t)             :: vector
+
+      ! Evaluate the vector cross-product
+
+      vector%x = vector_a%y * vector_b%z - vector_a%z * vector_b%y
+      vector%y = vector_a%z * vector_b%x - vector_a%x * vector_b%z
+      vector%z = vector_a%x * vector_b%y - vector_a%y * vector_b%x
+
+      ! Finish
+
+      return
+
+   end function cross_product_
+
+   !****
+
+   function affine_sum_(vectors, weights) result(vector)
+
+      type(vector_t), intent(in) :: vectors(:)
+      real(RD), intent(in)       :: weights(:)
+      type(vector_t)             :: vector
+
+      @:CHECK_BOUNDS(SIZE(weights), SIZE(vectors))
+
+      ! Evaluate the affine sum of the vectors. It is assumed (but not
+      ! checked!) that SUM(weights) = 1
+
+      vector%x = SUM(vectors%x*weights)
+      vector%y = SUM(vectors%y*weights)
+      vector%z = SUM(vectors%z*weights)
+
+      ! Finish
+
+      return
+
+   end function affine_sum_
+
+   !****
+
+   #:for rank in range(1, RANK_MAX)
+
+      subroutine to_array_${rank}$_(vectors, comps)
+
+         type(vector_t), intent(in)         :: vectors${ARRAY_SPEC(rank)}$
+         real(RD), allocatable, intent(out) :: comps${ARRAY_SPEC(rank+1)}$
+
+         integer :: shape_vectors(${rank}$)
+         integer :: shape_comps(${rank+1}$)
+
+         ! Convert the array of vectors into an (3,...) array of vector components
+
+         shape_vectors = SHAPE(vectors)
+         shape_comps = [3, shape_vectors]
+
+         comps = RESHAPE( &
+            TRANSFER(vectors, MOLD=0._RD, SIZE=PRODUCT(shape_comps)), &
+            SHAPE=shape_comps)
+
+         ! Finish
+
+         return
+
+      end subroutine to_array_${rank}$_
+
+      !****
+
+      subroutine from_array_${rank}$_(comps, vectors)
+
+         real(RD), intent(in)                     :: comps${ARRAY_SPEC(rank+1)}$
+         type(vector_t), allocatable, intent(out) :: vectors${ARRAY_SPEC(rank)}$
+
+         integer :: shape_comps(${rank+1}$)
+         integer :: shape_vectors(${rank}$)
+
+         @:CHECK_BOUNDS(SIZE(comps, 1), 3)
+
+         ! Convert the (3,...)  array of vector components into an array of vectors
+
+         shape_comps = SHAPE(comps)
+         shape_vectors = shape_comps(2:)
+
+         vectors = RESHAPE( &
+            TRANSFER(comps, MOLD=vector_t(0._RD, 0._RD, 0._RD), SIZE=PRODUCT(shape_vectors)), &
+            SHAPE=shape_vectors)
+
+         ! Finish
+
+         return
+
+      end subroutine from_array_${rank}$_
+
+   #:endfor
+
+ end module vector_m

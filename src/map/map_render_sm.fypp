@@ -9,6 +9,7 @@ submodule (map_m) map_render_sm
 
    use framebuffer_m
    use transform_m
+   use vector_m
 
    use ISO_FORTRAN_ENV
 
@@ -22,9 +23,9 @@ contains
 
    module procedure render
 
-      type(transform_t)   :: tform
+      type(transform_t)   :: tform_camera
       integer             :: v
-      real(RD)            :: VV(3,self%n_v,mesh%n_vert)
+      type(vector_t)      :: vert_vectors_c(self%n_v,mesh%n_vert)
       type(framebuffer_t) :: fbuff
       integer             :: i_a
 
@@ -33,21 +34,16 @@ contains
       @:CHECK_BOUNDS(SIZE(vert_scalars, 1), self%n_s)
       @:CHECK_BOUNDS(SIZE(vert_scalars, 2), mesh%n_vert)
 
-      @:CHECK_BOUNDS(SIZE(vert_vectors, 1), 3)
-      @:CHECK_BOUNDS(SIZE(vert_vectors, 2), self%n_v)
-      @:CHECK_BOUNDS(SIZE(vert_vectors, 3), mesh%n_vert)
+      @:CHECK_BOUNDS(SIZE(vert_vectors, 1), self%n_v)
+      @:CHECK_BOUNDS(SIZE(vert_vectors, 2), mesh%n_vert)
 
       ! Set up transformations
 
-      tform = view%camera_transform()
+      tform_camera = view%camera_transform()
 
-      ! Transform the vertex attribute vectors to the camera system
+      ! Evalaute vert_vectors in the camera frame
 
-      vert_loop: do v = 1, mesh%n_vert
-         do i_a = 1, self%n_v
-            VV(:,i_a,v) = tform%vector_image(vert_vectors(:,i_a,v))
-         end do
-      end do vert_loop
+      vert_vectors_c = vert_vectors%image(tform_camera)
 
       ! Initialize the framebuffer
 
@@ -93,11 +89,11 @@ contains
          ! Update the attributes
 
          do i_a = 1, self%n_s
-            self%PS(i_a,i_x,i_y) = DOT_PRODUCT(vert_scalars(i_a,[v1, v2, v3]), lambda)
+            self%PS(i_a,i_x,i_y) = SUM(vert_scalars(i_a,[v1, v2, v3])*lambda)
          end do
 
          do i_a = 1, self%n_v
-            self%PV(:,i_a,i_x,i_y) = MATMUL(VV(:,i_a,[v1, v2, v3]), lambda)
+            self%PV(i_a,i_x,i_y) = affine_sum(vert_vectors_c(i_a,[v1,v2,v3]), lambda)
          end do
 
          ! Finish

@@ -55,13 +55,14 @@ contains
 
       subroutine read_rev1_()
 
-         integer               :: n_vert
-         integer               :: n_edge
-         integer               :: n_face
-         integer, allocatable  :: EV(:)
-         integer, allocatable  :: ET(:)
-         integer, allocatable  :: VE(:)
-         real(RD), allocatable :: VP(:,:)
+         integer                    :: n_vert
+         integer                    :: n_edge
+         integer                    :: n_face
+         integer, allocatable       :: EV(:)
+         integer, allocatable       :: ET(:)
+         integer, allocatable       :: VE(:)
+         type(point_t), allocatable :: VP(:)
+         real(RD), allocatable      :: vert_coords(:,:)
 
          call hdf5io%read_attr('n_vert', n_vert)
          call hdf5io%read_attr('n_edge', n_edge)
@@ -70,13 +71,13 @@ contains
          call hdf5io%alloc_read_dset('edge_verts', EV)
          call hdf5io%alloc_read_dset('edge_twins', ET)
          call hdf5io%alloc_read_dset('vert_edges', VE)
-         call hdf5io%alloc_read_dset('vert_points', VP)
+         call hdf5io%alloc_read_dset('vert_coords', vert_coords)
 
          if (.NOT. &
             ALL(SHAPE(EV) == [n_edge]) .AND. &
             ALL(SHAPE(ET) == [n_edge]) .AND. &
             ALL(SHAPE(VE) == [n_vert]) .AND. &
-            ALL(SHAPE(VP) == [3, n_vert])) then
+            ALL(SHAPE(vert_coords) == [3,n_vert])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -84,6 +85,8 @@ contains
                @:ABORT('invalid dataset dimension')
             end if
          end if
+
+         call from_array(vert_coords, VP)
 
          select type(self)
          type is(mesh_t)
@@ -106,6 +109,8 @@ contains
 
    module procedure write
 
+      real(RD), allocatable :: vert_coords(:,:)
+
       ! Write the mesh_t
 
       call hdf5io%write_attr('TYPE', 'mesh_t')
@@ -118,7 +123,9 @@ contains
       call hdf5io%write_dset('edge_verts', self%EV)
       call hdf5io%write_dset('edge_twins', self%ET)
       call hdf5io%write_dset('vert_edges', self%VE)
-      call hdf5io%write_dset('vert_points', self%VP)
+
+      call to_array(self%VP, vert_coords)
+      call hdf5io%write_dset('vert_coords', vert_coords)
 
       ! Finish
 

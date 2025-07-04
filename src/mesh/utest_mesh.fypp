@@ -12,7 +12,9 @@ program utest_mesh
 
    use mesh_m
    use mesh_primitives_m
+   use point_m
    use stat_m
+   use vector_m
 
    use ISO_FORTRAN_ENV
 
@@ -351,24 +353,25 @@ contains
 
       real(RD), parameter :: TOL = 1E-15_RD
 
-      type(mesh_t) :: mesh
-      real(RD)     :: length(12)
-      integer      :: e
-      integer      :: v1
-      integer      :: v2
-      integer      :: f
-      real(RD)     :: A(3,4)
+      type(mesh_t)   :: mesh
+      type(point_t)  :: point
+      real(RD)       :: length(12)
+      integer        :: e
+      integer        :: v1
+      integer        :: v2
+      integer        :: f
+      type(vector_t) :: A(4)
 
       print *, 'Checking mesh geometry'
 
       mesh = tetrahedron_mesh()
-      @:CHECK(ALL(ABS(mesh%vert_point(4) - [0._RD, 0._RD, 1._RD]) < TOL), &
-         'get vertex point of tetrahedron_mesh')
+      point = point_t(0._RD, 0._RD, 1._RD)
+      @:CHECK(norm2(mesh%vert_point(4) - point) < TOL, 'get vertex point of tetrahedron_mesh')
 
       mesh = tetrahedron_mesh()
-      mesh%vert_point(4) = [0._RD, 0._RD, 2._RD]
-      @:CHECK(ALL(mesh%vert_point(4) == [0._RD, 0._RD, 2._RD]), &
-         'set vertex point of tetrahedron_mesh')
+      point = point_t(0._RD, 0._RD, 2._RD)
+      mesh%vert_point(4) = point
+      @:CHECK(norm2(mesh%vert_point(4) - point) == 0, 'set vertex point of tetrahedron_mesh')
 
       mesh = tetrahedron_mesh()
       edge_loop: do e = 1, 12
@@ -381,9 +384,9 @@ contains
 
       mesh = tetrahedron_mesh()
       face_loop: do f = 1, 4
-         A(:,f) = mesh%face_area(f)
+         A(f) = mesh%face_area(f)
       end do face_loop
-      @:CHECK(ALL(ABS(NORM2(A, DIM=1) - 2._RD/SQRT(3._RD)) < TOL), &
+      @:CHECK(ALL(ABS(NORM2(A) - 2._RD/SQRT(3._RD)) < TOL), &
          'face areas of tetrahedron_mesh')
 
       ! Finish
@@ -415,7 +418,7 @@ contains
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'read sphere_mesh from file')
 
-      @:CHECK(compare(mesh_out, mesh_in), 'read mesh equals written mesh')
+      @:CHECK(mesh_out == mesh_in, 'read mesh equals written mesh')
 
       ! Finish
 

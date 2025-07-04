@@ -1,0 +1,79 @@
+! Submodule : point_operate_m
+! Purpose   : Operators for point_t
+
+#:include 'forum.inc'
+
+submodule(point_m) point_operate_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure equals_
+
+      ! Test the points for equality
+
+      equals = &
+         self%x == other%x .AND. &
+         self%y == other%y .AND. &
+         self%z == other%z
+
+      ! Finish
+
+      return
+
+   end procedure equals_
+
+   !****
+   
+   module procedure add_point_vector_
+
+      ! Add the vector to the point
+   
+      point%x = self%x + vector%x
+      point%y = self%y + vector%y
+      point%z = self%z + vector%z
+
+      ! Finish
+
+      return
+
+   end procedure add_point_vector_
+
+   !****
+   
+   module procedure add_vector_point_
+
+      ! Add the point to the vector
+   
+      point%x = vector%x + self%x
+      point%y = vector%y + self%y
+      point%z = vector%z + self%z
+
+      ! Finish
+
+      return
+
+   end procedure add_vector_point_
+
+   !****
+
+   module procedure sub_point_point_
+
+      ! Subtract the points
+   
+      vector%x = self%x - other%x
+      vector%y = self%y - other%y
+      vector%z = self%z - other%z
+
+      ! Finish
+
+      return
+
+   end procedure sub_point_point_
+
+end submodule point_operate_sm

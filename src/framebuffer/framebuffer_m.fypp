@@ -12,6 +12,7 @@ module framebuffer_m
 
    use mesh_m
    use view_m
+   use point_m
 
    use ISO_FORTRAN_ENV
 
@@ -102,7 +103,7 @@ module framebuffer_m
       module subroutine render_triangle(self, P, process_pixel, origin)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
-         real(RD), intent(in)                :: P(:,:)
+         type(point_t), intent(in)           :: P(:)
          optional                            :: process_pixel
          integer, intent(in), optional       :: origin
          interface

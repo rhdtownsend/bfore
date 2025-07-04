@@ -10,6 +10,9 @@ module mesh_primitives_m
    use forum_m
    use mesh_m
 
+   use point_m
+   use vector_m
+
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -203,10 +206,15 @@ contains
 
          integer, intent(in) :: v(:)
 
-         integer :: j
+         integer                 :: j
+         type(point_t), pointer  :: point
+         type(point_t)           :: origin = point_t(0._RD, 0._RD, 0._RD)
+         real(RD)                :: radius
 
          do j = 1, SIZE(v)
-            mesh%vert_point(v(j)) = mesh%vert_point(v(j))/NORM2(mesh%vert_point(v(j)))
+            point => mesh%vert_point(v(j))
+            radius = norm2(point - origin)
+            point = affine_sum([point, origin], [1./radius, 1._RD-1/radius])
          end do
 
       end subroutine push_out_

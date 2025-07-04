@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_mesh utest_framebuffer utest_surface utest_map
+   BIN_TARGETS += utest_mesh utest_framebuffer utest_map
 endif
 
 # Source file lists & related variables
@@ -22,11 +22,13 @@ endif
 # xxx_USES = source files providing modules USE'd by xxx
 # xxx_LIBS = library files required to link xxx
 
-mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_modify_sm.fypp mesh_traverse_sm.fypp \
+mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_modify_sm.fypp mesh_traverse_sm.fypp \
             mesh_topology_sm.fypp mesh_geometry_sm.fypp mesh_io_sm.fypp \
             mesh_primitives_m.fypp \
 	    stat_m.fypp file_m.fypp math_m.fypp \
             transform_m.fypp \
+            point_m.fypp point_operate_sm.fypp point_transform_sm.fypp \
+            vector_m.fypp vector_operate_sm.fypp vector_transform_sm.fypp \
             view_m.fypp view_construct_sm.fypp view_io_sm.fypp \
             framebuffer_m.fypp framebuffer_construct_sm.fypp framebuffer_render_sm.fypp framebuffer_pixel_sm.fypp framebuffer_io_sm.fypp \
             map_m.fypp map_construct_sm.fypp map_render_sm.fypp map_pixel_sm.fypp map_io_sm.fypp

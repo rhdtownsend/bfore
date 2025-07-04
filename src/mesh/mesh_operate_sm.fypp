@@ -1,0 +1,37 @@
+! Submodule : mesh_operate_sm
+! Purpose   : Operators for mesh_t
+
+#:include 'forum.inc'
+
+submodule(mesh_m) mesh_operate_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure equals_
+
+      ! Test the meshes for equality
+
+      equals = &
+         self%n_vert == other%n_vert .AND. &
+         self%n_edge == other%n_edge .AND. &
+         self%n_face == other%n_face
+
+      if (.NOT. equals) return
+
+      equals = &
+         ALL(self%EV == other%EV) .AND. &
+         ALL(self%ET == other%ET) .AND. &
+         ALL(self%VE == other%VE) .AND. &
+         ALL(self%VP == other%VP)
+
+      ! Finish
+
+   end procedure equals_
+
+end submodule mesh_operate_sm

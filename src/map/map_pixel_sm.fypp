@@ -41,7 +41,7 @@ contains
       ! Get the i_v'th vector attribute associated with pixel
       ! (i_x,i_y).  Can also be used to set the attribute
 
-      v => self%PV(:,i_v,i_x,i_y)
+      v => self%PV(i_v,i_x,i_y)
 
       ! Finish
 

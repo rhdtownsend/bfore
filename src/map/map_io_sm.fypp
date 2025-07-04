@@ -51,12 +51,13 @@ contains
 
       subroutine read_rev1_()
 
-         integer               :: n_s
-         integer               :: n_v
-         integer               :: n_x
-         integer               :: n_y
-         real(RD), allocatable :: PS(:,:,:)
-         real(RD), allocatable :: PV(:,:,:,:)
+         integer                     :: n_s
+         integer                     :: n_v
+         integer                     :: n_x
+         integer                     :: n_y
+         real(RD), allocatable       :: PS(:,:,:)
+         type(vector_t), allocatable :: PV(:,:,:)
+         real(RD), allocatable       :: pixel_vectors(:,:,:,:)
 
          call hdf5io%read_attr('n_s', n_s)
          call hdf5io%read_attr('n_v', n_v)
@@ -64,11 +65,11 @@ contains
          call hdf5io%read_attr('n_y', n_y)
 
          call hdf5io%alloc_read_dset('pixel_scalars', PS)
-         call hdf5io%alloc_read_dset('pixel_vectors', PV)
+         call hdf5io%alloc_read_dset('pixel_vectors', pixel_vectors)
 
          if (.NOT. &
             ALL(SHAPE(PS) == [n_s, n_x, n_y]) .AND. &
-            ALL(SHAPE(PV) == [3, n_v, n_x, n_y])) then
+            ALL(SHAPE(pixel_vectors) == [3, n_v, n_x, n_y])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -76,6 +77,8 @@ contains
                @:ABORT('invalid dataset dimension')
             end if
          end if
+
+         call from_array(pixel_vectors, PV)
 
          select type(self)
          type is(map_t)
@@ -98,6 +101,8 @@ contains
 
    module procedure write
 
+      real(RD), allocatable :: pixel_vectors(:,:,:,:)
+
       ! Write the map_t
 
       call hdf5io%write_attr('TYPE', 'map_t')
@@ -109,7 +114,9 @@ contains
       call hdf5io%write_attr('n_v', self%n_v)
 
       call hdf5io%write_dset('pixel_scalars', self%PS)
-      call hdf5io%write_dset('pixel_vectors', self%PV)
+
+      call to_array(self%PV, pixel_vectors)
+      call hdf5io%write_dset('pixel_vectors', pixel_vectors)
 
       ! Finish
 

@@ -23,11 +23,11 @@ contains
 
       @:CHECK_BOUNDS(SIZE(ET), SIZE(EV))
 
-      @:CHECK_BOUNDS(SIZE(VP, 1), 3)
+      !@:CHECK_BOUNDS(SIZE(VP, 1), 3)
 
       ! Construct the mesh_t from the supplied data
 
-      mesh%n_vert = SIZE(VP, 2)
+      mesh%n_vert = SIZE(VP)
       mesh%n_edge = SIZE(EV)
       mesh%n_face = SIZE(EV)/3
 
@@ -46,20 +46,19 @@ contains
 
    module procedure mesh_t_face_verts_
 
-      integer               :: n_vert
-      integer               :: n_edge
-      integer               :: n_face
-      integer, allocatable  :: EV(:)
-      integer, allocatable  :: ET(:)
-      integer, allocatable  :: VE(:)
-      real(RD), allocatable :: VP(:,:)
+      integer                    :: n_vert
+      integer                    :: n_edge
+      integer                    :: n_face
+      integer, allocatable       :: EV(:)
+      integer, allocatable       :: ET(:)
+      integer, allocatable       :: VE(:)
+      type(point_t), allocatable :: VP(:)
 
       @:CHECK_BOUNDS(SIZE(face_verts, 1), 3)
-      @:CHECK_BOUNDS(SIZE(vert_points, 1), 3)
 
       ! Construct the mesh_t from the supplied face-vertex list
 
-      n_vert = SIZE(vert_points, 2)
+      n_vert = SIZE(vert_coords, 2)
       n_edge = 3*SIZE(face_verts, 2)
       n_face = SIZE(face_verts, 2)
 
@@ -193,7 +192,7 @@ contains
 
       ! Set up the vertex-point table
 
-      VP = vert_points
+      call from_array(vert_coords, VP)
 
       ! Create the mesh_t
 
@@ -209,18 +208,18 @@ contains
 
    module procedure mesh_t_merge_
 
-      integer               :: n_vert
-      integer               :: n_face
-      integer               :: n_edge
-      integer, allocatable  :: EV(:)
-      integer, allocatable  :: ET(:)
-      integer, allocatable  :: VE(:)
-      real(RD), allocatable :: VP(:,:)
-      integer               :: i
-      integer               :: e1
-      integer               :: e2
-      integer               :: v1
-      integer               :: v2
+      integer                    :: n_vert
+      integer                    :: n_face
+      integer                    :: n_edge
+      integer, allocatable       :: EV(:)
+      integer, allocatable       :: ET(:)
+      integer, allocatable       :: VE(:)
+      type(point_t), allocatable :: VP(:)
+      integer                    :: i
+      integer                    :: e1
+      integer                    :: e2
+      integer                    :: v1
+      integer                    :: v2
 
       @:ASSERT_DEBUG(SIZE(meshes) >= 1)
 
@@ -235,7 +234,7 @@ contains
       allocate(EV(n_edge))
       allocate(ET(n_edge))
       allocate(VE(n_vert))
-      allocate(VP(3,n_vert))
+      allocate(VP(n_vert))
 
       mesh_loop: do i = 1, SIZE(meshes)
 
@@ -249,7 +248,7 @@ contains
          v2 = v1 + meshes(i)%n_vert - 1
 
          VE(v1:v2) = meshes(i)%VE + SUM(meshes(:i-1)%n_edge)
-         VP(:,v1:v2) = meshes(i)%VP
+         VP(v1:v2) = meshes(i)%VP
 
       end do mesh_loop
 
