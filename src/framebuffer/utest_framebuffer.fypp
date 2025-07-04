@@ -15,6 +15,7 @@ program utest_framebuffer
    use point_m
    use framebuffer_m
    use view_m
+   use vector_m
    use stat_m
 
    use ISO_FORTRAN_ENV
@@ -192,24 +193,38 @@ contains
 
    subroutine test_io()
 
-      type(mesh_t)        :: mesh
-      type(view_t)        :: view
-      type(framebuffer_t) :: fbuff_out
-      type(framebuffer_t) :: fbuff_in
-      type(hdf5io_t)      :: hdf5io
-      integer             :: stat
+      type(mesh_t)           :: mesh
+      integer                :: v
+      type(point_t), pointer :: point
+      type(view_t)           :: view
+      type(framebuffer_t)    :: fbuff_out
+      type(framebuffer_t)    :: fbuff_in
+      type(hdf5io_t)         :: hdf5io
+      integer                :: stat
 
       ! Test rendering operations
 
       print *,'Checking framebuffer i/o'
 
-      mesh = sphere_mesh(2)
+      mesh = sphere_mesh(1._RD, 6, 3, 1)
+
+      do v = 1, mesh%n_vert
+
+         point => mesh%vert_point(v)
+
+         mesh%vert_scalar(1, v) = point%x
+         mesh%vert_scalar(2, v) = point%y
+         mesh%vert_scalar(3, v) = point%z
+
+         mesh%vert_vector(1, v) = point - point_t(0._RD, 0._RD, 0._RD)
+
+      end do
 
       view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
          [0._RD, 0._RD, 0._RD], &
          2.4_RD, 2.4_RD)
 
-      fbuff_out = framebuffer_t(1024, 1024)
+      fbuff_out = framebuffer_t(8192, 8192, 3, 1)
       call fbuff_out%render(mesh, view)
 
       hdf5io = hdf5io_t('utest_framebuffer.h5', CREATE_FILE)
@@ -222,7 +237,7 @@ contains
       call hdf5io%final()
       @:CHECK(stat == STAT_OK, 'read framebuffer from file')
 
-      @:CHECK(compare(fbuff_out, fbuff_in), 'read framebuffer equals written framebuffer')
+      @:CHECK(fbuff_out == fbuff_in, 'read framebuffer equals written framebuffer')
 
       ! Finish
 
@@ -242,9 +257,11 @@ contains
       real(RD), intent(in)     :: z
       character(*), intent(in) :: orient
 
-      real(RD)                   :: x_mid
-      real(RD)                   :: y_mid
-      type(point_t), allocatable :: rect_points(:)
+      real(RD)                    :: x_mid
+      real(RD)                    :: y_mid
+      type(point_t), allocatable  :: rect_points(:)
+      real(RD), allocatable       :: rect_scalars(:,:)
+      type(vector_t), allocatable :: rect_vectors(:,:)
 
       ! Render a triangle within the supplid bounding box
 
@@ -263,23 +280,29 @@ contains
          x_max, y_max, z], &
          SHAPE=[3, 9]), rect_points)
 
+      allocate(rect_scalars(fbuff%n_scalar,3))
+      rect_scalars = 0._RD
+
+      allocate(rect_vectors(fbuff%n_vector,3))
+      rect_vectors = vector_t(0._RD, 0._RD, 0._RD)
+
       select case(orient)
       case('L')
-         call fbuff%render_triangle(rect_points([7, 1, 6]))
+         call fbuff%render_triangle(rect_points([7, 1, 6]), rect_scalars, rect_vectors)
       case('B')
-         call fbuff%render_triangle(rect_points([1, 3, 8]))
+         call fbuff%render_triangle(rect_points([1, 3, 8]), rect_scalars, rect_vectors)
       case('R')
-         call fbuff%render_triangle(rect_points([3, 9, 4]))
+         call fbuff%render_triangle(rect_points([3, 9, 4]), rect_scalars, rect_vectors)
       case('T')
-         call fbuff%render_triangle(rect_points([9, 7, 2]))
+         call fbuff%render_triangle(rect_points([9, 7, 2]), rect_scalars, rect_vectors)
       case('TL')
-         call fbuff%render_triangle(rect_points([7, 1, 9]))
+         call fbuff%render_triangle(rect_points([7, 1, 9]), rect_scalars, rect_vectors)
       case('BL')
-         call fbuff%render_triangle(rect_points([1, 3, 7]))
+         call fbuff%render_triangle(rect_points([1, 3, 7]), rect_scalars, rect_vectors)
       case('BR')
-         call fbuff%render_triangle(rect_points([3, 9, 1]))
+         call fbuff%render_triangle(rect_points([3, 9, 1]), rect_scalars, rect_vectors)
       case('TR')
-         call fbuff%render_triangle(rect_points([9, 7, 3]))
+         call fbuff%render_triangle(rect_points([9, 7, 3]), rect_scalars, rect_vectors)
       case default
          @:ABORT('invalid orient')
       end select

@@ -9,9 +9,6 @@ module point_m
 
    use forum_m
 
-   use vector_m
-   use transform_m
-
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -43,6 +40,7 @@ module point_m
       ! In point_construct_sm
 
       elemental module function point_t_data_(x, y, z) result(point)
+         implicit none (type, external)
          real(RD), intent(in) :: x
          real(RD), intent(in) :: y
          real(RD), intent(in) :: z
@@ -52,24 +50,31 @@ module point_m
       ! In point_operate_sm
 
       elemental module function equals_(self, other) result(equals)
+         implicit none (type, external)
          class(point_t), intent(in) :: self
          type(point_t), intent(in)  :: other
          logical                    :: equals
       end function equals_
 
       elemental module function add_point_vector_(self, vector) result(point)
+         use vector_m
+         implicit none (type, external)
          class(point_t), intent(in) :: self
          type(vector_t), intent(in) :: vector
          type(point_t)              :: point
       end function add_point_vector_
 
       elemental module function add_vector_point_(vector, self) result(point)
+         use vector_m
+         implicit none (type, external)
          type(vector_t), intent(in) :: vector
          class(point_t), intent(in) :: self
          type(point_t)              :: point
       end function add_vector_point_
 
       elemental module function sub_point_point_(self, other) result(vector)
+         use vector_m
+         implicit none (type, external)
          class(point_t), intent(in) :: self
          type(point_t), intent(in)  :: other
          type(vector_t)             :: vector
@@ -78,6 +83,8 @@ module point_m
       ! In vector_transform_sm
 
       impure elemental module function image(self, tform) result(point)
+         use transform_m
+         implicit none (type, external)
          class(point_t), intent(in)    :: self
          type(transform_t), intent(in) :: tform
          type(point_t)                 :: point

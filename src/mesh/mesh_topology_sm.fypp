@@ -1,15 +1,9 @@
 ! Submodule : mesh_topology_sm
-! Purpose   : Routines to determine topology of mesh_t types
+! Purpose   : Routines to analyze topology of mesh_t
 
 #:include 'forum.inc'
 
 submodule (mesh_m) mesh_topology_sm
-
-   ! Uses
-
-   use forum_m
-
-   use ISO_FORTRAN_ENV
 
    ! No implicit typing
 
@@ -18,6 +12,105 @@ submodule (mesh_m) mesh_topology_sm
    ! Procedures
 
 contains
+
+   module procedure validate
+
+      integer :: i
+      integer :: e(self%n_edge)
+      integer :: e_t(self%n_edge)
+      logical :: edge_mask(self%n_edge)
+      integer :: v(self%n_vert)
+      integer :: v_e(self%n_vert)
+
+      ! Validate the mesh topology
+
+      associate( &
+         EV => self%EV(:self%n_edge), &
+         ET => self%ET(:self%n_edge), &
+         VE => self%VE(:self%n_vert))
+
+         ! Check table values
+
+         call validate_cond_(EV >= 1 .AND. EV <= self%n_vert, &
+            STAT_INVALID_EDGE_VERT)
+         if (stat /= STAT_OK) return
+
+         call validate_cond_((ET >= 1 .AND. ET <= self%n_edge) .OR. ET == BOUNDARY_EDGE, &
+            STAT_INVALID_EDGE_TWIN)
+         if (stat /= STAT_OK) return
+
+         call validate_cond_(VE >= 1 .AND. VE <= self%n_edge, &
+            STAT_INVALID_VERT_EDGE)
+         if (stat /= STAT_OK) return
+
+         ! Check for degenerate faces
+
+         call validate_cond_(EV(1::3) /= EV(2::3) .AND. EV(1::3) /= EV(3::3) .AND. EV(2::3) /= EV(3::3), &
+            STAT_DEGENERATE_FACE)
+         if (stat /= STAT_OK) return
+
+      end associate
+
+      ! Check the traversal identities
+
+      e = [(i, i=1, self%n_edge)]
+      e_t = self%edge_twin(e)
+
+      edge_mask = e_t /= BOUNDARY_EDGE
+
+      call validate_cond_(self%edge_twin(PACK(e_t, MASK=edge_mask)) == &
+         PACK(e, MASK=edge_mask), &
+         STAT_MISMATCHED_EDGE_TWIN)
+      if (stat /= STAT_OK) return
+
+      v = [(i, i=1, self%n_vert)]
+      v_e = self%vert_edge(v)
+
+      call validate_cond_(self%edge_vert(v_e) == v, &
+         STAT_MISMATCHED_VERT_EDGE)
+      if (stat /= STAT_OK) return
+
+      ! Check the orientation constraint
+
+      call validate_cond_(self%edge_vert(self%edge_next(PACK(e_t, MASK=edge_mask))) == &
+         self%edge_vert(PACK(e, MASK=edge_mask)), &
+         STAT_MISORIENTED_EDGE_TWIN)
+      if (stat /= STAT_OK) return
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine validate_cond_(cond, stat_on_err)
+
+         logical, intent(in) :: cond(:)
+         integer, intent(in) :: stat_on_err
+
+         ! Validate based on the cond array
+
+         if (.NOT. ALL(cond)) then
+
+            stat = stat_on_err
+            if (PRESENT(loc)) loc = FINDLOC(cond, .FALSE., DIM=1)
+
+         else
+
+            stat = STAT_OK
+            if (PRESENT(loc)) loc = 0
+
+         end if
+
+         ! Finish
+
+         return
+
+      end subroutine validate_cond_
+
+   end procedure validate
+
+   !****
 
    module procedure euler_characteristic
 

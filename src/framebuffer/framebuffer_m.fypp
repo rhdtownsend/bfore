@@ -13,6 +13,7 @@ module framebuffer_m
    use mesh_m
    use view_m
    use point_m
+   use vector_m
 
    use ISO_FORTRAN_ENV
 
@@ -24,12 +25,20 @@ module framebuffer_m
 
    type :: framebuffer_t
       private
-      real(RD), allocatable :: PZ(:,:)   ! Pixel depth buffer
-      integer, public       :: n_x
-      integer, public       :: n_y
+      real(RD), allocatable       :: PD(:,:)   ! Pixel depth buffer
+      real(RD), allocatable       :: PS(:,:,:) ! Pixel scalar buffer
+      type(vector_t), allocatable :: PV(:,:,:) ! Pixel vector buffert
+      integer, public             :: n_scalar
+      integer, public             :: n_vector
+      integer, public             :: n_x
+      integer, public             :: n_y
    contains
       private
+      procedure         :: equals_
+      generic, public   :: operator(==) => equals_
       procedure, public :: pixel_depth
+      procedure, public :: pixel_scalar
+      procedure, public :: pixel_vector
       procedure, public :: render
       procedure, public :: render_triangle
       procedure, public :: read
@@ -43,25 +52,25 @@ module framebuffer_m
       module procedure framebuffer_t_merge_
    end interface framebuffer_t
 
-   interface compare
-      module procedure compare_
-   end interface compare
-
    interface
 
       ! In framebuffer_construct_sm
 
-      module function framebuffer_t_data_(PZ) result(fbuff)
+      module function framebuffer_t_data_(PD, PS, PV) result(fbuff)
          implicit none (type, external)
-         real(RD), intent(in) :: PZ(:,:)
-         type(framebuffer_t)  :: fbuff
+         real(RD), intent(in)       :: PD(:,:)
+         real(RD), intent(in)       :: PS(:,:,:)
+         type(vector_t), intent(in) :: PV(:,:,:)
+         type(framebuffer_t)        :: fbuff
       end function framebuffer_t_data_
 
-      module function framebuffer_t_dims_(n_x, n_y) result(fbuff)
+      module function framebuffer_t_dims_(n_x, n_y, n_scalar, n_vector) result(fbuff)
          implicit none (type, external)
-         integer, intent(in) :: n_x
-         integer, intent(in) :: n_y
-         type(framebuffer_t) :: fbuff
+         integer, intent(in)           :: n_x
+         integer, intent(in)           :: n_y
+         integer, intent(in), optional :: n_scalar
+         integer, intent(in), optional :: n_vector
+         type(framebuffer_t)           :: fbuff
       end function framebuffer_t_dims_
 
       module function framebuffer_t_merge_(fbuffs) result(fbuff)
@@ -70,52 +79,58 @@ module framebuffer_m
          type(framebuffer_t)             :: fbuff
       end function framebuffer_t_merge_
 
+      ! In framebuffer_operate_sm
+
+      module function equals_(self, other) result(equals)
+         implicit none (type, external)
+         class(framebuffer_t), intent(in) :: self
+         type(framebuffer_t), intent(in)  :: other
+         logical                          :: equals
+      end function equals_
+
       ! In framebuffer_pixel_sm
 
-      module function pixel_depth(self, i_x, i_y) result(z)
+      module function pixel_depth(self, i_x, i_y) result(depth)
          implicit none (type, external)
          class(framebuffer_t), intent(in), target :: self
          integer, intent(in)                      :: i_x
          integer, intent(in)                      :: i_y
-         real(RD), pointer                        :: z
+         real(RD), pointer                        :: depth
       end function pixel_depth
+
+      module function pixel_scalar(self, i, i_x, i_y) result(scalar)
+         implicit none (type, external)
+         class(framebuffer_t), intent(in), target :: self
+         integer, intent(in)                      :: i
+         integer, intent(in)                      :: i_x
+         integer, intent(in)                      :: i_y
+         real(RD), pointer                        :: scalar
+      end function pixel_scalar
+
+      module function pixel_vector(self, i, i_x, i_y) result(vector)
+         implicit none (type, external)
+         class(framebuffer_t), intent(in), target :: self
+         integer, intent(in)                      :: i
+         integer, intent(in)                      :: i_x
+         integer, intent(in)                      :: i_y
+         type(vector_t), pointer                  :: vector
+      end function pixel_vector
 
       ! In framebuffer_render_sm
 
-      module subroutine render(self, mesh, view, process_pixel)
+      module subroutine render(self, mesh, view)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
          type(mesh_t), intent(in)            :: mesh
          type(view_t), intent(in)            :: view
-         optional                            :: process_pixel
-         interface
-            subroutine process_pixel(i_x, i_y, lambda, origin)
-               use forum_m
-               implicit none (type, external)
-               integer, intent(in)  :: i_x
-               integer, intent(in)  :: i_y
-               real(RD), intent(in) :: lambda(3)
-               integer, intent(in)  :: origin
-            end subroutine process_pixel
-         end interface
       end subroutine render
 
-      module subroutine render_triangle(self, P, process_pixel, origin)
+      module subroutine render_triangle(self, points, scalars, vectors)
          implicit none (type, external)
          class(framebuffer_t), intent(inout) :: self
-         type(point_t), intent(in)           :: P(:)
-         optional                            :: process_pixel
-         integer, intent(in), optional       :: origin
-         interface
-            subroutine process_pixel(i_x, i_y, lambda, origin)
-               use forum_m
-               implicit none (type, external)
-               integer, intent(in)  :: i_x
-               integer, intent(in)  :: i_y
-               real(RD), intent(in) :: lambda(3)
-               integer, intent(in)  :: origin
-            end subroutine process_pixel
-         end interface
+         type(point_t), intent(in)           :: points(:)
+         real(RD), intent(in)                :: scalars(:,:)
+         type(vector_t), intent(in)          :: vectors(:,:)
       end subroutine render_triangle
 
       ! In framebuffer_io_sm
@@ -141,32 +156,5 @@ module framebuffer_m
    private
 
    public :: framebuffer_t
-   public :: compare
-
-   ! Procedures
-
-contains
-
-   function compare_(fbuff_a, fbuff_b) result(same)
-
-      type(framebuffer_t), intent(in) :: fbuff_a
-      type(framebuffer_t), intent(in) :: fbuff_b
-      logical                         :: same
-
-      ! Compare the two meshes
-
-      same = &
-         fbuff_a%n_x == fbuff_b%n_x .AND. &
-         fbuff_a%n_y == fbuff_b%n_y
-
-      if (.NOT. same) return
-
-      same = ALL(fbuff_a%PZ == fbuff_b%PZ)
-
-      ! Finish
-
-      return
-
-   end function compare_
 
 end module framebuffer_m

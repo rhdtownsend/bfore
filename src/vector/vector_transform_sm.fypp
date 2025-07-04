@@ -3,11 +3,7 @@
 
 #:include 'forum.inc'
 
-submodule(vector_m) vector_transform_sm
-
-   ! Uses
-
-   use transform_m
+submodule (vector_m) vector_transform_sm
 
    ! No implicit typing
 

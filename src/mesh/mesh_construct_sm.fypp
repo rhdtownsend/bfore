@@ -30,11 +30,15 @@ contains
       mesh%n_vert = SIZE(VP)
       mesh%n_edge = SIZE(EV)
       mesh%n_face = SIZE(EV)/3
+      mesh%n_scalar = SIZE(VS, 1)
+      mesh%n_vector = SIZE(VV, 1)
 
       mesh%EV = EV
       mesh%ET = ET
       mesh%VE = VE
       mesh%VP = VP
+      mesh%VS = VS
+      mesh%VV = VV
 
       ! Finish
 
@@ -46,15 +50,31 @@ contains
 
    module procedure mesh_t_face_verts_
 
-      integer                    :: n_vert
-      integer                    :: n_edge
-      integer                    :: n_face
-      integer, allocatable       :: EV(:)
-      integer, allocatable       :: ET(:)
-      integer, allocatable       :: VE(:)
-      type(point_t), allocatable :: VP(:)
+      integer                     :: n_scalar_
+      integer                     :: n_vector_
+      integer                     :: n_vert
+      integer                     :: n_edge
+      integer                     :: n_face
+      integer, allocatable        :: EV(:)
+      integer, allocatable        :: ET(:)
+      integer, allocatable        :: VE(:)
+      type(point_t), allocatable  :: VP(:)
+      real(RD), allocatable       :: VS(:,:)
+      type(vector_t), allocatable :: VV(:,:)
 
       @:CHECK_BOUNDS(SIZE(face_verts, 1), 3)
+
+      if (PRESENT(n_scalar)) then
+         n_scalar_ = n_scalar
+      else
+         n_scalar_ = 0
+      end if
+
+      if (PRESENT(n_vector)) then
+         n_vector_ = n_vector
+      else
+         n_vector_ = 0
+      end if
 
       ! Construct the mesh_t from the supplied face-vertex list
 
@@ -194,9 +214,17 @@ contains
 
       call from_array(vert_coords, VP)
 
+      ! Set up empty scalar and vector tables
+
+      allocate(VS(n_scalar_,n_vert))
+      VS = 0._RD
+
+      allocate(VV(n_vector_,n_vert))
+      VV = vector_t(0._RD, 0._RD, 0._RD)
+
       ! Create the mesh_t
 
-      mesh = mesh_t_data_(EV, ET, VE, VP)
+      mesh = mesh_t_data_(EV, ET, VE, VP, VS, VV)
 
       ! Finish
 
@@ -208,26 +236,35 @@ contains
 
    module procedure mesh_t_merge_
 
-      integer                    :: n_vert
-      integer                    :: n_face
-      integer                    :: n_edge
-      integer, allocatable       :: EV(:)
-      integer, allocatable       :: ET(:)
-      integer, allocatable       :: VE(:)
-      type(point_t), allocatable :: VP(:)
-      integer                    :: i
-      integer                    :: e1
-      integer                    :: e2
-      integer                    :: v1
-      integer                    :: v2
+      integer                     :: n_vert
+      integer                     :: n_face
+      integer                     :: n_edge
+      integer                     :: n_scalar
+      integer                     :: n_vector
+      integer, allocatable        :: EV(:)
+      integer, allocatable        :: ET(:)
+      integer, allocatable        :: VE(:)
+      type(point_t), allocatable  :: VP(:)
+      real(RD), allocatable       :: VS(:,:)
+      type(vector_t), allocatable :: VV(:,:)
+      integer                     :: i
+      integer                     :: e1
+      integer                     :: e2
+      integer                     :: v1
+      integer                     :: v2
 
-      @:ASSERT_DEBUG(SIZE(meshes) >= 1)
+      @:ASSERT_DEBUG(SIZE(meshes) >= 1, 'invalid dimension')
+
+      @:ASSERT_DEBUG(ALL(meshes%n_scalar == meshes(1)%n_scalar), 'invalid dimension')
+      @:ASSERT_DEBUG(ALL(meshes%n_vector == meshes(1)%n_vector), 'invalid dimension')
 
       ! Construct the mesh_t by merging meshes
 
       n_vert = SUM(meshes%n_vert)
       n_edge = SUM(meshes%n_edge)
       n_face = SUM(meshes%n_face)
+      n_scalar = meshes(1)%n_scalar
+      n_vector = meshes(1)%n_vector
 
       ! Set up concatenated tables
 
@@ -235,6 +272,8 @@ contains
       allocate(ET(n_edge))
       allocate(VE(n_vert))
       allocate(VP(n_vert))
+      allocate(VS(n_scalar,n_vert))
+      allocate(VV(n_vector,n_vert))
 
       mesh_loop: do i = 1, SIZE(meshes)
 
@@ -248,13 +287,17 @@ contains
          v2 = v1 + meshes(i)%n_vert - 1
 
          VE(v1:v2) = meshes(i)%VE + SUM(meshes(:i-1)%n_edge)
+
          VP(v1:v2) = meshes(i)%VP
+
+         VS(:,v1:v2) = meshes(i)%VS
+         VV(:,v1:v2) = meshes(i)%VV
 
       end do mesh_loop
 
       ! Create the mesh_t
 
-      mesh = mesh_t_data_(EV, ET, VE, VP)
+      mesh = mesh_t_data_(EV, ET, VE, VP, VS, VV)
 
       ! Finish
 

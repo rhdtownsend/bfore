@@ -23,7 +23,8 @@ module vector_m
       real(RD) :: z
    contains
       private
-      procedure, public     :: image
+      procedure             :: equals_
+      generic, public       :: operator(==) => equals_
       procedure             :: add_vector_vector_
       generic, public       :: operator(+) => add_vector_vector_
       procedure             :: sub_vector_vector_
@@ -33,6 +34,7 @@ module vector_m
       generic, public       :: operator(*) => mul_vector_scalar_, mul_scalar_vector_
       procedure             :: div_vector_scalar_
       generic, public       :: operator(/) => div_vector_scalar_
+      procedure, public     :: image
    end type vector_t
 
    ! Interfaces
@@ -41,31 +43,43 @@ module vector_m
 
       ! In vector_operate_sm
 
+      elemental module function equals_(self, other) result(equals)
+         implicit none (type, external)
+         class(vector_t), intent(in) :: self
+         type(vector_t), intent(in)  :: other
+         logical                     :: equals
+      end function equals_
+
       elemental module function add_vector_vector_(self, other) result(vector)
+         implicit none (type, external)
          class(vector_t), intent(in) :: self
          type(vector_t), intent(in)  :: other
          type(vector_t)              :: vector
       end function add_vector_vector_
 
       elemental module function sub_vector_vector_(self, other) result(vector)
+         implicit none (type, external)
          class(vector_t), intent(in) :: self
          type(vector_t), intent(in)  :: other
          type(vector_t)              :: vector
       end function sub_vector_vector_
 
       elemental module function mul_vector_scalar_(self, scalar) result(vector)
+         implicit none (type, external)
          class(vector_t), intent(in) :: self
          real(RD), intent(in)        :: scalar
          type(vector_t)              :: vector
       end function mul_vector_scalar_
 
       elemental module function mul_scalar_vector_(scalar, self) result(vector)
+         implicit none (type, external)
          real(RD), intent(in)        :: scalar
          class(vector_t), intent(in) :: self
          type(vector_t)              :: vector
       end function mul_scalar_vector_
 
       elemental module function div_vector_scalar_(self, scalar) result(vector)
+         implicit none (type, external)
          class(vector_t), intent(in) :: self
          real(RD), intent(in)        :: scalar
          type(vector_t)              :: vector
@@ -75,6 +89,7 @@ module vector_m
 
       impure elemental module function image(self, tform) result(vector)
          use transform_m
+         implicit none (type, external)
          class(vector_t), intent(in)   :: self
          type(transform_t), intent(in) :: tform
          type(vector_t)                :: vector
@@ -90,9 +105,9 @@ module vector_m
       module procedure cross_product_
    end interface cross_product
 
-   interface affine_sum
-      module procedure affine_sum_
-   end interface affine_sum
+   interface sum
+      module procedure sum_
+   end interface sum
 
    interface to_array
       #:for rank in range(1, RANK_MAX)
@@ -106,6 +121,10 @@ module vector_m
       #:endfor
    end interface from_array
 
+   interface reallocate
+      module procedure reallocate_vector_t_2_
+   end interface reallocate
+
    ! Accessibility
 
    private
@@ -113,9 +132,10 @@ module vector_m
    public :: vector_t
    public :: norm2
    public :: cross_product
-   public :: affine_sum
+   public :: sum
    public :: to_array
    public :: from_array
+   public :: reallocate
 
 contains
 
@@ -156,26 +176,22 @@ contains
 
    !****
 
-   function affine_sum_(vectors, weights) result(vector)
+   pure function sum_(vectors) result(vector)
 
       type(vector_t), intent(in) :: vectors(:)
-      real(RD), intent(in)       :: weights(:)
       type(vector_t)             :: vector
 
-      @:CHECK_BOUNDS(SIZE(weights), SIZE(vectors))
+      ! Evaluate the sum of the vectors
 
-      ! Evaluate the affine sum of the vectors. It is assumed (but not
-      ! checked!) that SUM(weights) = 1
-
-      vector%x = SUM(vectors%x*weights)
-      vector%y = SUM(vectors%y*weights)
-      vector%z = SUM(vectors%z*weights)
+      vector%x = SUM(vectors%x)
+      vector%y = SUM(vectors%y)
+      vector%z = SUM(vectors%z)
 
       ! Finish
 
       return
 
-   end function affine_sum_
+   end function sum_
 
    !****
 
@@ -233,4 +249,8 @@ contains
 
    #:endfor
 
- end module vector_m
+   !****
+
+   $:REALLOCATE('type(vector_t)', 'vector_t', 2)
+
+end module vector_m

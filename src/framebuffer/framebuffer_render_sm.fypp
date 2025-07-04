@@ -3,7 +3,7 @@
 
 #:include 'forum.inc'
 
-submodule (framebuffer_m) framebuffer_render_sm
+submodule(framebuffer_m) framebuffer_render_sm
 
    ! Uses
 
@@ -23,10 +23,13 @@ contains
 
    module procedure render
 
+      integer           :: v
+      integer           :: i
+      type(point_t)     :: points(mesh%n_vert)
+      real(RD)          :: scalars(mesh%n_scalar,mesh%n_vert)
+      type(vector_t)    :: vectors(mesh%n_vector,mesh%n_vert)
       type(transform_t) :: tform_camera
       type(transform_t) :: tform_pixel
-      integer           :: v
-      type(point_t)     :: P(mesh%n_vert)
       integer           :: f
       type(vector_t)    :: A
       integer           :: f_e
@@ -34,19 +37,36 @@ contains
       integer           :: v2
       integer           :: v3
 
-      ! Set up transformations
+      integer :: start, end, count
+
+      @:ASSERT_DEBUG(mesh%n_scalar == self%n_scalar, 'dimension mismatch')
+      @:ASSERT_DEBUG(mesh%n_vector== self%n_vector, 'dimension mismatch')
+
+      call SYSTEM_CLOCK(start, count)
+
+      ! Extract vertex data from the mesh
+
+      vert_loop: do v = 1, mesh%n_vert
+
+         points(v) = mesh%vert_point(v)
+
+         do i = 1, mesh%n_scalar
+            scalars(i,v) = mesh%vert_scalar(i, v)
+         end do
+
+         do i = 1, mesh%n_vector
+            vectors(i,v) = mesh%vert_vector(i, v)
+         end do
+
+      end do vert_loop
+
+      ! Apply transformations
 
       tform_camera = view%camera_transform()
       tform_pixel = view%pixel_transform(self%n_x, self%n_y)
 
-      ! Extract vertex points from the mesh, and transform to the
-      ! pixel system
-
-      vert_loop: do v = 1, mesh%n_vert
-         P(v) = mesh%vert_point(v)
-      end do vert_loop
-
-      P = P%image(tform_pixel)
+      points = points%image(tform_pixel)
+      vectors = vectors%image(tform_camera)
 
       ! Loop through faces of mesh, rendering each one
 
@@ -58,7 +78,8 @@ contains
          A = mesh%face_area(f)
          A = A%image(tform_camera)
 
-         ! Check for a forward-facing triangle
+         ! Check for a forward-facing triangle (i.e., backface
+         ! culling)
 
          if (A%z > 0._RD) then
 
@@ -70,11 +91,16 @@ contains
             v2 = mesh%edge_vert(mesh%edge_next(f_e))
             v3 = mesh%edge_vert(mesh%edge_prev(f_e))
 
-            call render_triangle(self, P([v1, v2, v3]), process_pixel, f)
+            call render_triangle(self, &
+               points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
 
          end if
 
       end do face_loop
+
+      call SYSTEM_CLOCK(end)
+
+      print *, 'render time:',REAL(end-start, RD)/count
 
       ! Finish
 
@@ -102,23 +128,27 @@ contains
       real(RD) :: EF(3)
       logical  :: inside
       real(RD) :: lambda(3)
-      real(RD) :: z
+      real(RD) :: depth
+      integer  :: i
 
-      @:CHECK_BOUNDS(SIZE(P), 3)
+      @:CHECK_BOUNDS(SIZE(points), 3)
 
-      ! Render a triangle with vertex points P(:,:) (in the
-      ! framebuffer system). The algorithm largely follows that
-      ! described by Pineda (1988). If process_pixel is present,
-      ! it is used to process the pixel (like a fragment shader);
-      ! then, origin must also be present
+      @:CHECK_BOUNDS(SIZE(scalars, 1), self%n_scalar)
+      @:CHECK_BOUNDS(SIZE(scalars, 2), 3)
+
+      @:CHECK_BOUNDS(SIZE(vectors, 1), self%n_vector)
+      @:CHECK_BOUNDS(SIZE(vectors, 2), 3)
+
+      ! Render a triangle. The algorithm largely follows that
+      ! described by Pineda (1988)
 
       ! Determine the pixel bounding box
 
-      i_x_min = MAX(FLOOR(MINVAL(P%x)), 1)
-      i_x_max = MIN(CEILING(MAXVAL(P%x)), self%n_x)
+      i_x_min = MAX(FLOOR(MINVAL(points%x)), 1)
+      i_x_max = MIN(CEILING(MAXVAL(points%x)), self%n_x)
 
-      i_y_min = MAX(FLOOR(MINVAL(P%y)), 1)
-      i_y_max = MIN(CEILING(MAXVAL(P%y)), self%n_y)
+      i_y_min = MAX(FLOOR(MINVAL(points%y)), 1)
+      i_y_max = MIN(CEILING(MAXVAL(points%y)), self%n_y)
 
       ! Check if the bounding box is null
 
@@ -126,13 +156,9 @@ contains
 
       ! Calculate quantities used in edge-function evaluation
 
-      !EF_a = P(2,[2, 3, 1]) - P(2,[3, 1, 2])
-      !EF_b = P(1,[3, 1, 2]) - P(1,[2, 3, 1])
-      !EF_c = P(1,[2, 3, 1])*P(2,[3, 1, 2]) - P(1,[3, 1, 2])*P(2,[2, 3, 1])
-
-      EF_a = P([2, 3, 1])%y - P([3, 1, 2])%y
-      EF_b = P([3, 1, 2])%x - P([2, 3, 1])%x
-      EF_c = P([2, 3, 1])%x*P([3, 1, 2])%y - P([3, 1, 2])%x*P([2, 3, 1])%y
+      EF_a = points([2, 3, 1])%y - points([3, 1, 2])%y
+      EF_b = points([3, 1, 2])%x - points([2, 3, 1])%x
+      EF_c = points([2, 3, 1])%x*points([3, 1, 2])%y - points([3, 1, 2])%x*points([2, 3, 1])%y
 
       ! Calculate (twice) the projected area of the triangle,
       ! returning if it is small (indicating an edge-on triangle)
@@ -173,19 +199,23 @@ contains
 
                ! Perform the depth test
 
-               z = DOT_PRODUCT(lambda, P%z)
+               depth = DOT_PRODUCT(lambda, points%z)
 
-               if (z > self%PZ(i_x,i_y)) then
+               if (depth > self%PD(i_x,i_y)) then
 
                   ! Store the depth
 
-                  self%PZ(i_x,i_y) = z
+                  self%PD(i_x,i_y) = depth
 
-                  ! Process the pixel
+                  ! Store the scalars and vectors
 
-                  if (PRESENT(process_pixel) .AND. PRESENT(origin)) then
-                     call process_pixel(i_x, i_y, lambda, origin)
-                  end if
+                  do i = 1, self%n_scalar
+                     self%PS(i,i_x,i_y) = SUM(scalars(i,:)*lambda)
+                  end do
+
+                  do i = 1, self%n_vector
+                     self%PV(i,i_x,i_y) = sum(vectors(i,:)*lambda)
+                  end do
 
                   ! Flag that at least one pixel on this scanline was
                   ! inside

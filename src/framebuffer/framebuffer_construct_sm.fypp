@@ -15,12 +15,22 @@ contains
 
    module procedure framebuffer_t_data_
 
+      @:CHECK_BOUNDS(SIZE(PS, 2), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PS, 3), SIZE(PD, 2))
+
+      @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PD, 2))
+
       ! Construct the framebuffer_t from the data
 
-      fbuff%PZ = PZ
+      fbuff%PD = PD
+      fbuff%PS = PS
+      fbuff%PV = PV
 
-      fbuff%n_x = SIZE(PZ, 1)
-      fbuff%n_y = SIZE(PZ, 2)
+      fbuff%n_scalar = SIZE(PS, 1)
+      fbuff%n_vector = SIZE(PV, 1)
+      fbuff%n_x = SIZE(PD, 1)
+      fbuff%n_y = SIZE(PD, 2)
 
       ! Finish
 
@@ -32,13 +42,35 @@ contains
 
    module procedure framebuffer_t_dims_
 
-      real(RD) :: PZ(n_x,n_y)
+      integer                     :: n_scalar_
+      integer                     :: n_vector_
+      real(RD)                    :: PD(n_x,n_y)
+      real(RD), allocatable       :: PS(:,:,:)
+      type(vector_t), allocatable :: PV(:,:,:)
+
+      if (PRESENT(n_scalar)) then
+         n_scalar_ = n_scalar
+      else
+         n_scalar_ = 0
+      end if
+
+      if (PRESENT(n_vector)) then
+         n_vector_ = n_vector
+      else
+         n_vector_ = 0
+      end if
 
       ! Construct the framebuffer_t from the dimensions
 
-      PZ = -HUGE(0._RD)
+      PD = -HUGE(0._RD)
 
-      fbuff = framebuffer_t_data_(PZ)
+      allocate(PS(n_scalar_,n_x,n_y))
+      PS = 0._RD
+
+      allocate(PV(n_vector_,n_x,n_y))
+      PV = vector_t(0._RD, 0._RD, 0._RD)
+
+      fbuff = framebuffer_t_data_(PD, PS, PV)
 
       ! Finish
 
@@ -50,30 +82,54 @@ contains
 
    module procedure framebuffer_t_merge_
 
-      integer              :: n_x
-      integer              :: n_y
-      integer              :: i
-      logical, allocatable :: mask(:,:)
+      integer                     :: n_x
+      integer                     :: n_y
+      integer                     :: n_scalar
+      integer                     :: n_vector
+      real(RD), allocatable       :: PD(:,:)
+      real(RD), allocatable       :: PS(:,:,:)
+      type(vector_t), allocatable :: PV(:,:,:)
+      logical, allocatable        :: mask(:,:)
+      integer                     :: i
+
+      @:ASSERT_DEBUG(SIZE(fbuffs) >= 1, 'invalid dimension')
+
+      @:ASSERT_DEBUG(ALL(fbuffs%n_x == fbuffs(1)%n_x), 'dimension mismatch')
+      @:ASSERT_DEBUG(ALL(fbuffs%n_y == fbuffs(1)%n_y), 'dimension mismatch')
+
+      @:ASSERT_DEBUG(ALL(fbuffs%n_scalar == fbuffs(1)%n_scalar), 'dimension mismatch')
+      @:ASSERT_DEBUG(ALL(fbuffs%n_vector == fbuffs(1)%n_vector), 'dimension mismatch')
 
       ! Construct the framebuffer_t by merging fbuffs
 
       n_x = MINVAL(fbuffs%n_x)
       n_y = MINVAL(fbuffs%n_y)
+      n_scalar = fbuffs(1)%n_scalar
+      n_vector = fbuffs(1)%n_vector
 
-      @:ASSERT_DEBUG(ALL(fbuffs%n_x == n_x), 'mismatched dimensions')
-      @:ASSERT_DEBUG(ALL(fbuffs%n_y == n_y), 'mismatched dimensions')
+      allocate(PD(n_x,n_y))
+      allocate(PS(n_scalar,n_x,n_y))
+      allocate(PV(n_vector,n_x,n_y))
 
-      fbuff = framebuffer_t(n_x, n_y)
+      PD = fbuffs(1)%PD
+      PS = fbuffs(1)%PS
+      PV = fbuffs(1)%PV
 
-      allocate(mask(n_x, n_y))
+      allocate(mask(n_x,n_y))
 
-      fbuff_loop: do i = 1, SIZE(fbuffs)
+      fbuff_loop: do i = 2, SIZE(fbuffs)
 
-         mask = fbuffs(i)%PZ > fbuff%PZ
+         mask = fbuffs(i)%PD > PD
 
-         fbuff%PZ = MERGE(fbuffs(i)%PZ, fbuff%PZ, mask)
+         PD = MERGE(fbuffs(i)%PD, PD, mask)
+         PS = MERGE(fbuffs(i)%PS, PS, SPREAD(mask, DIM=1, NCOPIES=n_scalar))
+         PV = MERGE(fbuffs(i)%PV, PV, SPREAD(mask, DIM=1, NCOPIES=n_vector))
 
       end do fbuff_loop
+
+      ! Create the fbuff_t
+
+      fbuff = framebuffer_t_data_(PD, PS, PV)
 
       ! Finish
 

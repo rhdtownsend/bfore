@@ -1,6 +1,6 @@
 ! Module  : mesh_m
 ! Purpose : Define mesh_t datatype, for representing triangular surface
-!           meshes using the compact half-edge paradigm
+!           meshes
 
 #:include 'forum.inc'
 
@@ -28,13 +28,17 @@ module mesh_m
 
    type :: mesh_t
       private
-      integer, allocatable       :: EV(:) ! Edge-vertex table
-      integer, allocatable       :: ET(:) ! Edge-twin table
-      integer, allocatable       :: VE(:) ! Vertex-edge table
-      type(point_t), allocatable :: VP(:) ! Vertex-point table
-      integer, public       :: n_vert
-      integer, public       :: n_edge
-      integer, public       :: n_face
+      integer, allocatable        :: EV(:)   ! Edge-vertex table
+      integer, allocatable        :: ET(:)   ! Edge-twin table
+      integer, allocatable        :: VE(:)   ! Vertex-edge table
+      type(point_t), allocatable  :: VP(:)   ! Vertex-point table
+      real(RD), allocatable       :: VS(:,:) ! Vertex-scalar table
+      type(vector_t), allocatable :: VV(:,:) ! Vertex-vector table
+      integer, public             :: n_scalar
+      integer, public             :: n_vector
+      integer, public             :: n_vert
+      integer, public             :: n_edge
+      integer, public             :: n_face
    contains
       private
       procedure         :: equals_
@@ -49,12 +53,14 @@ module mesh_m
       procedure, public :: face_vert
       procedure, public :: face_edge
       procedure, public :: flip_edge
-      procedure, public :: validate
       procedure, public :: refine_face
       procedure, public :: refine
       procedure, public :: refine_and_flip
       procedure, public :: vert_point
+      procedure, public :: vert_scalar
+      procedure, public :: vert_vector
       procedure, public :: face_area
+      procedure, public :: validate
       procedure, public :: euler_characteristic
       procedure, public :: read
       procedure, public :: write
@@ -71,20 +77,24 @@ module mesh_m
 
       ! In mesh_construct_sm
 
-      module function mesh_t_data_(EV, ET, VE, VP) result(mesh)
+      module function mesh_t_data_(EV, ET, VE, VP, VS, VV) result(mesh)
          implicit none (type, external)
-         integer, intent(in)       :: EV(:)
-         integer, intent(in)       :: ET(:)
-         integer, intent(in)       :: VE(:)
-         type(point_t), intent(in) :: VP(:)
-         type(mesh_t)              :: mesh
+         integer, intent(in)        :: EV(:)
+         integer, intent(in)        :: ET(:)
+         integer, intent(in)        :: VE(:)
+         type(point_t), intent(in)  :: VP(:)
+         real(RD), intent(in)       :: VS(:,:)
+         type(vector_t), intent(in) :: VV(:,:)
+         type(mesh_t)               :: mesh
       end function mesh_t_data_
 
-      module function mesh_t_face_verts_(face_verts, vert_coords) result(mesh)
+      module function mesh_t_face_verts_(face_verts, vert_coords, n_scalar, n_vector) result(mesh)
          implicit none (type, external)
-         integer, intent(in)  :: face_verts(:,:)
-         real(RD), intent(in) :: vert_coords(:,:)
-         type(mesh_t)         :: mesh
+         integer, intent(in)            :: face_verts(:,:)
+         real(RD), intent(in)           :: vert_coords(:,:)
+         integer, intent(in), optional  :: n_scalar
+         integer, intent(in), optional  :: n_vector
+         type(mesh_t)                   :: mesh
       end function mesh_t_face_verts_
 
       module function mesh_t_merge_(meshes) result(mesh)
@@ -96,6 +106,7 @@ module mesh_m
       ! In mesh_operate_sm
 
       module function equals_(self, other) result(equals)
+         implicit none (type, external)
          class(mesh_t), intent(in) :: self
          type(mesh_t), intent(in)  :: other
          logical                   :: equals
@@ -176,17 +187,17 @@ module mesh_m
          logical, intent(in), optional :: clockwise
       end subroutine flip_edge
 
-      module subroutine refine_face(self, f, v)
+      module subroutine refine_face(self, f, v_new)
          implicit none (type, external)
          class(mesh_t), intent(inout) :: self
          integer, intent(in)          :: f
-         integer, intent(out)         :: v
+         integer, intent(out)         :: v_new
       end subroutine refine_face
 
-      module subroutine refine(self, v)
+      module subroutine refine(self, v_new)
          implicit none (type, external)
          class(mesh_t), intent(inout)      :: self
-         integer, allocatable, intent(out) :: v(:)
+         integer, allocatable, intent(out) :: v_new(:)
       end subroutine refine
 
       module subroutine refine_and_flip(self, v, clockwise)
@@ -196,14 +207,32 @@ module mesh_m
          logical, intent(in), optional     :: clockwise
       end subroutine refine_and_flip
 
-      ! In mesh_geometry_sm
+      ! In mesh_vert_sm
 
-      module function vert_point(self, v) result(P)
+      module function vert_point(self, v) result(point)
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: v
-         type(point_t), pointer            :: P
+         type(point_t), pointer            :: point
       end function vert_point
+
+      module function vert_scalar(self, i, v) result(scalar)
+         implicit none (type, external)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: i
+         integer, intent(in)               :: v
+         real(RD), pointer                 :: scalar
+      end function vert_scalar
+
+      module function vert_vector(self, i, v) result(vector)
+         implicit none (type, external)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: i
+         integer, intent(in)               :: v
+         type(vector_t), pointer           :: vector
+      end function vert_vector
+
+      ! In mesh_face_sm
 
       module function face_area(self, f) result(A)
          implicit none (type, external)
@@ -213,6 +242,13 @@ module mesh_m
       end function face_area
 
       ! In mesh_topology_sm
+
+      module subroutine validate(self, stat, loc)
+         implicit none (type, external)
+         class(mesh_t), intent(in)      :: self
+         integer, intent(out)           :: stat
+         integer, intent(out), optional :: loc
+      end subroutine validate
 
       module function euler_characteristic(self) result(chi)
          implicit none (type, external)
@@ -244,110 +280,5 @@ module mesh_m
 
    public :: BOUNDARY_EDGE
    public :: mesh_t
-
-   ! Procedures
-
-contains
-
-   subroutine validate(self, stat, loc)
-
-      class(mesh_t), intent(inout)   :: self
-      integer, intent(out)           :: stat
-      integer, intent(out), optional :: loc
-
-      integer :: i
-      integer :: e(self%n_edge)
-      integer :: e_t(self%n_edge)
-      logical :: edge_mask(self%n_edge)
-      integer :: v(self%n_vert)
-      integer :: v_e(self%n_vert)
-
-      ! Validate the mesh
-
-      associate( &
-         EV => self%EV(:self%n_edge), &
-         ET => self%ET(:self%n_edge), &
-         VE => self%VE(:self%n_vert))
-
-         ! Check table values
-
-         call validate_cond_(EV >= 1 .AND. EV <= self%n_vert, &
-            STAT_INVALID_EDGE_VERT)
-         if (stat /= STAT_OK) return
-
-         call validate_cond_((ET >= 1 .AND. ET <= self%n_edge) .OR. ET == BOUNDARY_EDGE, &
-            STAT_INVALID_EDGE_TWIN)
-         if (stat /= STAT_OK) return
-
-         call validate_cond_(VE >= 1 .AND. VE <= self%n_edge, &
-            STAT_INVALID_VERT_EDGE)
-         if (stat /= STAT_OK) return
-
-         ! Check for degenerate faces
-
-         call validate_cond_(EV(1::3) /= EV(2::3) .AND. EV(1::3) /= EV(3::3) .AND. EV(2::3) /= EV(3::3), &
-            STAT_DEGENERATE_FACE)
-         if (stat /= STAT_OK) return
-
-      end associate
-
-      ! Check the traversal identities
-
-      e = [(i, i=1, self%n_edge)]
-      e_t = self%edge_twin(e)
-
-      edge_mask = e_t /= BOUNDARY_EDGE
-
-      call validate_cond_(self%edge_twin(PACK(e_t, MASK=edge_mask)) == &
-         PACK(e, MASK=edge_mask), &
-         STAT_MISMATCHED_EDGE_TWIN)
-      if (stat /= STAT_OK) return
-
-      v = [(i, i=1, self%n_vert)]
-      v_e = self%vert_edge(v)
-
-      call validate_cond_(self%edge_vert(v_e) == v, &
-         STAT_MISMATCHED_VERT_EDGE)
-      if (stat /= STAT_OK) return
-
-      ! Check the orientation constraint
-
-      call validate_cond_(self%edge_vert(self%edge_next(PACK(e_t, MASK=edge_mask))) == &
-         self%edge_vert(PACK(e, MASK=edge_mask)), &
-         STAT_MISORIENTED_EDGE_TWIN)
-      if (stat /= STAT_OK) return
-
-      ! Finish
-
-      return
-
-   contains
-
-      subroutine validate_cond_(cond, stat_on_err)
-
-         logical, intent(in) :: cond(:)
-         integer, intent(in) :: stat_on_err
-
-         ! Validate based on the cond array
-
-         if (.NOT. ALL(cond)) then
-
-            stat = stat_on_err
-            if (PRESENT(loc)) loc = FINDLOC(cond, .FALSE., DIM=1)
-
-         else
-
-            stat = STAT_OK
-            if (PRESENT(loc)) loc = 0
-
-         end if
-
-         ! Finish
-
-         return
-
-      end subroutine validate_cond_
-
-   end subroutine validate
 
 end module mesh_m

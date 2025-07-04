@@ -51,16 +51,31 @@ contains
 
       subroutine read_rev1_()
 
-         integer               :: n_x
-         integer               :: n_y
-         real(RD), allocatable :: PZ(:,:)
+         integer                     :: n_scalar
+         integer                     :: n_vector
+         integer                     :: n_x
+         integer                     :: n_y
+         real(RD), allocatable       :: PD(:,:)
+         real(RD), allocatable       :: PS(:,:,:)
+         type(vector_t), allocatable :: PV(:,:,:)
+         real(RD), allocatable       :: pixel_vector_comps(:,:,:,:)
 
          call hdf5io%read_attr('n_x', n_x)
          call hdf5io%read_attr('n_y', n_y)
+         call hdf5io%read_attr('n_scalar', n_scalar)
+         call hdf5io%read_attr('n_vector', n_vector)
 
-         call hdf5io%alloc_read_dset('pixel_depths', PZ)
+         call hdf5io%alloc_read_dset('pixel_depths', PD)
 
-         if (.NOT. ALL(SHAPE(PZ) == [n_x, n_y])) then
+         call hdf5io%alloc_read_dset('pixel_scalars', PS)
+
+         call hdf5io%alloc_read_dset('pixel_vectors', pixel_vector_comps)
+         call from_array(pixel_vector_comps, PV)
+
+         if (.NOT. &
+            ALL(SHAPE(PD) == [n_x, n_y]) .AND. &
+            ALL(SHAPE(PS) == [n_scalar, n_x, n_y]) .AND. &
+            ALL(SHAPE(PV) == [n_vector, n_x, n_y])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -71,7 +86,7 @@ contains
 
          select type(self)
          type is(framebuffer_t)
-            self = framebuffer_t_data_(PZ)
+            self = framebuffer_t_data_(PD, PS, PV)
          class default
             @:ABORT('invalid type')
          end select
@@ -90,6 +105,8 @@ contains
 
    module procedure write
 
+      real(RD), allocatable :: pixel_vector_comps(:,:,:,:)
+
       ! Write the framebuffer_t
 
       call hdf5io%write_attr('TYPE', 'framebuffer_t')
@@ -97,8 +114,15 @@ contains
 
       call hdf5io%write_attr('n_x', self%n_x)
       call hdf5io%write_attr('n_y', self%n_y)
+      call hdf5io%write_attr('n_scalar', self%n_scalar)
+      call hdf5io%write_attr('n_vector', self%n_vector)
 
-      call hdf5io%write_dset('pixel_depths', self%PZ)
+      call hdf5io%write_dset('pixel_depths', self%PD)
+
+      call hdf5io%write_dset('pixel_scalars', self%PS)
+
+      call to_array(self%PV, pixel_vector_comps)
+      call hdf5io%write_dset('pixel_vectors', pixel_vector_comps)
 
       ! Finish
 

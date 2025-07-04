@@ -406,7 +406,7 @@ contains
 
       print *, 'Checking mesh i/o'
 
-      mesh_out = sphere_mesh(2)
+      mesh_out = sphere_mesh(1._RD, 2)
 
       hdf5io = hdf5io_t('utest_mesh.h5', CREATE_FILE)
       call mesh_out%write(hdf5io, stat)

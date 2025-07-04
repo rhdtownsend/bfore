@@ -207,12 +207,14 @@ contains
       integer :: v1_e
       integer :: v2_e
       integer :: v3_e
+      integer :: i
 
       @:ASSERT(f >= 1 .AND. f <= self%n_face, 'invalid face')
 
       ! Refine the face by inserting a new vertex at the center. The
       ! faces are oriented so that their first edges are adjacent to
-      ! the (old) neighboring faces. The new vertex is returned in v
+      ! the (old) neighboring faces. The new vertex is returned in
+      ! v_new
 
       call expand_(self, self%n_vert+1, self%n_edge+6)
 
@@ -242,22 +244,22 @@ contains
       v2_e = self%vert_edge(v2)
       v3_e = self%vert_edge(v3)
 
-      v = self%n_vert + 1
+      v_new = self%n_vert + 1
 
       ! Create new edges
 
       ! Update the edge-vertex table
 
       self%EV(e2) = v2
-      self%EV(e3) = v
+      self%EV(e3) = v_new
 
       self%EV(e4) = v2
       self%EV(e5) = v3
-      self%EV(e6) = v
+      self%EV(e6) = v_new
 
       self%EV(e7) = v3
       self%EV(e8) = v1
-      self%EV(e9) = v
+      self%EV(e9) = v_new
 
       ! Update the edge-twin table
 
@@ -287,11 +289,19 @@ contains
          self%VE(v3) = e7
       end if
 
-      self%VE(v) = e3
+      self%VE(v_new) = e3
 
-      ! Update the vertex-point table
+      ! Update the vertex-point, -scalar and -vector tables
 
-      self%VP(v) = affine_sum(self%VP([v1, v2, v3]), [1._RD/3._RD, 1._RD/3._RD, 1._RD/3._RD])
+      self%VP(v_new) = affine_sum(self%VP([v1, v2, v3]), [1._RD/3._RD, 1._RD/3._RD, 1._RD/3._RD])
+
+      do i = 1, self%n_scalar
+         self%VS(i,v_new) = SUM(self%VS(i,[v1, v2, v3]))/3._RD
+      end do
+
+      do i = 1, self%n_vector
+         self%VV(i,v_new) = sum(self%VV(i,[v1, v2, v3]))/3._RD
+      end do
 
       ! Update the mesh dimensions
 
@@ -311,14 +321,14 @@ contains
 
       integer :: f
 
-      ! Refine all faces. The new vertices are returned in v
+      ! Refine all faces. The new vertices are returned in v_new
 
       call expand_(self, self%n_vert+self%n_face, self%n_edge+6*self%n_face)
 
-      allocate(v(self%n_face))
+      allocate(v_new(self%n_face))
 
       face_loop: do f = 1, self%n_face
-         call self%refine_face(f, v(f))
+         call self%refine_face(f, v_new(f))
       end do face_loop
 
       ! Finish
@@ -382,20 +392,17 @@ contains
       if (d_vert > mesh%n_vert) then
 
          call reallocate(mesh%VE, [d_vert])
-!         mesh%VE(mesh%n_vert+1:) = 0
-
          call reallocate(mesh%VP, [d_vert])
-!         mesh%VP(:,mesh%n_vert+1:) = 0._RD
+
+         call reallocate(mesh%VS, [mesh%n_scalar,d_vert])
+         call reallocate(mesh%VV, [mesh%n_vector,d_vert])
 
       end if
 
       if (d_edge > mesh%n_edge) then
 
          call reallocate(mesh%EV, [d_edge])
-!         mesh%EV(mesh%n_edge+1:) = 0
-
          call reallocate(mesh%ET, [d_edge])
-!         mesh%ET(mesh%n_edge+1:) = 0
 
       end if
 

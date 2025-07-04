@@ -1,9 +1,9 @@
 ! Submodule : mesh_io_sm
-! Purpose   : Input/output routines for mesh_t
+! Purpose   : Input/output for mesh_t
 
 #:include 'forum.inc'
 
-submodule (mesh_m) mesh_io_sm
+submodule(mesh_m) mesh_io_sm
 
    ! Uses
 
@@ -55,29 +55,45 @@ contains
 
       subroutine read_rev1_()
 
-         integer                    :: n_vert
-         integer                    :: n_edge
-         integer                    :: n_face
-         integer, allocatable       :: EV(:)
-         integer, allocatable       :: ET(:)
-         integer, allocatable       :: VE(:)
-         type(point_t), allocatable :: VP(:)
-         real(RD), allocatable      :: vert_coords(:,:)
+         integer                     :: n_vert
+         integer                     :: n_edge
+         integer                     :: n_face
+         integer                     :: n_scalar
+         integer                     :: n_vector
+         integer, allocatable        :: EV(:)
+         integer, allocatable        :: ET(:)
+         integer, allocatable        :: VE(:)
+         type(point_t), allocatable  :: VP(:)
+         real(RD), allocatable       :: VS(:,:)
+         type(vector_t), allocatable :: VV(:,:)
+         real(RD), allocatable       :: vert_point_coords(:,:)
+         real(RD), allocatable       :: vert_vector_comps(:,:,:)
 
          call hdf5io%read_attr('n_vert', n_vert)
          call hdf5io%read_attr('n_edge', n_edge)
          call hdf5io%read_attr('n_face', n_face)
+         call hdf5io%read_attr('n_scalar', n_scalar)
+         call hdf5io%read_attr('n_vector', n_vector)
 
          call hdf5io%alloc_read_dset('edge_verts', EV)
          call hdf5io%alloc_read_dset('edge_twins', ET)
          call hdf5io%alloc_read_dset('vert_edges', VE)
-         call hdf5io%alloc_read_dset('vert_coords', vert_coords)
+
+         call hdf5io%alloc_read_dset('vert_points', vert_point_coords)
+         call from_array(vert_point_coords, VP)
+
+         call hdf5io%alloc_read_dset('vert_scalars', VS)
+
+         call hdf5io%alloc_read_dset('vert_vectors', vert_vector_comps)
+         call from_array(vert_vector_comps, VV)
 
          if (.NOT. &
             ALL(SHAPE(EV) == [n_edge]) .AND. &
             ALL(SHAPE(ET) == [n_edge]) .AND. &
             ALL(SHAPE(VE) == [n_vert]) .AND. &
-            ALL(SHAPE(vert_coords) == [3,n_vert])) then
+            ALL(SHAPE(VP) == [n_vert]) .AND. &
+            ALL(SHAPE(VS) == [n_scalar, n_vert]) .AND. &
+            ALL(SHAPE(VV) == [n_vector, n_vert])) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -86,11 +102,9 @@ contains
             end if
          end if
 
-         call from_array(vert_coords, VP)
-
          select type(self)
          type is(mesh_t)
-            self = mesh_t_data_(EV, ET, VE, VP)
+            self = mesh_t_data_(EV, ET, VE, VP, VS, VV)
          class default
             @:ABORT('invalid type')
          end select
@@ -109,7 +123,8 @@ contains
 
    module procedure write
 
-      real(RD), allocatable :: vert_coords(:,:)
+      real(RD), allocatable :: vert_point_coords(:,:)
+      real(RD), allocatable :: vert_vector_comps(:,:,:)
 
       ! Write the mesh_t
 
@@ -119,13 +134,20 @@ contains
       call hdf5io%write_attr('n_vert', self%n_vert)
       call hdf5io%write_attr('n_edge', self%n_edge)
       call hdf5io%write_attr('n_face', self%n_face)
+      call hdf5io%write_attr('n_scalar', self%n_scalar)
+      call hdf5io%write_attr('n_vector', self%n_vector)
 
       call hdf5io%write_dset('edge_verts', self%EV)
       call hdf5io%write_dset('edge_twins', self%ET)
       call hdf5io%write_dset('vert_edges', self%VE)
 
-      call to_array(self%VP, vert_coords)
-      call hdf5io%write_dset('vert_coords', vert_coords)
+      call to_array(self%VP, vert_point_coords)
+      call hdf5io%write_dset('vert_points', vert_point_coords)
+
+      call hdf5io%write_dset('vert_scalars', self%VS)
+
+      call to_array(self%VV, vert_vector_comps)
+      call hdf5io%write_dset('vert_vectors', vert_vector_comps)
 
       ! Finish
 

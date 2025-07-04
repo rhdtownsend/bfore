@@ -33,9 +33,11 @@ module mesh_primitives_m
 
 contains
 
-   function one_face_mesh() result(mesh)
+   function one_face_mesh(n_scalar, n_vector) result(mesh)
 
-      type(mesh_t) :: mesh
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
 
       integer  :: face_verts(3,1)
       real(RD) :: vert_coords(3,3)
@@ -48,7 +50,7 @@ contains
       vert_coords(:,2) = [0._RD, 1._RD, 0._RD]
       vert_coords(:,3) = [0._RD, 0._RD, 1._RD]
 
-      mesh = mesh_t(face_verts, vert_coords)
+      mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
 
       ! Finish
 
@@ -58,9 +60,11 @@ contains
 
    !****
 
-   function two_face_mesh() result(mesh)
+   function two_face_mesh(n_scalar, n_vector) result(mesh)
 
-      type(mesh_t) :: mesh
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
 
       integer  :: face_verts(3,2)
       real(RD) :: vert_coords(3,4)
@@ -75,7 +79,7 @@ contains
       vert_coords(:,3) = [0._RD, 0._RD, 1._RD]
       vert_coords(:,4) = [1._RD, 1._RD, -1._RD]
 
-      mesh = mesh_t(face_verts, vert_coords)
+      mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
 
       ! Finish
 
@@ -85,9 +89,11 @@ contains
 
    !***
 
-   function tetrahedron_mesh() result(mesh)
+   function tetrahedron_mesh(n_scalar, n_vector) result(mesh)
 
-      type(mesh_t) :: mesh
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
 
       real(RD), parameter :: SQRT_1_9 = SQRT(1._RD/9._RD)
       real(RD), parameter :: SQRT_2_9 = SQRT(2._RD/9._RD)
@@ -110,7 +116,7 @@ contains
       vert_coords(:,3) = [-SQRT_2_9, SQRT_6_9, -SQRT_1_9]
       vert_coords(:,4) = [0._RD, 0._RD, 1._RD]
 
-      mesh = mesh_t(face_verts, vert_coords)
+      mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
 
       ! Finish
 
@@ -120,9 +126,11 @@ contains
 
    !****
 
-   function icosahedron_mesh() result(mesh)
+   function icosahedron_mesh(n_scalar, n_vector) result(mesh)
 
-      type(mesh_t) :: mesh
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
 
       real(RD), parameter :: PHI = (SQRT(5._RD) + 1._RD)/2._RD
 
@@ -166,7 +174,7 @@ contains
       vert_coords(:,11) = [-phi,  0._RD, -1._RD]
       vert_coords(:,12) = [-phi,  0._RD,  1._RD]
 
-      mesh = mesh_t(face_verts, vert_coords)
+      mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
 
       ! Finish
 
@@ -176,22 +184,25 @@ contains
 
    !****
 
-   function sphere_mesh(n) result(mesh)
+   function sphere_mesh(radius, n_refine, n_scalar, n_vector) result(mesh)
 
-      integer, intent(in) :: n
-      type(mesh_t)        :: mesh
+      real(RD), intent(in)          :: radius
+      integer, intent(in)           :: n_refine
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
 
       integer              :: i
       integer, allocatable :: v(:)
 
-      ! Create a unit-sphere mesh_t by refining an icosahedron n times
-      ! (pushing out to r=1 after each refine)
+      ! Create a unit-sphere mesh_t by refining an icosahedron
+      ! n_refine times (pushing out to r=radius after each refine)
 
-      mesh = icosahedron_mesh()
+      mesh = icosahedron_mesh(n_scalar, n_vector)
 
-      call push_out_([(i, i=1,12)])
+      call push_out_([(i, i=1,mesh%n_vert)])
 
-      refline_loop: do i = 1, n
+      refline_loop: do i = 1, n_refine
          call mesh%refine_and_flip(v)
          call push_out_(v)
       end do refline_loop
@@ -206,15 +217,16 @@ contains
 
          integer, intent(in) :: v(:)
 
+         type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
+
          integer                 :: j
          type(point_t), pointer  :: point
-         type(point_t)           :: origin = point_t(0._RD, 0._RD, 0._RD)
-         real(RD)                :: radius
+         real(RD)                :: radius_point
 
          do j = 1, SIZE(v)
             point => mesh%vert_point(v(j))
-            radius = norm2(point - origin)
-            point = affine_sum([point, origin], [1./radius, 1._RD-1/radius])
+            radius_point = norm2(point - ORIGIN)
+            point = affine_sum([point, ORIGIN], [radius/radius_point, 1._RD-radius/radius_point])
          end do
 
       end subroutine push_out_

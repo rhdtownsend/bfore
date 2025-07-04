@@ -3,7 +3,7 @@
 
 #:include 'forum.inc'
 
-submodule(point_m) point_transform_sm
+submodule (point_m) point_transform_sm
 
    ! No implicit typing
 
