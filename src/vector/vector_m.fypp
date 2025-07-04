@@ -9,6 +9,8 @@ module vector_m
 
    use forum_m
 
+   use transform_m
+
    use ISO_FORTRAN_ENV
 
    ! No implicit typing
@@ -88,7 +90,6 @@ module vector_m
       ! In vector_transform_sm
 
       impure elemental module function image(self, tform) result(vector)
-         use transform_m
          implicit none (type, external)
          class(vector_t), intent(in)   :: self
          type(transform_t), intent(in) :: tform

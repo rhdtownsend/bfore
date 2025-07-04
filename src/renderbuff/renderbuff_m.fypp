@@ -10,6 +10,9 @@ module renderbuff_m
 
    use forum_m
 
+   use mesh_m
+   use view_m
+   use point_m
    use vector_m
 
    use ISO_FORTRAN_ENV
@@ -116,8 +119,6 @@ module renderbuff_m
       ! In renderbuff_render_sm
 
       module subroutine render(self, mesh, view)
-         use mesh_m
-         use view_m
          implicit none (type, external)
          class(renderbuff_t), intent(inout) :: self
          type(mesh_t), intent(in)           :: mesh
@@ -125,7 +126,6 @@ module renderbuff_m
       end subroutine render
 
       module subroutine render_triangle(self, points, scalars, vectors)
-         use point_m
          implicit none (type, external)
          class(renderbuff_t), intent(inout) :: self
          type(point_t), intent(in)          :: points(:)
