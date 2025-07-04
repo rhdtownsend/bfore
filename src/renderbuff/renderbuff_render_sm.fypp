@@ -46,8 +46,6 @@ contains
 
       ! Extract vertex data from the mesh
 
-      print *,'extract verts'
-
       vert_loop: do v = 1, mesh%n_vert
 
          points(v) = mesh%vert_point(v)
@@ -64,36 +62,21 @@ contains
 
       ! Apply transformations
 
-      print *,'transform'
-
       tform_camera = view%camera_transform()
-      print *,'made cam tform',self%n_x,self%n_y
-
       tform_pixel = view%pixel_transform(self%n_x, self%n_y)
 
-      print *,'made tforms'
-
-      print *,'tform point'
       points = points%image(tform_pixel)
-
-      print *,'tform vect'
       vectors = vectors%image(tform_camera)
 
       ! Loop through faces of mesh, rendering each one
 
-      print *,'go faces'
-
       face_loop: do f = 1, mesh%n_face
-
-         print *,f
 
          ! Get the face area vector, and transform to the camera
          ! system
 
          A = mesh%face_area(f)
          A = A%image(tform_camera)
-
-         print *,f,A
 
          ! Cull back-faces
 
@@ -107,14 +90,10 @@ contains
          v2 = mesh%edge_vert(mesh%edge_next(f_e))
          v3 = mesh%edge_vert(mesh%edge_prev(f_e))
 
-         print *,v1,v2,v3
-
          call render_triangle(self, &
             points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
 
       end do face_loop
-
-      print *,'done faces'
 
       call SYSTEM_CLOCK(end)
 
