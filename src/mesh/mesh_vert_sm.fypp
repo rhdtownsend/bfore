@@ -1,0 +1,67 @@
+! Submodule : mesh_vert_sm
+! Purpose   : Vertex routines for mesh_t
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_vert_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure vert_point
+
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vert')
+
+      ! Get the point associated with vertex v. Can also be used to
+      ! set the point
+
+      point => self%VP(v)
+
+      ! Finish
+
+      return
+
+   end procedure vert_point
+
+   !****
+
+   module procedure vert_scalar
+
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n_scalar, 'invalid scalar')
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vert')
+
+      ! Get the i'th scalar associated with vertex v. Can also be used
+      ! to set the scalar
+
+      scalar => self%VS(i,v)
+
+      ! Finish
+
+      return
+
+   end procedure vert_scalar
+
+   !****
+
+   module procedure vert_vector
+
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n_vector, 'invalid vector')
+      @:ASSERT_DEBUG(v >= 1 .AND. v <= self%n_vert, 'invalid vert')
+
+      ! Get the i'th vector associated with vertex v. Can also be used
+      ! to set the vector
+
+      vector => self%VV(i,v)
+
+      ! Finish
+
+      return
+
+   end procedure vert_vector
+
+end submodule mesh_vert_sm

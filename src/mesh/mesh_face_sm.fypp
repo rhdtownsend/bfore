@@ -1,0 +1,53 @@
+! Submodule : mesh_face_sm
+! Purpose   : Face routines for mesh_t
+
+#:include 'forum.inc'
+
+submodule (mesh_m) mesh_face_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure face_area
+
+      integer                 :: f_e
+      integer                 :: v1
+      integer                 :: v2
+      integer                 :: v3
+      type(point_t), pointer  :: point1
+      type(point_t), pointer  :: point2
+      type(point_t), pointer  :: point3
+
+      ! Get the area vector of face f
+
+      f_e = self%face_edge(f)
+
+      print *,'face edge', f, f_e, self%n_edge
+
+      v1 = self%edge_vert(f_e)
+      print *,'got v1', v1, self%n_vert, self%edge_next(f_e)
+      v2 = self%edge_vert(self%edge_next(f_e))
+      print *,'got v2', v2
+      v3 = self%edge_vert(self%edge_prev(f_e))
+      print *,'got v3', v3
+
+      print *,'face verts', f, v1, v2, v3
+
+      point1 => self%vert_point(v1)
+      point2 => self%vert_point(v2)
+      point3 => self%vert_point(v3)
+
+      A = 0.5_RD*cross_product(point2-point1, point3-point1)
+
+      ! Finish
+
+      return
+
+   end procedure face_area
+
+end submodule mesh_face_sm
