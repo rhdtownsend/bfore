@@ -27,16 +27,9 @@ contains
 
       f_e = self%face_edge(f)
 
-      print *,'face edge', f, f_e, self%n_edge
-
       v1 = self%edge_vert(f_e)
-      print *,'got v1', v1, self%n_vert, self%edge_next(f_e)
       v2 = self%edge_vert(self%edge_next(f_e))
-      print *,'got v2', v2
       v3 = self%edge_vert(self%edge_prev(f_e))
-      print *,'got v3', v3
-
-      print *,'face verts', f, v1, v2, v3
 
       point1 => self%vert_point(v1)
       point2 => self%vert_point(v2)
