@@ -1,0 +1,68 @@
+! Module  : star_surface_m
+! Purpose : Define abstract star_surface_t type, for representing stellar surfaces defined
+!           by radius(theta,phi) and other parameters
+
+#:include 'forum.inc'
+
+module star_surface_m
+
+   ! Uses
+
+   use polar_surface_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, abstract, extends(polar_surface_t) :: star_surface_t
+   contains
+      private
+      procedure(temperature), deferred, public :: temperature
+      procedure(gravity), deferred, public     :: gravity
+      procedure(velocity), deferred, public    :: velocity
+   end type star_surface_t
+
+   ! Interfaces
+
+   abstract interface
+
+      function temperature(self, theta, phi) result(T)
+         use forum_m
+         import star_surface_t
+         class(star_surface_t), intent(in) :: self
+         real(RD), intent(in)              :: theta
+         real(RD), intent(in)              :: phi
+         real(RD)                          :: T
+      end function temperature
+
+      function gravity(self, theta, phi) result(G)
+         use forum_m
+         use vector_m
+         import star_surface_t
+         class(star_surface_t), intent(in) :: self
+         real(RD), intent(in)              :: theta
+         real(RD), intent(in)              :: phi
+         type(vector_t)                    :: G
+      end function gravity
+
+      function velocity(self, theta, phi) result(V)
+         use forum_m
+         use vector_m
+         import star_surface_t
+         class(star_surface_t), intent(in) :: self
+         real(RD), intent(in)              :: theta
+         real(RD), intent(in)              :: phi
+         type(vector_t)                    :: V
+      end function velocity
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: star_surface_t
+
+end module star_surface_m

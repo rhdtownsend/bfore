@@ -1,0 +1,56 @@
+! Module  : sphere_surface_m
+! Purpose : Define sphere_surface_t datatype, representing spherical
+!           surfaces
+
+#:include 'forum.inc'
+
+module sphere_surface_m
+
+   ! Uses
+
+   use forum_m
+
+   use polar_surface_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(polar_surface_t) :: sphere_surface_t
+      private
+      real(RD), public :: r
+   contains
+      private
+      procedure, public :: radius
+   end type sphere_surface_t
+
+   ! Accessibility
+
+   private
+
+   public :: sphere_surface_t
+
+   ! Procedures
+
+contains
+
+   function radius(self, theta, phi) result(r)
+
+      class(sphere_surface_t), intent(in) :: self
+      real(RD), intent(in)                :: theta
+      real(RD), intent(in)                :: phi
+      real(RD)                            :: r
+
+      ! Evaluate the radius at (theta, phi)
+
+      r = self%r
+
+      ! Finish
+
+      return
+
+   end function radius
+
+end module sphere_surface_m

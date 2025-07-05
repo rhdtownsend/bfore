@@ -1,0 +1,74 @@
+! Module  : polar_surface_m
+! Purpose : Define abstract polar_surface_t type, for representing surfaces defined
+!           by radius(theta,phi)
+
+#:include 'forum.inc'
+
+module polar_surface_m
+
+   ! Uses
+
+   use forum_m
+
+   use point_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, abstract :: polar_surface_t
+   contains
+      private
+      procedure(radius), deferred, public :: radius
+      procedure, public                   :: point
+   end type polar_surface_t
+
+   ! Interfaces
+
+   abstract interface
+
+      function radius(self, theta, phi) result(r)
+         use forum_m
+         import polar_surface_t
+         class(polar_surface_t), intent(in) :: self
+         real(RD), intent(in)               :: theta
+         real(RD), intent(in)               :: phi
+         real(RD)                           :: r
+      end function radius
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: polar_surface_t
+
+   ! Procedures
+
+contains
+
+   function point(self, theta, phi)
+
+      class(polar_surface_t), intent(in) :: self
+      real(RD), intent(in)               :: theta
+      real(RD), intent(in)               :: phi
+      type(point_t)                      :: point
+
+      real(RD) :: r
+
+      ! Evaluate a point on the surface at (theta,phi)
+
+      r = self%radius(theta, phi)
+
+      point = point_t(r*SIN(theta)*COS(phi), r*SIN(theta)*SIN(phi), r*COS(theta))
+
+      ! Finish
+
+      return
+
+   end function point
+
+end module polar_surface_m

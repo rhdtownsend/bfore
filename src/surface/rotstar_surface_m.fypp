@@ -1,0 +1,148 @@
+! Module  : rotstar_surface_m
+! Purpose : Define rotstar_surface_t type, for representing rotating stellar
+!           surfaces in the Roche approximation
+
+#:include 'forum.inc'
+
+module rotstar_surface_m
+
+   ! Uses
+
+   use forum_m
+
+   use star_surface_m
+   use vector_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(star_surface_t) :: rotstar_surface_t
+      private
+      real(RD), public :: M
+      real(RD), public :: R_pole
+      real(RD), public :: T_pole
+      real(RD), public :: omega
+   contains
+      private
+      procedure, public :: radius
+      procedure, public :: temperature
+      procedure, public :: gravity
+      procedure, public :: velocity
+   end type rotstar_surface_t
+
+   ! Accessibility
+
+   private
+
+   public :: rotstar_surface_t
+
+   ! Procedures
+
+contains
+
+   function radius(self, theta, phi) result(r)
+
+      class(rotstar_surface_t), intent(in) :: self
+      real(RD), intent(in)                 :: theta
+      real(RD), intent(in)                 :: phi
+      real(RD)                             :: r
+
+      real(RD) :: omega_stheta
+
+      ! Evaluate the radius at (theta,phi)
+
+      omega_stheta = self%omega*SIN(theta)
+
+      if (ABS(omega_stheta) > EPSILON(0._RD)) then
+         r = self%R_pole*3._RD*COS((PI + ACOS(omega_stheta))/3._RD)/omega_stheta
+      else
+         r = self%R_pole
+      end if
+
+      ! Finish
+
+      return
+
+   end function radius
+
+   !****
+
+   function temperature(self, theta, phi) result(T)
+
+      class(rotstar_surface_t), intent(in) :: self
+      real(RD), intent(in)                 :: theta
+      real(RD), intent(in)                 :: phi
+      real(RD)                             :: T
+
+      real(RD) :: g
+
+      ! Evaluate the surface effective temperature at (theta,phi),
+      ! using von Zeipel's law for radiative atmospheres
+
+      g = NORM2(self%gravity(theta, 0._RD))
+
+      T = self%T_pole*(g/(G_GRAVITY*self%M/self%R_pole**2))**0.25_RD
+
+      ! Finish
+
+      return
+
+   end function temperature
+
+   !****
+
+   function gravity(self, theta, phi) result(G)
+
+      class(rotstar_surface_t), intent(in) :: self
+      real(RD), intent(in)                 :: theta
+      real(RD), intent(in)                 :: phi
+      type(vector_t)                       :: G
+
+      real(RD)       :: r
+      type(vector_t) :: G_grav
+      type(vector_t) :: G_cent
+
+      ! Evaluate the gravity vector at (theta,phi)
+
+      r = self%radius(theta, phi)
+
+      G_grav = -G_GRAVITY*self%M/r**2 * vector_t(SIN(theta)*COS(phi), SIN(theta)*SIN(phi), COS(theta))
+      G_cent = (8._RD*G_GRAVITY*self%M/(27._RD*self%R_pole**3)) * self%omega**2 * r * &
+         vector_t(SIN(theta)*COS(phi), SIN(theta)*SIN(phi), 0._RD)
+
+      G = G_grav + G_cent
+
+      ! Finish
+
+      return
+
+   end function gravity
+
+   !****
+
+   function velocity(self, theta, phi) result(V)
+
+      class(rotstar_surface_t), intent(in) :: self
+      real(RD), intent(in)                 :: theta
+      real(RD), intent(in)                 :: phi
+      type(vector_t)                       :: V
+
+      real(RD) :: r
+
+      ! Evaluate the velocity vector at (theta, phi)
+
+      r = self%radius(theta, phi)
+
+      V = SQRT(8._RD*G_GRAVITY*self%M/(27._RD*self%R_pole**3)) * self%omega * r * &
+         vector_t(-SIN(theta)*SIN(phi), SIN(theta)*COS(phi), 0._RD)
+
+      ! Finish
+
+      return
+
+   end function velocity
+
+end module rotstar_surface_m

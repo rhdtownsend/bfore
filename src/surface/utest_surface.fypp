@@ -1,0 +1,93 @@
+! Program : utest_surface
+! Purpose : Unit tests for surface_m and subtypes
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_surface
+
+   ! Uses
+
+   use forum_m
+
+   use rotstar_surface_m
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Run the tests
+
+   call test_rotstar_surface()
+
+   ! Finish
+
+contains
+
+   subroutine test_rotstar_surface()
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      real(RD), parameter :: M = M_SUN
+      real(RD), parameter :: R_POLE = R_SUN
+      real(RD), parameter :: T_POLE = 5777._RD
+      real(RD), parameter :: G_POLE = G_GRAVITY*M/R_POLE**2
+      real(RD), parameter :: V_CRIT = SQRT(2._RD*G_POLE*R_POLE/3._RD)
+
+      type(rotstar_surface_t) :: surf
+      type(vector_t)          :: vector
+
+      print *, 'Checking rotstar_surface functionality'
+
+      surf = rotstar_surface_t(M, R_POLE, T_POLE, 0._RD)
+
+      @:CHECK(ABS(surf%radius(0._RD, 0._RD)/R_POLE - 1._RD) < TOL, 'non-rotating polar radius')
+      @:CHECK(ABS(surf%temperature(0._RD, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'non-rotating polar temperature')
+
+      vector = vector_t(0._RD, 0._RD, -1._RD)
+      @:CHECK(norm2(surf%gravity(0._RD, 0._RD)/G_POLE - vector) < TOL, 'non-rotating polar gravity')
+
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      @:CHECK(norm2(surf%velocity(0._RD, 0._RD)/V_CRIT - vector) < TOL, 'non-rotating polar velocity')
+
+      @:CHECK(ABS(surf%radius(HALFPI, 0._RD)/R_POLE - 1._RD) < TOL, 'non-rotating equatorial temperature')
+      @:CHECK(ABS(surf%temperature(HALFPI, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'non-rotating equatorial temperature')
+
+      vector = vector_t(-1._RD, 0._RD, 0._RD)
+      @:CHECK(norm2(surf%gravity(HALFPI, 0._RD)/G_POLE - vector) < TOL, 'non-rotating equatorial gravity')
+
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      @:CHECK(norm2(surf%velocity(HALFPI, 0._RD)/V_CRIT - vector) < TOL, 'non-rotating equatorial velocity')
+
+      !
+
+      surf = rotstar_surface_t(M, R_POLE, T_POLE, 1._RD)
+
+      @:CHECK(ABS(surf%radius(0._RD, 0._RD)/R_POLE - 1._RD) < TOL, 'critically-rotating polar radius')
+      @:CHECK(ABS(surf%temperature(0._RD, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'critically-rotating polar temperature')
+
+      vector = vector_t(0._RD, 0._RD, -1._RD)
+      @:CHECK(norm2(surf%gravity(0._RD, 0._RD)/G_POLE - vector) < TOL, 'critically-rotating polar gravity')
+
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      @:CHECK(norm2(surf%velocity(0._RD, 0._RD)/V_CRIT - vector) < TOL, 'critically-rotating polar velocity')
+
+      @:CHECK(ABS(surf%radius(HALFPI, 0._RD)/R_POLE - 1.5_RD) < TOL, 'critically-rotating equatorial radius')
+      @:CHECK(ABS(surf%temperature(HALFPI, 0._RD)/T_POLE - 0._RD) < TOL**0.25, 'critically-rotating equatorial temperature')
+
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      @:CHECK(norm2(surf%gravity(HALFPI, 0._RD)/G_POLE - vector) < TOL, 'critically-rotating equatorial gravity')
+
+      vector = vector_t(0._RD, 1._RD, 0._RD)
+      @:CHECK(norm2(surf%velocity(HALFPI, 0._RD)/V_CRIT - vector) < TOL, 'critically-rotating equatorial velocity')
+
+      ! Finish
+
+      return
+
+   end subroutine test_rotstar_surface
+
+end program utest_surface
