@@ -1,0 +1,67 @@
+! Program : utest_vector
+! Purpose : Unit tests for vector_m
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_vector
+
+   ! Uses
+
+   use forum_m
+
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Run the tests
+
+   call test_arithmetic()
+
+   ! Finish
+
+contains
+
+   subroutine test_arithmetic()
+
+      type(vector_t) :: vector_a
+      type(vector_t) :: vector_b
+      type(vector_t) :: vector
+
+      print *, 'Checking vector arithmetic'
+
+      vector_a = vector_t(0._RD, 1._RD, 2._RD)
+      vector_b = vector_t(1._RD, 2._RD, 3._RD)
+
+      vector = vector_t(1._RD, 3._RD, 5._RD)
+      @:CHECK(vector_a + vector_b == vector, 'addition (a)')
+      @:CHECK(vector_b + vector_a == vector, 'addition (b)')
+
+      vector = vector_t(-1._RD, -1._RD, -1._RD)
+      @:CHECK(vector_a - vector_b == vector, 'subtraction (a)')
+
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      @:CHECK(vector_b - vector_a == vector, 'subtraction (b)')
+
+      vector = vector_t(0._RD, -1._RD, -2._RD)
+      @:CHECK(-vector_a == vector, 'negation')
+
+      vector = vector_t(0._RD, 0.5_RD, 1._RD)
+      @:CHECK(vector_a/2._RD == vector, 'scalar division')
+
+      vector = vector_t(-1._RD, 2._RD, -1._RD)
+      @:CHECK(cross_product(vector_a, vector_b) == vector, 'cross_product')
+
+      @:CHECK(norm2(vector_a) == sqrt(5._RD), 'norm')
+
+      ! Finish
+
+      return
+
+   end subroutine test_arithmetic
+
+end program utest_vector

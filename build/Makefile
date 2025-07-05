@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_mesh utest_renderbuff
+   BIN_TARGETS += utest_vector utest_mesh utest_renderbuff
 endif
 
 # Source file lists & related variables
@@ -29,8 +29,13 @@ mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_modify_
 renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_operate_sm.fypp \
                   renderbuff_render_sm.fypp renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_io_sm.fypp
-other_SRCS = transform_m.fypp stat_m.fypp file_m.fypp math_m.fypp
-all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(other_SRCS)
+transform_SRCS = transform_m.fypp
+other_SRCS = stat_m.fypp file_m.fypp math_m.fypp
+all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(transform_SRCS) $(other_SRCS)
+
+utest_vector_SRCS = utest_vector.fypp $(vector_SRCS) $(transform_SRCS)
+utest_vector_USES = $(utest_vector_SRCS)
+utest_vector_LIBS =
 
 utest_mesh_SRCS = utest_mesh.fypp $(all_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
