@@ -1,0 +1,57 @@
+! Program : utest_point
+! Purpose : Unit tests for point_m
+
+#:include 'forum.inc'
+#:include 'utest.inc'
+
+program utest_point
+
+   ! Uses
+
+   use forum_m
+
+   use point_m
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Run the tests
+
+   call test_arithmetic()
+
+   ! Finish
+
+contains
+
+   subroutine test_arithmetic()
+
+      type(point_t)  :: point_a
+      type(point_t)  :: point_b
+      type(vector_t) :: vector
+
+      print *, 'Checking point arithmetic'
+
+      point_a = point_t(0._RD, 1._RD, 2._RD)
+      point_b = point_t(1._RD, 2._RD, 3._RD)
+
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      @:CHECK(point_a + vector == point_b, 'addition (a)')
+      @:CHECK(vector + point_a == point_b, 'addition (b)')
+
+     vector = vector_t(-1._RD, -1._RD, -1._RD)
+      @:CHECK(point_a - point_b == vector, 'subtraction (a)')
+
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      @:CHECK(point_b - point_a == vector, 'subtraction (b)')
+
+      ! Finish
+
+      return
+
+   end subroutine test_arithmetic
+
+end program utest_point

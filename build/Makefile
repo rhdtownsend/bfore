@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_vector utest_mesh utest_renderbuff utest_surface
+   BIN_TARGETS += utest_vector utest_point utest_mesh utest_renderbuff utest_surface
 endif
 
 # Source file lists & related variables
@@ -22,8 +22,8 @@ endif
 # xxx_USES = source files providing modules USE'd by xxx
 # xxx_LIBS = library files required to link xxx
 
-point_SRCS = point_m.fypp point_operate_sm.fypp point_transform_sm.fypp point_array_sm.fypp
 vector_SRCS = vector_m.fypp vector_operate_sm.fypp vector_transform_sm.fypp vector_array_sm.fypp
+point_SRCS = point_m.fypp point_operate_sm.fypp point_transform_sm.fypp point_array_sm.fypp
 mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_modify_sm.fypp mesh_traverse_sm.fypp \
             mesh_vert_sm.fypp mesh_face_sm.fypp mesh_topology_sm.fypp mesh_io_sm.fypp mesh_primitives_m.fypp
 renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_operate_sm.fypp \
@@ -37,6 +37,10 @@ all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_S
 utest_vector_SRCS = utest_vector.fypp $(vector_SRCS) $(transform_SRCS)
 utest_vector_USES = $(utest_vector_SRCS)
 utest_vector_LIBS =
+
+utest_point_SRCS = utest_point.fypp $(point_SRCS) $(vector_SRCS) $(transform_SRCS)
+utest_point_USES = $(utest_point_SRCS)
+utest_point_LIBS =
 
 utest_mesh_SRCS = utest_mesh.fypp $(all_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
