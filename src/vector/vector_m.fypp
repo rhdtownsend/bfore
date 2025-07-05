@@ -29,8 +29,9 @@ module vector_m
       generic, public       :: operator(==) => equals_
       procedure             :: add_vector_vector_
       generic, public       :: operator(+) => add_vector_vector_
+      procedure             :: neg_vector_
       procedure             :: sub_vector_vector_
-      generic, public       :: operator(-) => sub_vector_vector_
+      generic, public       :: operator(-) => neg_vector_, sub_vector_vector_
       procedure             :: mul_vector_scalar_
       procedure, pass(self) :: mul_scalar_vector_
       generic, public       :: operator(*) => mul_vector_scalar_, mul_scalar_vector_
@@ -65,6 +66,12 @@ module vector_m
          type(vector_t), intent(in)  :: other
          type(vector_t)              :: vector
       end function sub_vector_vector_
+
+      elemental module function neg_vector_(self) result(vector)
+         implicit none (type, external)
+         class(vector_t), intent(in) :: self
+         type(vector_t)              :: vector
+      end function neg_vector_
 
       elemental module function mul_vector_scalar_(self, scalar) result(vector)
          implicit none (type, external)

@@ -48,6 +48,22 @@ contains
 
    !****
 
+   module procedure neg_vector_
+
+      ! Negate the vector
+
+      vector%x = -self%x
+      vector%y = -self%y
+      vector%z = -self%z
+
+      ! Finish
+
+      return
+
+   end procedure neg_vector_
+
+   !****
+
    module procedure sub_vector_vector_
 
       ! Subtract the vectors
