@@ -10,6 +10,7 @@ program utest_vector
 
    use forum_m
 
+   use transform_m
    use vector_m
 
    use ISO_FORTRAN_ENV
@@ -21,6 +22,7 @@ program utest_vector
    ! Run the tests
 
    call test_arithmetic()
+   call test_transform()
 
    ! Finish
 
@@ -63,5 +65,92 @@ contains
       return
 
    end subroutine test_arithmetic
+
+   !****
+
+   subroutine test_transform()
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(vector_t)    :: vector
+      type(transform_t) :: tform
+
+      print *, 'Checking vector transformation'
+
+      tform = transform_t()
+      call tform%rotate(HALFPI, HALFPI, HALFPI)
+      vector = vector_t(0._RD, 1._RD, 0._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(0._RD, 0._RD, 1._RD)) < TOL, 'rotation about x axis')
+
+      !
+
+      tform = transform_t()
+      call tform%rotate(0._RD, HALFPI, 0._RD)
+      vector = vector_t(0._RD, 0._RD, 1._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(1._RD, 0._RD, 0._RD)) < TOL, 'rotation about y axis')
+
+      !
+
+      tform = transform_t()
+      call tform%rotate(HALFPI, 0._RD, 0._RD)
+      vector = vector_t(1._RD, 0._RD, 0._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(0._RD, 1._RD, 0._RD)) < TOL, 'rotation about z axis')
+
+      !
+
+      tform = transform_t()
+      call tform%translate(1._RD, 0._RD, 0._RD)
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(0._RD, 0._RD, 0._RD)) < TOL, 'translation in x direction')
+
+      !
+
+      tform = transform_t()
+      call tform%translate(0._RD, 1._RD, 0._RD)
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(0._RD, 0._RD, 0._RD)) < TOL, 'translation in y direction')
+
+      !
+
+      tform = transform_t()
+      call tform%translate(0._RD, 0._RD, 1._RD)
+      vector = vector_t(0._RD, 0._RD, 0._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(0._RD, 0._RD, 0._RD)) < TOL, 'translation in z direction')
+
+      !
+
+      tform = transform_t()
+      call tform%scale(2._RD, 1._RD, 1._RD)
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(2._RD, 1._RD, 1._RD)) < TOL, 'scaling in x direction')
+
+      !
+
+      tform = transform_t()
+      call tform%scale(1._RD, 2._RD, 1._RD)
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(1._RD, 2._RD, 1._RD)) < TOL, 'scaling in y direction')
+
+      !
+
+      tform = transform_t()
+      call tform%scale(1._RD, 1._RD, 2._RD)
+      vector = vector_t(1._RD, 1._RD, 1._RD)
+      vector = vector%image(tform)
+      @:CHECK(norm2(vector - vector_t(1._RD, 1._RD, 2._RD)) < TOL, 'scaling in z direction')
+
+      ! Finish
+
+      return
+
+   end subroutine test_transform
 
 end program utest_vector
