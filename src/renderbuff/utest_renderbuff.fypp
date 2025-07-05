@@ -44,8 +44,6 @@ contains
       type(renderbuff_t)    :: rbuff
       real(RD), allocatable :: z(:,:)
 
-      print *, 'Checking renderbuff triangle rendering'
-
       rbuff = renderbuff_t(3, 3)
 
       call render_tri(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'BR')
@@ -259,7 +257,7 @@ contains
 
       real(RD)                    :: x_mid
       real(RD)                    :: y_mid
-      type(point_t), allocatable  :: rect_points(:)
+      type(point_t)               :: rect_points(9)
       real(RD), allocatable       :: rect_scalars(:,:)
       type(vector_t), allocatable :: rect_vectors(:,:)
 

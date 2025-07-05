@@ -1,0 +1,86 @@
+! Submodule : point_array_m
+! Purpose   : Array routines for point_t
+
+#:include 'forum.inc'
+
+submodule (point_m) point_array_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure to_array_0_
+
+      @:CHECK_BOUNDS(SIZE(coords), 3)
+
+      ! Convert the point into a (3) array of point coordinates
+
+      coords = TRANSFER(points, MOLD=coords)
+
+      ! Finish
+
+      return
+
+   end procedure to_array_0_
+
+   !****
+
+   #:for rank in range(1, RANK_MAX)
+
+      module procedure to_array_${rank}$_
+
+         @:ASSERT_DEBUG(ALL(SHAPE(coords) == [3, SHAPE(points)]), 'dimension mismatch')
+
+         ! Convert the array of points into an (3,...) array of point coordinates
+
+         coords = RESHAPE(TRANSFER(points, MOLD=coords), SHAPE=SHAPE(coords))
+
+         ! Finish
+
+         return
+
+      end procedure to_array_${rank}$_
+
+   #:endfor
+
+   !****
+
+   module procedure from_array_0_
+
+      @:CHECK_BOUNDS(SIZE(coords), 3)
+
+      ! Convert the (3) array of point coordinates into a point
+
+      points = TRANSFER(coords, MOLD=points)
+
+      ! Finish
+
+      return
+
+   end procedure from_array_0_
+
+   !****
+
+   #:for rank in range(1, RANK_MAX)
+
+      module procedure from_array_${rank}$_
+
+         @:ASSERT_DEBUG(ALL([3, SHAPE(points)] == SHAPE(coords)), 'dimension mismatch')
+
+         ! Convert the (3,...)  array of point coordinates into an array of points
+
+         points = RESHAPE(TRANSFER(coords, MOLD=points), SHAPE=SHAPE(points))
+
+         ! Finish
+
+         return
+
+      end procedure from_array_${rank}$_
+
+   #:endfor
+
+end submodule point_array_sm

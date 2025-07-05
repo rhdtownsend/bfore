@@ -212,6 +212,7 @@ contains
 
       ! Set up the vertex-point table
 
+      allocate(VP(n_vert))
       call from_array(vert_coords, VP)
 
       ! Set up empty scalar and vector tables

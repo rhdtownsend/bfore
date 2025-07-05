@@ -80,11 +80,13 @@ contains
          call hdf5io%alloc_read_dset('vert_edges', VE)
 
          call hdf5io%alloc_read_dset('vert_points', vert_point_coords)
+         allocate(VP${ARRAY_SPEC(1, "SIZE(vert_point_coords, {0}+1)")}$)
          call from_array(vert_point_coords, VP)
 
          call hdf5io%alloc_read_dset('vert_scalars', VS)
 
          call hdf5io%alloc_read_dset('vert_vectors', vert_vector_comps)
+         allocate(VV${ARRAY_SPEC(2, "SIZE(vert_vector_comps, {0}+1)")}$)
          call from_array(vert_vector_comps, VV)
 
          if (.NOT. &
@@ -123,8 +125,8 @@ contains
 
    module procedure write
 
-      real(RD), allocatable :: vert_point_coords(:,:)
-      real(RD), allocatable :: vert_vector_comps(:,:,:)
+      real(RD) :: vert_point_coords(3,self%n_vert)
+      real(RD) :: vert_vector_comps(3,self%n_vector,self%n_vert)
 
       ! Write the mesh_t
 

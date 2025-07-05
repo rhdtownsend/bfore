@@ -70,6 +70,7 @@ contains
          call hdf5io%alloc_read_dset('pixel_scalars', PS)
 
          call hdf5io%alloc_read_dset('pixel_vectors', pixel_vector_comps)
+         allocate(PV${ARRAY_SPEC(3, "SIZE(pixel_vector_comps, {0}+1)")}$)
          call from_array(pixel_vector_comps, PV)
 
          if (.NOT. &
@@ -105,7 +106,7 @@ contains
 
    module procedure write
 
-      real(RD), allocatable :: pixel_vector_comps(:,:,:,:)
+      real(RD) :: pixel_vector_comps(3,self%n_vector,self%n_x,self%n_y)
 
       ! Write the renderbuff
 
