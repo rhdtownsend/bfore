@@ -1,0 +1,64 @@
+! Module  : roche_surface_m
+! Purpose : Define rocher_surface_t type, for representing a (single-star) Roche sufrace
+
+#:include 'forum.inc'
+
+module roche_surface_m
+
+   ! Uses
+
+   use forum_m
+
+   use polar_surface_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type, extends(polar_surface_t) :: roche_surface_t
+      private
+      real(RD), public :: r_pole
+      real(RD), public :: omega
+   contains
+      private
+      procedure, public :: radius
+   end type roche_surface_t
+
+   ! Accessibility
+
+   private
+
+   public :: roche_surface_t
+
+   ! Procedures
+
+contains
+
+   function radius(self, theta, phi) result(r)
+
+      class(roche_surface_t), intent(in) :: self
+      real(RD), intent(in)               :: theta
+      real(RD), intent(in)               :: phi
+      real(RD)                           :: r
+
+      real(RD) :: omega_stheta
+
+      ! Evaluate the radius at (theta,phi)
+
+      omega_stheta = self%omega*SIN(theta)
+
+      if (ABS(omega_stheta) > EPSILON(0._RD)) then
+         r = self%r_pole*3._RD*COS((PI + ACOS(omega_stheta))/3._RD)/omega_stheta
+      else
+         r = self%r_pole
+      end if
+
+      ! Finish
+
+      return
+
+   end function radius
+
+end module roche_surface_m

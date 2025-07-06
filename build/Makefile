@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_vector utest_point utest_mesh utest_renderbuff utest_surface
+   BIN_TARGETS += utest_vector utest_point utest_surface #utest_mesh utest_renderbuff utest_surface
 endif
 
 # Source file lists & related variables
@@ -30,9 +30,9 @@ renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_oper
                   renderbuff_render_sm.fypp renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_io_sm.fypp
 transform_SRCS = transform_m.fypp
-surface_SRCS = polar_surface_m.fypp sphere_surface_m.fypp star_surface_m.fypp rotstar_surface_m.fypp
+surface_SRCS = polar_surface_m.fypp sphere_surface_m.fypp roche_surface_m.fypp #star_surface_m.fypp rotstar_surface_m.fypp
 other_SRCS = stat_m.fypp file_m.fypp math_m.fypp
-all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(transform_SRCS) $(other_SRCS)
+all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(transform_SRCS) $(surface_SRCS) $(other_SRCS)
 
 utest_vector_SRCS = utest_vector.fypp $(vector_SRCS) $(transform_SRCS)
 utest_vector_USES = $(utest_vector_SRCS)
@@ -42,6 +42,10 @@ utest_point_SRCS = utest_point.fypp $(point_SRCS) $(vector_SRCS) $(transform_SRC
 utest_point_USES = $(utest_point_SRCS)
 utest_point_LIBS =
 
+utest_surface_SRCS = utest_surface.fypp $(surface_SRCS) $(point_SRCS) $(vector_SRCS) $(transform_SRCS)
+utest_surface_USES = $(utest_surface_SRCS)
+utest_surface_LIBS =
+
 utest_mesh_SRCS = utest_mesh.fypp $(all_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
 utest_mesh_LIBS = 
@@ -49,10 +53,6 @@ utest_mesh_LIBS =
 utest_renderbuff_SRCS = utest_renderbuff.fypp $(all_SRCS)
 utest_renderbuff_USES = $(utest_renderbuff_SRCS)
 utest_renderbuff_LIBS =
-
-utest_surface_SRCS = utest_surface.fypp $(surface_SRCS) $(point_SRCS) $(vector_SRCS) $(transform_SRCS)
-utest_surface_USES = $(utest_surface_SRCS)
-utest_surface_LIBS =
 
 # Build flags
 

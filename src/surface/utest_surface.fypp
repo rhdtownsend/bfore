@@ -10,7 +10,9 @@ program utest_surface
 
    use forum_m
 
-   use rotstar_surface_m
+   use roche_surface_m
+   use sphere_surface_m
+   use point_m
    use vector_m
 
    use ISO_FORTRAN_ENV
@@ -21,73 +23,67 @@ program utest_surface
 
    ! Run the tests
 
-   call test_rotstar_surface()
+   call test_sphere_surface()
+   call test_roche_surface()
 
    ! Finish
 
 contains
 
-   subroutine test_rotstar_surface()
+   subroutine test_sphere_surface()
 
       real(RD), parameter :: TOL = 1E-15_RD
 
-      real(RD), parameter :: M = M_SUN
-      real(RD), parameter :: R_POLE = R_SUN
-      real(RD), parameter :: T_POLE = 5777._RD
-      real(RD), parameter :: G_POLE = G_GRAVITY*M/R_POLE**2
-      real(RD), parameter :: V_CRIT = SQRT(2._RD*G_POLE*R_POLE/3._RD)
+      type(sphere_surface_t) :: surf
 
-      type(rotstar_surface_t) :: surf
-      type(vector_t)          :: vector
+      print *, 'Checking sphere_surface functionality'
 
-      print *, 'Checking rotstar_surface functionality'
+      surf = sphere_surface_t(1._RD)
 
-      surf = rotstar_surface_t(M, R_POLE, T_POLE, 0._RD)
+      @:CHECK(ABS(surf%radius(0._RD, 0._RD) - 1._RD) < TOL, 'polar radius')
+      @:CHECK(ABS(surf%radius(HALFPI, 0._RD) - 1._RD) < TOL, 'equatorial radius')
 
-      @:CHECK(ABS(surf%radius(0._RD, 0._RD)/R_POLE - 1._RD) < TOL, 'non-rotating polar radius')
-      @:CHECK(ABS(surf%temperature(0._RD, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'non-rotating polar temperature')
-
-      vector = vector_t(0._RD, 0._RD, -1._RD)
-      @:CHECK(norm2(surf%gravity(0._RD, 0._RD)/G_POLE - vector) < TOL, 'non-rotating polar gravity')
-
-      vector = vector_t(0._RD, 0._RD, 0._RD)
-      @:CHECK(norm2(surf%velocity(0._RD, 0._RD)/V_CRIT - vector) < TOL, 'non-rotating polar velocity')
-
-      @:CHECK(ABS(surf%radius(HALFPI, 0._RD)/R_POLE - 1._RD) < TOL, 'non-rotating equatorial temperature')
-      @:CHECK(ABS(surf%temperature(HALFPI, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'non-rotating equatorial temperature')
-
-      vector = vector_t(-1._RD, 0._RD, 0._RD)
-      @:CHECK(norm2(surf%gravity(HALFPI, 0._RD)/G_POLE - vector) < TOL, 'non-rotating equatorial gravity')
-
-      vector = vector_t(0._RD, 0._RD, 0._RD)
-      @:CHECK(norm2(surf%velocity(HALFPI, 0._RD)/V_CRIT - vector) < TOL, 'non-rotating equatorial velocity')
-
-      !
-
-      surf = rotstar_surface_t(M, R_POLE, T_POLE, 1._RD)
-
-      @:CHECK(ABS(surf%radius(0._RD, 0._RD)/R_POLE - 1._RD) < TOL, 'critically-rotating polar radius')
-      @:CHECK(ABS(surf%temperature(0._RD, 0._RD)/T_POLE - 1._RD) < TOL**0.25, 'critically-rotating polar temperature')
-
-      vector = vector_t(0._RD, 0._RD, -1._RD)
-      @:CHECK(norm2(surf%gravity(0._RD, 0._RD)/G_POLE - vector) < TOL, 'critically-rotating polar gravity')
-
-      vector = vector_t(0._RD, 0._RD, 0._RD)
-      @:CHECK(norm2(surf%velocity(0._RD, 0._RD)/V_CRIT - vector) < TOL, 'critically-rotating polar velocity')
-
-      @:CHECK(ABS(surf%radius(HALFPI, 0._RD)/R_POLE - 1.5_RD) < TOL, 'critically-rotating equatorial radius')
-      @:CHECK(ABS(surf%temperature(HALFPI, 0._RD)/T_POLE - 0._RD) < TOL**0.25, 'critically-rotating equatorial temperature')
-
-      vector = vector_t(0._RD, 0._RD, 0._RD)
-      @:CHECK(norm2(surf%gravity(HALFPI, 0._RD)/G_POLE - vector) < TOL, 'critically-rotating equatorial gravity')
-
-      vector = vector_t(0._RD, 1._RD, 0._RD)
-      @:CHECK(norm2(surf%velocity(HALFPI, 0._RD)/V_CRIT - vector) < TOL, 'critically-rotating equatorial velocity')
+      @:CHECK(NORM2(surf%point(0._RD, HALFPI) - point_t(0._RD, 0._RD, 1._RD)) < tol, 'polar point')
+      @:CHECK(NORM2(surf%point(HALFPI, HALFPI) - point_t(0._RD, 1._RD, 0._RD)) < tol, 'equatorial point')
 
       ! Finish
 
       return
 
-   end subroutine test_rotstar_surface
+   end subroutine test_sphere_surface
+
+   !****
+
+   subroutine test_roche_surface()
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(roche_surface_t) :: surf
+
+      print *, 'Checking roche_surface functionality'
+
+      surf = roche_surface_t(1._RD, 0._RD)
+
+      @:CHECK(ABS(surf%radius(0._RD, 0._RD) - 1._RD) < TOL, 'non-rotating polar radius')
+      @:CHECK(ABS(surf%radius(HALFPI, 0._RD) - 1._RD) < TOL, 'non-rotating equatorial radius')
+
+      @:CHECK(NORM2(surf%point(0._RD, HALFPI) - point_t(0._RD, 0._RD, 1._RD)) < tol, 'non-rotating polar point')
+      @:CHECK(NORM2(surf%point(HALFPI, HALFPI) - point_t(0._RD, 1._RD, 0._RD)) < tol, 'non-rotating equatorial point')
+
+      !
+
+      surf = roche_surface_t(1._RD, 1._RD)
+
+      @:CHECK(ABS(surf%radius(0._RD, 0._RD) - 1._RD) < TOL, 'critical-rotating polar radius')
+      @:CHECK(ABS(surf%radius(HALFPI, 0._RD) - 1.5_RD) < TOL, 'critical-rotating equatorial radius')
+
+      @:CHECK(NORM2(surf%point(0._RD, HALFPI) - point_t(0._RD, 0._RD, 1._RD)) < tol, 'critical-rotating polar')
+      @:CHECK(NORM2(surf%point(HALFPI, HALFPI) - point_t(0._RD, 1.5_RD, 0._RD)) < tol, 'critical-rotating equatorial point')
+
+      ! Finish
+
+      return
+
+   end subroutine test_roche_surface
 
 end program utest_surface
