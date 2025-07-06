@@ -37,12 +37,8 @@ contains
       integer           :: v2
       integer           :: v3
 
-      integer :: start, end, count
-
       @:ASSERT_DEBUG(mesh%n_scalar == self%n_scalar, 'dimension mismatch')
       @:ASSERT_DEBUG(mesh%n_vector== self%n_vector, 'dimension mismatch')
-
-      call SYSTEM_CLOCK(start, count)
 
       ! Extract vertex data from the mesh
 
@@ -94,10 +90,6 @@ contains
             points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
 
       end do face_loop
-
-      call SYSTEM_CLOCK(end)
-
-      print *, 'render time:',REAL(end-start, RD)/count
 
       ! Finish
 

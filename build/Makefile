@@ -13,7 +13,7 @@ LIB_TARGETS =
 INC_FILES = 
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_vector utest_point utest_surface #utest_mesh utest_renderbuff utest_surface
+   BIN_TARGETS += utest_vector utest_point utest_surface utest_mesh utest_renderbuff ptest_renderbuff
 endif
 
 # Source file lists & related variables
@@ -53,6 +53,10 @@ utest_mesh_LIBS =
 utest_renderbuff_SRCS = utest_renderbuff.fypp $(all_SRCS)
 utest_renderbuff_USES = $(utest_renderbuff_SRCS)
 utest_renderbuff_LIBS =
+
+ptest_renderbuff_SRCS = ptest_renderbuff.fypp $(all_SRCS)
+ptest_renderbuff_USES = $(ptest_renderbuff_SRCS)
+ptest_renderbuff_LIBS =
 
 # Build flags
 

@@ -14,9 +14,10 @@ program utest_renderbuff
    use mesh_primitives_m
    use point_m
    use renderbuff_m
+   use sphere_surface_m
+   use stat_m
    use view_m
    use vector_m
-   use stat_m
 
    use ISO_FORTRAN_ENV
 
@@ -31,8 +32,8 @@ program utest_renderbuff
    ! Run the tests
 
    call test_triangle()
+   !call test_mesh()
    call test_construction()
-   call test_fill_rules()
    call test_io()
 
    ! Finish
@@ -44,16 +45,114 @@ contains
       type(renderbuff_t)    :: rbuff
       real(RD), allocatable :: z(:,:)
 
-      rbuff = renderbuff_t(3, 3)
+      print *,'Checking renderbuff triangle rendering'
 
-      call render_tri(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'BR')
-      call render_tri(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'TL')
+      ! Fill-rule tests from
+      ! https://learn.microsoft.com/en-us/windows/win32/direct3d9/rasterization-rules
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'L')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for edge-left triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'B')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for edge-bot triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'T')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for edge-top triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TL')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, Z_MIN, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for corner-top-left triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BL')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         0._RD, Z_MIN, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for corner-bot-left triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BR')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         Z_MIN, Z_MIN, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'fill rules for corner-bot-right triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TR')
+      z = RESHAPE([ &
+         Z_MIN, Z_MIN, Z_MIN, &
+         Z_MIN, 0._RD, Z_MIN, &
+         0._RD, 0._RD, Z_MIN], &
+         SHAPE=[3,3])
+      @:CHECK(check_depths(rbuff, z), 'full rules for corner-top-right triangle')
+
+      !
+
+      rbuff = renderbuff_t(3, 3)
+      call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
       z = RESHAPE([ &
          0._RD, 0._RD, 0._RD, &
          0._RD, 0._RD, 0._RD, &
          0._RD, 0._RD, 0._RD], &
          SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'two triangles making a square')
+      @:CHECK(check_depths(rbuff, z), 'square from two triangles')
+
+      !
+
+      rbuff = renderbuff_t(3, 3, n_scalar=2)
+      call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
+      @:CHECK(check_scalars(rbuff), 'square w/ two scalars')
+
+      !
+
+      rbuff = renderbuff_t(3, 3, n_vector=2)
+      call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
+      @:CHECK(check_vectors(rbuff), 'square w/ two vectors')
+
+      !
+
+      rbuff = renderbuff_t(3, 3, n_scalar=2, n_vector=1)
+      call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
+      @:CHECK(check_scalars(rbuff) .AND. check_vectors(rbuff), 'square w/ two scalars and one vector')
 
       ! Finish
 
@@ -96,99 +195,6 @@ contains
 
    !****
 
-   subroutine test_fill_rules()
-
-      type(renderbuff_t)    :: rbuff
-      real(RD), allocatable :: z(:,:)
-
-      ! Test fill rules (see
-      ! https://learn.microsoft.com/en-us/windows/win32/direct3d9/rasterization-rules)
-
-      print *, 'Checking renderbuff fill rules'
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'L')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         0._RD, 0._RD, Z_MIN, &
-         Z_MIN, Z_MIN, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'left triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'B')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         Z_MIN, 0._RD, Z_MIN, &
-         Z_MIN, Z_MIN, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'bot triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'T')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         Z_MIN, 0._RD, Z_MIN, &
-         0._RD, 0._RD, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'top triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TL')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         0._RD, Z_MIN, Z_MIN, &
-         0._RD, 0._RD, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'top-left triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BL')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         0._RD, Z_MIN, Z_MIN, &
-         Z_MIN, Z_MIN, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'bot-left triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BR')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         Z_MIN, 0._RD, Z_MIN, &
-         Z_MIN, Z_MIN, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'bot-right triangle')
-
-      !
-
-      rbuff = renderbuff_t(3, 3)
-      call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TR')
-      z = RESHAPE([ &
-         Z_MIN, Z_MIN, Z_MIN, &
-         Z_MIN, 0._RD, Z_MIN, &
-         0._RD, 0._RD, Z_MIN], &
-         SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'top-right triangle')
-
-      ! Finish
-
-      return
-
-   end subroutine test_fill_rules
-
-   !****
-
    subroutine test_io()
 
       type(mesh_t)           :: mesh
@@ -200,21 +206,14 @@ contains
       type(hdf5io_t)         :: hdf5io
       integer                :: stat
 
-      ! Test rendering operations
-
       print *,'Checking renderbuff i/o'
 
-      mesh = sphere_mesh(1._RD, 6, 3, 1)
+      mesh = polar_mesh(sphere_surface_t(1._RD), 0, 1, 1)
 
       do v = 1, mesh%n_vert
 
-         point => mesh%vert_point(v)
-
-         mesh%vert_scalar(1,v) = point%x
-         mesh%vert_scalar(2,v) = point%y
-         mesh%vert_scalar(3,v) = point%z
-
-         mesh%vert_vector(1,v) = point - point_t(0._RD, 0._RD, 0._RD)
+         mesh%vert_scalar(1,v) = 1._RD
+         mesh%vert_vector(1,v) = vector_t(1._RD, 1._RD, 1._RD)
 
       end do
 
@@ -222,7 +221,7 @@ contains
          [0._RD, 0._RD, 0._RD], &
          2.4_RD, 2.4_RD)
 
-      rbuff_out = renderbuff_t(8192, 8192, 3, 1)
+      rbuff_out = renderbuff_t(256, 256, 1, 1)
       call rbuff_out%render(mesh, view)
 
       hdf5io = hdf5io_t('utest_renderbuff.h5', CREATE_FILE)
@@ -247,17 +246,18 @@ contains
 
    subroutine render_tri(rbuff, x_min, x_max, y_min, y_max, z, orient)
 
-      type(renderbuff_t)       :: rbuff
-      real(RD), intent(in)     :: x_min
-      real(RD), intent(in)     :: x_max
-      real(RD), intent(in)     :: y_min
-      real(RD), intent(in)     :: y_max
-      real(RD), intent(in)     :: z
-      character(*), intent(in) :: orient
+      type(renderbuff_t), intent(inout) :: rbuff
+      real(RD), intent(in)              :: x_min
+      real(RD), intent(in)              :: x_max
+      real(RD), intent(in)              :: y_min
+      real(RD), intent(in)              :: y_max
+      real(RD), intent(in)              :: z
+      character(*), intent(in)          :: orient
 
       real(RD)                    :: x_mid
       real(RD)                    :: y_mid
       type(point_t)               :: rect_points(9)
+      integer                     :: i
       real(RD), allocatable       :: rect_scalars(:,:)
       type(vector_t), allocatable :: rect_vectors(:,:)
 
@@ -279,10 +279,14 @@ contains
          SHAPE=[3, 9]), rect_points)
 
       allocate(rect_scalars(rbuff%n_scalar,3))
-      rect_scalars = 0._RD
+      do i = 1, rbuff%n_scalar
+         rect_scalars(i,:) = REAL(i, RD)
+      end do
 
       allocate(rect_vectors(rbuff%n_vector,3))
-      rect_vectors = vector_t(0._RD, 0._RD, 0._RD)
+      do i = 1, rbuff%n_vector
+         rect_vectors(i,:) = REAL(i, RD)*vector_t(1._RD, 1._RD, 1._RD)
+      end do
 
       select case(orient)
       case('L')
@@ -313,6 +317,28 @@ contains
 
    !****
 
+   subroutine render_square(rbuff, x_min, x_max, y_min, y_max, z)
+
+      type(renderbuff_t), intent(inout) :: rbuff
+      real(RD), intent(in)              :: x_min
+      real(RD), intent(in)              :: x_max
+      real(RD), intent(in)              :: y_min
+      real(RD), intent(in)              :: y_max
+      real(RD), intent(in)              :: z
+
+      ! Render a square within the supplied bounding box
+
+      call render_tri(rbuff, x_min, x_max, y_min, y_max, z, 'BR')
+      call render_tri(rbuff, x_min, x_max, y_min, y_max, z, 'TL')
+
+      ! Finish
+
+      return
+
+   end subroutine render_square
+
+   !****
+
    function check_depths(rbuff, z) result(same)
 
       real(RD), parameter :: TOL = 1E-15_RD
@@ -340,5 +366,77 @@ contains
       return
 
    end function check_depths
+
+   !****
+
+   function check_scalars(rbuff) result(same)
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(renderbuff_t), intent(in) :: rbuff
+      logical                        :: same
+
+      integer  :: i
+      integer  :: i_x
+      integer  :: i_y
+      real(RD) :: rbuff_scalar(rbuff%n_x,rbuff%n_y)
+
+      ! Check the renderbuff scalar buffers
+
+      same = .TRUE.
+
+      do i = 1, rbuff%n_scalar
+
+         do i_y = 1, rbuff%n_y
+            do i_x = 1, rbuff%n_x
+               rbuff_scalar(i_x,i_y) = rbuff%pixel_scalar(i,i_x,i_y)
+            end do
+         end do
+
+         same = same .AND. ALL(ABS(rbuff_scalar - REAL(i, RD)) < TOL)
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function check_scalars
+
+   !****
+
+   function check_vectors(rbuff) result(same)
+
+      real(RD), parameter :: TOL = 1E-15_RD
+
+      type(renderbuff_t), intent(in) :: rbuff
+      logical                        :: same
+
+      integer        :: i
+      integer        :: i_x
+      integer        :: i_y
+      type(vector_t) :: rbuff_vector(rbuff%n_x,rbuff%n_y)
+
+      ! Check the renderbuff vector buffers
+
+      same = .TRUE.
+
+      do i = 1, rbuff%n_vector
+
+         do i_y = 1, rbuff%n_y
+            do i_x = 1, rbuff%n_x
+               rbuff_vector(i_x,i_y) = rbuff%pixel_vector(i,i_x,i_y)
+            end do
+         end do
+
+         same = same .AND. ALL(NORM2(rbuff_vector - REAL(i, RD)*vector_t(1._RD, 1._RD, 1._RD)) < TOL)
+
+      end do
+
+      ! Finish
+
+      return
+
+   end function check_vectors
 
 end program utest_renderbuff
