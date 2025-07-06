@@ -34,6 +34,7 @@ module point_m
       procedure             :: sub_point_point_
       generic, public       :: operator(-) => sub_point_point_
       procedure, public     :: image
+      procedure, public     :: to_polar
    end type point_t
 
    ! Interfaces
@@ -82,6 +83,14 @@ module point_m
          type(transform_t), intent(in) :: tform
          type(point_t)                 :: point
       end function image
+
+      elemental module subroutine to_polar(self, r, theta, phi)
+         implicit none (type, external)
+         class(point_t), intent(in) :: self
+         real(RD), intent(out)      :: r
+         real(RD), intent(out)      :: theta
+         real(RD), intent(out)      :: phi
+      end subroutine to_polar
 
    end interface
 

@@ -36,4 +36,22 @@ contains
 
    end procedure image
 
+   !****
+
+   module procedure to_polar
+
+      ! Evaluate the spherical polar coordinates of the point
+
+      r = SQRT(self%x**2 + self%y**2 + self%z**2)
+
+      theta = ACOS(self%z/r)
+
+      phi = ATAN2(self%y, self%x)
+
+      ! Finish
+
+      return
+
+   end procedure to_polar
+
 end submodule point_transform_sm
