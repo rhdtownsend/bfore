@@ -11,6 +11,7 @@ module mesh_primitives_m
    use mesh_m
 
    use point_m
+   use polar_surface_m
    use vector_m
 
    use ISO_FORTRAN_ENV
@@ -27,7 +28,7 @@ module mesh_primitives_m
    public :: two_face_mesh
    public :: tetrahedron_mesh
    public :: icosahedron_mesh
-   public :: sphere_mesh
+   public :: polar_mesh
 
    ! Procedures
 
@@ -184,27 +185,27 @@ contains
 
    !****
 
-   function sphere_mesh(radius, n_refine, n_scalar, n_vector) result(mesh)
+   function polar_mesh(surf, n_refine, n_scalar, n_vector) result(mesh)
 
-      real(RD), intent(in)          :: radius
-      integer, intent(in)           :: n_refine
-      integer, intent(in), optional :: n_scalar
-      integer, intent(in), optional :: n_vector
-      type(mesh_t)                  :: mesh
+      class(polar_surface_t), intent(in) :: surf
+      integer, intent(in)                :: n_refine
+      integer, intent(in), optional      :: n_scalar
+      integer, intent(in), optional      :: n_vector
+      type(mesh_t)                       :: mesh
 
       integer              :: i
       integer, allocatable :: v(:)
 
-      ! Create a unit-sphere mesh_t by refining an icosahedron
-      ! n_refine times (pushing out to r=radius after each refine)
+      ! Create a mesh defined via a polar_surface, by refining an
+      ! icosahedron mesh
 
       mesh = icosahedron_mesh(n_scalar, n_vector)
 
-      call push_out_([(i, i=1,mesh%n_vert)])
+      call to_surf_([(i, i=1,mesh%n_vert)])
 
       refline_loop: do i = 1, n_refine
          call mesh%refine_and_flip(v)
-         call push_out_(v)
+         call to_surf_(v)
       end do refline_loop
 
       ! Finish
@@ -213,24 +214,28 @@ contains
 
    contains
 
-      subroutine push_out_(v)
+      subroutine to_surf_(v)
 
          integer, intent(in) :: v(:)
 
-         type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
-
          integer                 :: j
          type(point_t), pointer  :: point
-         real(RD)                :: radius_point
+         real(RD)                :: r
+         real(RD)                :: theta
+         real(RD)                :: phi
 
          do j = 1, SIZE(v)
+
             point => mesh%vert_point(v(j))
-            radius_point = norm2(point - ORIGIN)
-            point = affine_sum([point, ORIGIN], [radius/radius_point, 1._RD-radius/radius_point])
+
+            call point%to_polar(r, theta, phi)
+
+            point = surf%point(theta, phi)
+
          end do
 
-      end subroutine push_out_
+      end subroutine to_surf_
 
-   end function sphere_mesh
+   end function polar_mesh
 
 end module mesh_primitives_m
