@@ -24,8 +24,8 @@ endif
 
 vector_SRCS = vector_m.fypp vector_operate_sm.fypp vector_transform_sm.fypp vector_array_sm.fypp
 point_SRCS = point_m.fypp point_operate_sm.fypp point_transform_sm.fypp point_array_sm.fypp
-mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_modify_sm.fypp mesh_traverse_sm.fypp \
-            mesh_vert_sm.fypp mesh_face_sm.fypp mesh_topology_sm.fypp mesh_io_sm.fypp mesh_primitives_m.fypp
+mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp mesh_connect_sm.fypp mesh_modify_sm.fypp \
+            mesh_vert_sm.fypp mesh_face_sm.fypp mesh_io_sm.fypp mesh_primitives_m.fypp
 renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_operate_sm.fypp \
                   renderbuff_render_sm.fypp renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_io_sm.fypp

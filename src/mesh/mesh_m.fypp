@@ -112,7 +112,7 @@ module mesh_m
          logical                   :: equals
       end function equals_
 
-      ! In mesh_traverse_sm
+      ! In mesh_connect_sm
 
       impure elemental module function edge_prev(self, e) result(e_p)
          implicit none (type, external)
@@ -178,6 +178,19 @@ module mesh_m
          integer                   :: f_e
       end function face_edge
 
+      module subroutine validate(self, stat, loc)
+         implicit none (type, external)
+         class(mesh_t), intent(in)      :: self
+         integer, intent(out)           :: stat
+         integer, intent(out), optional :: loc
+      end subroutine validate
+
+      module function euler_characteristic(self) result(chi)
+         implicit none (type, external)
+         class(mesh_t), intent(in) :: self
+         integer                   :: chi
+      end function euler_characteristic
+
       ! In mesh_modify_sm
 
       module subroutine flip_edge(self, e, clockwise)
@@ -240,21 +253,6 @@ module mesh_m
          integer, intent(in)               :: f
          type(vector_t)                    :: A
       end function face_area
-
-      ! In mesh_topology_sm
-
-      module subroutine validate(self, stat, loc)
-         implicit none (type, external)
-         class(mesh_t), intent(in)      :: self
-         integer, intent(out)           :: stat
-         integer, intent(out), optional :: loc
-      end subroutine validate
-
-      module function euler_characteristic(self) result(chi)
-         implicit none (type, external)
-         class(mesh_t), intent(in) :: self
-         integer                   :: chi
-      end function euler_characteristic
 
       ! In mesh_io_sm
 

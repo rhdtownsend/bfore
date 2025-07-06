@@ -24,13 +24,13 @@ program utest_mesh
 
    ! Run the tests
 
-   call test_traversal()
+   call test_connectivity()
    call test_validation()
    call test_construction
    call test_primitives()
    call test_modification()
    call test_topology()
-   call test_geometry()
+   call test_vertex()
    call test_io()
 
    ! Finish
@@ -39,7 +39,7 @@ contains
 
    !****
 
-   subroutine test_traversal()
+   subroutine test_connectivity()
 
       type(mesh_t)         :: mesh
       integer              :: i
@@ -64,7 +64,7 @@ contains
       !   edge_vert
       !   vert_edge
 
-      print *,'Checking mesh traversal'
+      print *,'Checking mesh connectivity'
 
       call build_mesh([1, 2, 3, 3, 2, 1], mesh)
 
@@ -111,7 +111,7 @@ contains
 
       return
 
-   end subroutine test_traversal
+   end subroutine test_connectivity
 
    !****
 
@@ -349,7 +349,7 @@ contains
 
    !****
 
-   subroutine test_geometry()
+   subroutine test_vertex()
 
       real(RD), parameter :: TOL = 1E-15_RD
 
@@ -362,7 +362,7 @@ contains
       integer        :: f
       type(vector_t) :: A(4)
 
-      print *, 'Checking mesh geometry'
+      print *, 'Checking mesh vertex access'
 
       mesh = tetrahedron_mesh()
       point = point_t(0._RD, 0._RD, 1._RD)
@@ -393,7 +393,7 @@ contains
 
       return
 
-   end subroutine test_geometry
+   end subroutine test_vertex
 
    !****
 
