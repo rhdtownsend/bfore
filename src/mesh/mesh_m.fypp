@@ -60,6 +60,7 @@ module mesh_m
       procedure, public :: vert_scalar
       procedure, public :: vert_vector
       procedure, public :: face_area
+      procedure, public :: face_midpoint
       procedure, public :: validate
       procedure, public :: euler_characteristic
       procedure, public :: read
@@ -247,12 +248,19 @@ module mesh_m
 
       ! In mesh_face_sm
 
-      module function face_area(self, f) result(A)
+      module function face_area(self, f) result(area)
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
          integer, intent(in)               :: f
-         type(vector_t)                    :: A
+         type(vector_t)                    :: area
       end function face_area
+
+      module function face_midpoint(self, f) result(midpoint)
+         implicit none (type, external)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: f
+         type(point_t)                     :: midpoint
+      end function face_midpoint
 
       ! In mesh_io_sm
 

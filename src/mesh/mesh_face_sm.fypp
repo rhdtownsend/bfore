@@ -35,12 +35,44 @@ contains
       point2 => self%vert_point(v2)
       point3 => self%vert_point(v3)
 
-      A = 0.5_RD*cross_product(point2-point1, point3-point1)
+      area = 0.5_RD*cross_product(point2-point1, point3-point1)
 
       ! Finish
 
       return
 
    end procedure face_area
+
+   !****
+
+   module procedure face_midpoint
+
+      integer                 :: f_e
+      integer                 :: v1
+      integer                 :: v2
+      integer                 :: v3
+      type(point_t), pointer  :: point1
+      type(point_t), pointer  :: point2
+      type(point_t), pointer  :: point3
+
+      ! Get the midpoint of face f
+
+      f_e = self%face_edge(f)
+
+      v1 = self%edge_vert(f_e)
+      v2 = self%edge_vert(self%edge_next(f_e))
+      v3 = self%edge_vert(self%edge_prev(f_e))
+
+      point1 => self%vert_point(v1)
+      point2 => self%vert_point(v2)
+      point3 => self%vert_point(v3)
+
+      midpoint = affine_sum([point1, point2, point3], [1._RD/3._RD, 1._RD/3._RD, 1._RD/3._RD])
+
+      ! Finish
+
+      return
+
+   end procedure face_midpoint
 
 end submodule mesh_face_sm
