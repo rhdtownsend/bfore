@@ -8,8 +8,8 @@ module mesh_primitives_m
    ! Uses
 
    use forum_m
-   use mesh_m
 
+   use mesh_m
    use point_m
    use polar_surface_m
    use vector_m
@@ -231,6 +231,7 @@ contains
             call point%to_polar(r, theta, phi)
 
             point = surf%point(theta, phi)
+
 
          end do
 
