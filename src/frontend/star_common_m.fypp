@@ -1,0 +1,34 @@
+! Module  : star_common
+! Purpose : Common star definitions
+
+#:include 'forum.inc'
+
+module star_common_m
+
+   ! Uses
+
+   use forum_m
+
+   ! Parameters
+
+   integer, parameter :: I_T = 1 ! Temperature
+
+   integer, parameter :: I_N = 1 ! Normal
+   integer, parameter :: I_V = 2 ! Velocity
+   integer, parameter :: I_G = 3 ! Gravity
+
+   integer, parameter :: N_SCALAR = 1
+   integer, parameter :: N_VECTOR = 3
+
+   ! Accessibility
+
+   private
+
+   public :: I_T
+   public :: I_N
+   public :: I_V
+   public :: I_G
+   public :: N_SCALAR
+   public :: N_VECTOR
+
+end module star_common_m

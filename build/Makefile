@@ -8,9 +8,11 @@ all:
 
 # Targets
 
+BIN_TARGETS = build_star
+
 LIB_TARGETS = 
 
-INC_FILES = 
+INC_FILES =
 
 ifeq ($(UTESTS),yes)
    BIN_TARGETS += utest_vector utest_point utest_surface utest_mesh utest_renderbuff ptest_renderbuff
@@ -58,13 +60,17 @@ ptest_renderbuff_SRCS = ptest_renderbuff.fypp $(all_SRCS)
 ptest_renderbuff_USES = $(ptest_renderbuff_SRCS)
 ptest_renderbuff_LIBS =
 
+build_star_SRCS = build_star.fypp star_common_m.fypp $(all_SRCS)
+build_star_USES = $(build_star_SRCS)
+build_star_LIBS =
+
 # Build flags
 
 FFLAGS = -I$(FORUM_INC_DIR)
 
 FPPFLAGS = -I$(FORUM_INC_DIR)
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum
+LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum `toml-f_link`
 
 # Include standard rules
 
