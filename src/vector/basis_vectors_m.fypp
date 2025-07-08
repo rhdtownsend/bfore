@@ -1,0 +1,91 @@
+! Module  : basis_vectors_m
+! Purpose : Routines for evaluating basis vectors
+
+#:include 'forum.inc'
+
+module basis_vectors_m
+
+   ! Uses
+
+   use forum_m
+
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Accessibility
+
+   private
+
+   public :: spherical_basis_vectors
+   public :: general_basis_vectors
+
+   ! Procedures
+
+contains
+
+   function spherical_basis_vectors(r, theta, phi) result(vectors)
+
+      real(RD), intent(in) :: r
+      real(RD), intent(in) :: theta
+      real(RD), intent(in) :: phi
+      type(vector_t)       :: vectors(3)
+
+      ! Construct unit basis vectors in the spherical coordinate system
+
+      vectors(1) = vector_t(SIN(theta)*COS(phi), SIN(theta)*SIN(phi), COS(theta))
+      vectors(2) = vector_t(COS(theta)*COS(phi), COS(theta)*SIN(phi), -SIN(theta))
+      vectors(3) = vector_t(SIN(phi), -COS(phi), 0._RD)
+
+      ! Finish
+
+      return
+
+   end function spherical_basis_vectors
+
+   !****
+
+   function general_basis_vectors(vector1, vector2, i) result(vectors)
+
+      type(vector_t), intent(in) :: vector1
+      type(vector_t), intent(in) :: vector2
+      integer, intent(in)        :: i
+      type(vector_t)             :: vectors(3)
+
+      integer :: j1
+      integer :: j2
+      integer :: j3
+
+      ! Construct unit basis vectors from vector1 and vector2, which
+      ! should not be parallel:
+      !
+      !    vectors(j1) is parallel to vector1
+      !    vectors(j2) is parallel to vector2 x vectors(j1)
+      !    vectors(j3) is parallel to vectors(j1) x vectors(j2)
+      !
+      ! ...where j1, j2, j3 are evaluated from i using modulo-3
+      ! arithmetic
+
+      j1 = MODULO(i-1, 3) + 1
+      j2 = MODULO(i+0, 3) + 1
+      j3 = MODULO(i+1, 3) + 1
+
+      vectors(j1) = vector1
+      vectors(j2) = cross_product(vector2, vectors(j1))
+      vectors(j3) = cross_product(vector1, vectors(j2))
+
+      vectors(j1) = vectors(j1)/norm2(vectors(j1))
+      vectors(j2) = vectors(j2)/norm2(vectors(j2))
+      vectors(j3) = vectors(j3)/norm2(vectors(j3))
+
+      ! Finish
+
+      return
+
+   end function general_basis_vectors
+
+end module basis_vectors_m
