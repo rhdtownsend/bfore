@@ -1,0 +1,78 @@
+! Module  : mesh_utils_m
+! Purpose : Miscellaneous utility routines for mesh_m
+
+#:include 'forum.inc'
+
+module mesh_utils_m
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use vector_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Accessibility
+
+   private
+
+   public :: store_vert_normals
+
+   ! Procedures
+
+contains
+
+   subroutine store_vert_normals(mesh, i)
+
+      type(mesh_t), intent(in) :: mesh
+      integer, intent(in)      :: i
+      type(vector_t)           :: normals(mesh%n_vert)
+
+      integer        :: f
+      type(vector_t) :: area
+      integer        :: f_e
+      integer        :: v1
+      integer        :: v2
+      integer        :: v3
+      integer        :: v
+
+      ! Evaluate the vertex normal vectors by averaging over face area vectors;
+      ! store the results in the i'th vertex vector
+
+      init_vert_loop: do v = 1, mesh%n_vert
+         mesh%vert_vector(i, v) = vector_t(0._RD, 0._RD, 0._RD)
+      end do init_vert_loop
+
+      face_loop: do f = 1, mesh%n_face
+
+         area = mesh%face_area(f)
+
+         f_e = mesh%face_edge(f)
+
+         v1 = mesh%edge_vert(f_e)
+         v2 = mesh%edge_vert(mesh%edge_next(f_e))
+         v3 = mesh%edge_vert(mesh%edge_prev(f_e))
+
+         mesh%vert_vector(i, v1) = mesh%vert_vector(i, v1) + area
+         mesh%vert_vector(i, v2) = mesh%vert_vector(i, v2) + area
+         mesh%vert_vector(i, v3) = mesh%vert_vector(i, v3) + area
+
+      end do face_loop
+
+      norm_vert_loop : do v = 1, mesh%n_vert
+         mesh%vert_vector(i, v) = mesh%vert_vector(i, v)/norm2(mesh%vert_vector(i, v))
+      end do norm_vert_loop
+
+      ! Finish
+
+      return
+
+   end subroutine store_vert_normals
+
+end module mesh_utils_m
