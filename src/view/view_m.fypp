@@ -9,8 +9,8 @@ module view_m
 
    use forum_m
 
+   use point_m
    use transform_m
-   use stat_m
 
    use ISO_FORTRAN_ENV
 
@@ -21,60 +21,18 @@ module view_m
    ! Derived-type definitions
 
    type :: view_t
-      private
-      real(RD) :: alpha
-      real(RD) :: beta
-      real(RD) :: gamma
-      real(RD) :: C(3)
-      real(RD) :: delta_x
-      real(RD) :: delta_y
+      type(point_t) :: origin
+      real(RD)      :: alpha
+      real(RD)      :: beta
+      real(RD)      :: gamma
+      real(RD)      :: delta_x
+      real(RD)      :: delta_y
    contains
       private
-      procedure, public :: read
-      procedure, public :: write
       procedure, public :: camera_transform
       procedure, public :: normal_transform
       procedure, public :: pixel_transform
    end type view_t
-
-   ! Interfaces
-
-   interface view_t
-      module procedure view_t_data_
-   end interface view_t
-
-   interface
-
-      ! In view_construct_sm
-
-      module function view_t_data_(alpha, beta, gamma, C, delta_x, delta_y) result(view)
-         implicit none (type, external)
-         real(RD), intent(in) :: alpha
-         real(RD) ,intent(in) :: beta
-         real(RD), intent(in) :: gamma
-         real(RD), intent(in) :: C(:)
-         real(RD), intent(in) :: delta_x
-         real(RD), intent(in) :: delta_y
-         type(view_t)         :: view
-      end function view_t_data_
-
-      ! In view_io_sm
-
-      module subroutine read(self, hdf5io, stat)
-         implicit none (type, external)
-         class(view_t), intent(out)     :: self
-         type(hdf5io_t), intent(inout)  :: hdf5io
-         integer, intent(out), optional :: stat
-      end subroutine read
-
-      module subroutine write(self, hdf5io, stat)
-         implicit none (type, external)
-         class(view_t), intent(in)      :: self
-         type(hdf5io_t), intent(inout)  :: hdf5io
-         integer, intent(out), optional :: stat
-      end subroutine write
-
-   end interface
 
    ! Accessibility
 
@@ -96,7 +54,7 @@ contains
 
       tform = transform_t()
 
-      call tform%translate(-self%C(1), -self%C(2), -self%C(3))
+      call tform%translate(-self%origin%x, -self%origin%y, -self%origin%z)
       call tform%rotate(self%alpha, self%beta, self%gamma)
 
       ! Finish
