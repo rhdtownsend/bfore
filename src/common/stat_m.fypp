@@ -9,6 +9,8 @@ module stat_m
 
    use forum_m
 
+   use tomlf
+
    ! No implicit typing
 
    implicit none (type, external)
@@ -51,5 +53,26 @@ module stat_m
    public :: STAT_INVALID_GROUP_TYPE
    public :: STAT_INVALID_GROUP_REVISION
    public :: STAT_INVALID_DATASET_DIM
+   public :: check_toml_stat
+
+   ! Procedures
+
+contains
+
+   subroutine check_toml_stat(context, stat, name, origin, type)
+
+      type(toml_context), intent(in) :: context
+      integer, intent(in)            :: stat
+      character(*), intent(in)       :: name
+      integer, intent(in)            :: origin
+      character(*), intent(in)       :: type
+
+      if (stat == 0) return
+
+      print *, 'non-zero stat:', stat, origin
+      print *, context%report('cannot read '//TRIM(name), origin, 'expected '//TRIM(type)//' value')
+      stop 1
+
+   end subroutine check_toml_stat
 
 end module stat_m
