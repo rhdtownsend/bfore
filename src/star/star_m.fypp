@@ -1,0 +1,136 @@
+! Module  : star_m
+! Purpose : Define star_t datatype, representing a star
+
+#:include 'forum.inc'
+
+module star_m
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use mesh_primitives_m
+   use point_m
+   use roche_surface_m
+   use vector_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Parameter definitions
+
+   integer, parameter :: I_T = 1
+   integer, parameter :: I_G = 2
+   integer, parameter :: N_SCALAR = 2
+
+   integer, parameter :: I_VN = 1
+   integer, parameter :: I_VV = 2
+   integer, parameter :: I_VG = 3
+   integer, parameter :: N_VECTOR = 3
+
+   ! Derived-type definitions
+
+   type :: star_t
+      type(mesh_t) :: mesh
+      real(RD)     :: M
+      real(RD)     :: R_pole
+      real(RD)     :: T_pole
+      real(RD)     :: omega
+   contains
+      private
+      procedure, public :: read
+      procedure, public :: write
+   end type star_t
+
+   ! Interfaces
+
+   interface
+
+      ! In star_io_sm
+
+      module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
+         class(star_t), intent(out)     :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
+         class(star_t), intent(in)      :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine write
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: I_T
+   public :: I_G
+   public :: I_VN
+   public :: I_VG
+   public :: I_VV
+   public :: star_t
+   public :: star_mesh
+
+   ! Procedures
+
+contains
+
+   function star_mesh(omega, beta, n_refine) result(mesh)
+
+      real(RD), intent(in) :: beta
+      real(RD), intent(in) :: omega
+      integer, intent(in)  :: n_refine
+      type(mesh_t)         :: mesh
+
+      type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
+
+      type(roche_surface_t) :: surf
+      type(vector_t)        :: vO
+      integer               :: v
+      type(point_t)         :: point
+      type(vector_t)        :: vr
+      type(vector_t)        :: vv
+      type(vector_t)        :: vg
+
+      ! Create the mesh
+
+      surf = roche_surface_t(1._RD, omega)
+
+      mesh = polar_mesh(surf, n_refine, N_SCALAR, N_VECTOR)
+
+      ! Set vertex scalar and vector quantities
+
+      vO = omega*SQRT(8._RD/27._RD)*vector_t(0._RD, 0._RD, 1._RD)
+
+      vert_loop: do v = 1, mesh%n_vert
+
+         point = mesh%vert_point(v)
+
+         vr = point - ORIGIN
+
+         vv = cross_product(vO, vr)
+         vg = -vr/norm2(vr)**3 - cross_product(vO, vv)
+
+         mesh%vert_vector(I_VN, v) = -vg/norm2(vg)
+         mesh%vert_vector(I_VV, v) = vv
+         mesh%vert_vector(I_VG, v) = vg
+
+         mesh%vert_scalar(I_T, v) = norm2(vg)**beta
+         mesh%vert_scalar(I_G, v) = norm2(vg)
+
+      end do vert_loop
+
+      ! Finish
+
+      return
+
+   end function star_mesh
+
+end module star_m
