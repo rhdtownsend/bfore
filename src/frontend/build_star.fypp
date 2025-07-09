@@ -1,5 +1,5 @@
 ! Program : build_star
-! Purpose : Build meshes representing stars
+! Purpose : Build a meshes representing a star
 
 #:include 'forum.inc'
 
@@ -10,13 +10,8 @@ program build_star
    use forum_m
 
    use mesh_m
-   use mesh_primitives_m
-   use point_m
-   use roche_surface_m
-   use star_common_m
+   use star_m
    use stat_m
-   use view_m
-   use vector_m
 
    use tomlf
 
@@ -32,19 +27,19 @@ program build_star
 
    real(RD)                  :: M
    real(RD)                  :: R_pole
-   real(RD)                  :: L
+   real(RD)                  :: T_pole
    real(RD)                  :: omega
    real(RD)                  :: beta
    integer                   :: n_refine
-   character(:), allocatable :: mesh_file_name
+   character(:), allocatable :: star_file_name
 
    type(toml_table), allocatable  :: table
    type(toml_context)             :: context
    type(toml_error), allocatable  :: error
 
-   type(roche_surface_t) :: surf
-   type(mesh_t)          :: mesh
-   type(hdf5io_t)        :: hdf5io
+   type(mesh_t)   :: mesh
+   type(star_t)   :: star
+   type(hdf5io_t) :: hdf5io
 
    ! Read command-line arguments
 
@@ -60,69 +55,66 @@ program build_star
       stop 1
    end if
 
-   call init_stellar(table, M, R_pole, L, omega)
+   call init_star(table, M, R_pole, T_pole, omega)
    call init_physics(table, beta)
-   call init_mesh(table, n_refine, mesh_file_name)
+   call init_mesh(table, n_refine)
+   call init_files(table, star_file_name)
 
    call table%destroy()
 
-   ! Create the mesh
+   ! Create the star
 
-   surf = roche_surface_t(R_pole, omega)
+   mesh = star_mesh(omega, beta, n_refine)
 
-   mesh = polar_mesh(surf, n_refine, N_SCALAR, N_VECTOR)
+   star = star_t(mesh, M, R_pole, T_pole, omega)
 
-   ! Set mesh properties
+   ! Write the star
 
-   call set_mesh_properties(mesh, M, R_pole, L, omega, beta)
-
-   ! Write the mesh
-
-   hdf5io = hdf5io_t(mesh_file_name, CREATE_FILE)
-   call mesh%write(hdf5io)
+   hdf5io = hdf5io_t(star_file_name, CREATE_FILE)
+   call star%write(hdf5io)
    call hdf5io%final()
 
    ! Finish
 
 contains
 
-   subroutine init_stellar(table, M, R_pole, L, omega)
+   subroutine init_star(table, M, R_pole, T_pole, omega)
 
       type(toml_table), intent(inout) :: table
       real(RD), intent(out)           :: M
       real(RD), intent(out)           :: R_pole
-      real(RD), intent(out)           :: L
+      real(RD), intent(out)           :: T_pole
       real(RD), intent(out)           :: omega
 
-      type(toml_table), pointer :: table_stellar
+      type(toml_table), pointer :: table_star
       integer                   :: stat
+      integer                   :: origin
 
-      ! Read the stellar parameters table
+      ! Read the star parameters table
 
-      call get_value(table, 'stellar', table_stellar, stat=stat)
-      call check_stat(stat)
+      call get_value(table, 'star', table_star, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'star', origin, 'table')
 
-      call get_value(table_stellar, 'M', M, stat=stat)
-      call check_stat(stat)
+      call get_value(table_star, 'M', M, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'M', origin, 'real')
 
-      call get_value(table_stellar, 'R_pole', R_pole, stat=stat)
-      call check_stat(stat)
+      call get_value(table_star, 'R_pole', R_pole, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'R_pole', origin, 'real')
 
-      call get_value(table_stellar, 'L', L, stat=stat)
-      call check_stat(stat)
+      call get_value(table_star, 'T_pole', T_pole, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'T_pole', origin, 'real')
 
-      call get_value(table_stellar, 'omega', omega, stat=stat)
-      call check_stat(stat)
+      call get_value(table_star, 'omega', omega, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'omega', origin, 'real')
 
       M = M*M_SUN
-      R_pole = R_pole*R_SUN
-      L = L*L_SUN
+      R_pole = R_pole*R_sun
 
       ! Finish
 
       return
 
-   end subroutine init_stellar
+   end subroutine init_star
 
    !****
 
@@ -133,14 +125,15 @@ contains
 
       type(toml_table), pointer :: table_physics
       integer                   :: stat
+      integer                   :: origin
 
       ! Read the physics parameters table
 
-      call get_value(table, 'physics', table_physics, stat=stat)
-      call check_stat(stat)
+      call get_value(table, 'physics', table_physics, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'physics', origin, 'table')
 
-      call get_value(table_physics, 'beta', beta, 0.25_RD, stat=stat)
-      call check_stat(stat)
+      call get_value(table_physics, 'beta', beta, 0.25_RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'beta', origin, 'real')
 
       ! Finish
 
@@ -150,25 +143,22 @@ contains
 
    !****
 
-   subroutine init_mesh(table, n_refine, file_name)
+   subroutine init_mesh(table, n_refine)
 
-      type(toml_table), intent(inout)        :: table
-      integer, intent(out)                   :: n_refine
-      character(:), allocatable, intent(out) :: file_name
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: n_refine
 
       type(toml_table), pointer :: table_mesh
       integer                   :: stat
+      integer                   :: origin
 
       ! Read the mesh parameters table
 
-      call get_value(table, 'mesh', table_mesh, stat=stat)
-      call check_stat(stat)
+      call get_value(table, 'mesh', table_mesh, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'mesh', origin, 'table')
 
-      call get_value(table_mesh, 'file_name', mesh_file_name, stat=stat)
-      call check_stat(stat)
-
-      call get_value(table_mesh, 'n_refine', n_refine, 0, stat=stat)
-      call check_stat(stat)
+      call get_value(table_mesh, 'n_refine', n_refine, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_refine', origin, 'integer')
 
       ! Finish
 
@@ -178,115 +168,27 @@ contains
 
    !****
 
-   subroutine check_stat(stat)
+   subroutine init_files(table, star_file_name)
 
-      integer, intent(in)      :: stat
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: star_file_name
 
-      if (stat == 0) return
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
 
-      print *,'non-zero stat:', stat
-      stop 1
+      ! Read the files parameters table
 
-   end subroutine check_stat
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
 
-   !****
-
-   subroutine set_mesh_properties(mesh, M, R_pole, L, omega, beta)
-
-      type(mesh_t), intent(inout) :: mesh
-      real(RD), intent(in)        :: M
-      real(RD), intent(in)        :: R_pole
-      real(RD), intent(in)        :: L
-      real(RD), intent(in)        :: omega
-      real(RD), intent(in)        :: beta
-
-      type(vector_t) :: vOmega
-      real(RD)       :: Sigma_0
-      real(RD)       :: Sigma_4b
-      integer        :: f
-      type(vector_t) :: area
-      type(point_t)  :: point
-      type(vector_t) :: vv
-      type(vector_t) :: vg
-      real(RD)       :: g_pole
-      real(RD)       :: T_pole
-      integer        :: v
-
-      ! Evaluate the sigma integrals (see Cranmer 1997, PhD thesis,
-      ! eqn. 4.22)
-
-      vOmega = omega*SQRT(8._RD*G_GRAVITY*M/(27._RD*R_pole**3))*vector_t(0._RD, 0._RD, 1._RD)
-
-      Sigma_0 = 0._RD
-      Sigma_4b = 0._RD
-
-      face_loop: do f = 1, mesh%n_face
-
-         area = mesh%face_area(f)
-         point = mesh%face_midpoint(f)
-
-         call eval_velocity_gravity(point, M, vOmega, vv, vg)
-
-         Sigma_0 = Sigma_0 + norm2(area)
-         Sigma_4b = Sigma_4b + norm2(vg)**beta*norm2(area)
-
-      end do face_loop
-
-      ! Evaluate auxillary quantities
-
-      g_pole = G_GRAVITY*M/R_pole**2
-      T_pole = ((L/Sigma_4b)*g_pole**(4._RD*beta)/SIGMA_STEFAN)**0.25_RD
-
-      ! Set vertex scalar and vector quantities
-
-      vert_loop: do v = 1, mesh%n_vert
-
-         point = mesh%vert_point(v)
-
-         call eval_velocity_gravity(point, M, vOmega, vv, vg)
-
-         mesh%vert_vector(I_N, v) = -vg/norm2(vg)
-         mesh%vert_vector(I_V, v) = vv
-         mesh%vert_vector(I_G, v) = vg
-
-         mesh%vert_scalar(I_T, v) = T_pole*(norm2(vg)/g_pole)**beta
-
-      end do vert_loop
+      call get_value(table_files, 'star_file_name', star_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'star_file_name', origin, 'string')
 
       ! Finish
 
       return
 
-   end subroutine set_mesh_properties
-
-   !****
-
-   subroutine eval_velocity_gravity(point, M, vOmega, vv, vg)
-
-      type(point_t), intent(in)   :: point
-      real(RD), intent(in)        :: M
-      type(vector_t), intent(in)  :: vOmega
-      type(vector_t), intent(out) :: vv
-      type(vector_t), intent(out) :: vg
-
-      type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
-
-      type(vector_t) :: vr
-      real(RD)       :: r
-
-      ! Evaluate the velocity and gravity at the point
-
-      vr = point - ORIGIN
-
-      r = norm2(vr)
-
-      vv = cross_product(vOmega, vr)
-      vg = -G_GRAVITY*M*vr/r**3 + cross_product(vOmega, vv)
-
-      ! Finish
-
-      return
-
-   end subroutine eval_velocity_gravity
+   end subroutine init_files
 
 end program build_star
