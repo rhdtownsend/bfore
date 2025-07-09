@@ -1,0 +1,162 @@
+! Module  : mode_m
+! Purpose : Define mode_t datatype, representing a single pulsation mode
+
+#:include 'forum.inc'
+
+module mode_m
+
+   ! Uses
+
+   use forum_m
+
+   use special_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Derived-type definitions
+
+   type mode_t
+      private
+      integer       :: l
+      integer       :: m
+      complex(RD)   :: C_r
+      complex(RD)   :: C_h
+      complex(RD)   :: C_T
+      complex(RD)   :: C_g
+      real(RD)      :: sigma
+   contains
+      procedure :: vxi
+      procedure :: delta_T
+      procedure :: delta_g
+   end type mode_t
+
+   ! Interfaces
+
+   interface mode_t
+      module procedure mode_t_
+   end interface mode_t
+
+   ! Access specifiers
+
+   private
+
+   public :: mode_t
+
+   ! Procedures
+
+contains
+
+   function mode_t_(l, m, C_r, C_h, C_T, C_g, sigma) result(mode)
+
+      integer, intent(in)     :: l
+      integer, intent(in)     :: m
+      complex(RD), intent(in) :: C_r
+      complex(RD), intent(in) :: C_h
+      complex(RD), intent(in) :: C_T
+      complex(RD), intent(in) :: C_g
+      real(RD), intent(in)    :: sigma
+      type(mode_t)            :: mode
+
+      ! Construct the mode_t
+
+      mode%l = l
+      mode%m = m
+
+      mode%C_r = C_r
+      mode%C_h = C_h
+      mode%C_T = C_T
+      mode%C_g = C_g
+
+      mode%sigma = sigma
+
+      ! Finish
+
+      return
+
+   end function mode_t_
+
+   !****
+
+   function vxi(self, r, theta, phi, time)
+
+      class(mode_t), intent(in) :: self
+      real(RD), intent(in)      :: r
+      real(RD), intent(in)      :: theta
+      real(RD), intent(in)      :: phi
+      real(RD), intent(in)      :: time
+      real(RD)                  :: vxi(3)
+
+      complex(RD) :: E
+
+      ! Evaluate the displacement perturbation vector
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the components of the displacement perturbation
+      ! vector (wrt the local spherical basis vectors)
+
+      vxi(1) =  REAL(self%C_r * r * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+      vxi(2) = REAL(self%C_h * r * spherical_rgrad_Y_theta(self%l, self%m, theta, phi) * E, RD)
+      vxi(3) = REAL(self%C_h * r * spherical_rgrad_Y_phi(self%l, self%m, theta, phi) * E, RD)
+
+      ! Finish
+
+   end function vxi
+
+   !****
+
+   function delta_T(self, T, theta, phi, time)
+
+      class(mode_t), intent(in) :: self
+      real(RD), intent(in)      :: T
+      real(RD), intent(in)      :: theta
+      real(RD), intent(in)      :: phi
+      real(RD), intent(in)      :: time
+      real(RD)                  :: delta_T
+
+      complex(RD) :: E
+
+      ! Evaluate the temperature perturbation
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the temperature perturbation
+
+      delta_T = REAL(self%C_T * T * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+
+   end function delta_T
+
+   ! !****
+
+   function delta_g(self, g, theta, phi, time)
+
+      class(mode_t), intent(in) :: self
+      real(RD), intent(in)      :: g
+      real(RD), intent(in)      :: theta
+      real(RD), intent(in)      :: phi
+      real(RD), intent(in)      :: time
+      real(RD)                  :: delta_g
+
+      complex(RD) :: E
+
+      ! Evaluate the gravity perturbation
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the gravity perturbation
+
+      delta_g = REAL(self%C_g * g * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+
+   end function delta_g
+
+end module mode_m
