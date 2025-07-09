@@ -51,11 +51,11 @@ contains
 
          point => mesh%vert_point(v)
 
-         mesh%vert_scalar(1,v) = point%x
-         mesh%vert_scalar(2,v) = point%y
-         mesh%vert_scalar(3,v) = point%z
+         mesh%vert_scalar(1, v) = point%x
+         mesh%vert_scalar(2, v) = point%y
+         mesh%vert_scalar(3, v) = point%z
 
-         mesh%vert_vector(1,v) = point - point_t(0._RD, 0._RD, 0._RD)
+         mesh%vert_vector(1, v) = point - point_t(0._RD, 0._RD, 0._RD)
 
       end do
 

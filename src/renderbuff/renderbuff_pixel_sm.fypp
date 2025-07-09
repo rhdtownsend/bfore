@@ -31,16 +31,34 @@ contains
 
    !****
 
-   module procedure pixel_scalar
+   module procedure pixel_tag
 
-      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n_scalar, 'invalid index')
       @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
       @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
 
-      ! Get the i'th scalar associated with pixel (i_x,i_y). Can also be
-      ! used to set the scalar
+      ! Get the tag associated with pixel (i_x,i_y). Can also be
+      ! used to set the tag
 
-      scalar => self%PS(i,i_x,i_y)
+      tag => self%PT(i_x,i_y)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_tag
+
+   !****
+
+   module procedure pixel_scalar
+
+      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_scalar, 'invalid index')
+      @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
+      @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
+
+      ! Get the a'th scalar attribute of pixel (i_x,i_y). Can also be
+      ! used to set the attribute
+
+      scalar => self%PS(a,i_x,i_y)
 
       ! Finish
 
@@ -52,19 +70,37 @@ contains
 
    module procedure pixel_vector
 
-      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n_vector, 'invalid index')
+      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_vector, 'invalid index')
       @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
       @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
 
-      ! Get the i'th vectorr associated with pixel (i_x,i_y). Can also be
-      ! used to set the vector
+      ! Get the a'th vector attribute of pixel (i_x,i_y). Can also be
+      ! used to set the attribute
 
-      vector => self%PV(i,i_x,i_y)
+      vector => self%PV(a,i_x,i_y)
 
       ! Finish
 
       return
 
    end procedure pixel_vector
+
+   !****
+
+   module procedure pixel_count
+
+      ! Count the number of pixels, optionally with tags matching tag
+
+      if (PRESENT(tag)) then
+         count_ = COUNT(self%PT == tag)
+      else
+         count_ = SIZE(self%PT)
+      end if
+
+      ! Finish
+
+      return
+
+   end procedure pixel_count
 
 end submodule renderbuff_pixel_sm

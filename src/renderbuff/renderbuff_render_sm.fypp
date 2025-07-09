@@ -87,7 +87,7 @@ contains
          v3 = mesh%edge_vert(mesh%edge_prev(f_e))
 
          call render_triangle(self, &
-            points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]))
+            points([v1, v2, v3]), scalars(:,[v1, v2, v3]), vectors(:,[v1, v2, v3]), tag)
 
       end do face_loop
 
@@ -195,6 +195,10 @@ contains
                   ! Store the depth
 
                   self%PD(i_x,i_y) = depth
+
+                  ! Store the tag
+
+                  if (PRESENT(tag)) self%PT(i_x,i_y) = tag
 
                   ! Store the scalars and vectors
 

@@ -15,6 +15,9 @@ contains
 
    module procedure renderbuff_t_data_
 
+      @:CHECK_BOUNDS(SIZE(PT, 1), SIZE(PD, 1))
+      @:CHECK_BOUNDS(SIZE(PT, 2), SIZE(PD, 2))
+
       @:CHECK_BOUNDS(SIZE(PS, 2), SIZE(PD, 1))
       @:CHECK_BOUNDS(SIZE(PS, 3), SIZE(PD, 2))
 
@@ -24,6 +27,7 @@ contains
       ! Construct the renderbuff from the data
 
       rbuff%PD = PD
+      rbuff%PT = PT
       rbuff%PS = PS
       rbuff%PV = PV
 
@@ -45,6 +49,7 @@ contains
       integer                     :: n_scalar_
       integer                     :: n_vector_
       real(RD)                    :: PD(n_x,n_y)
+      integer                     :: PT(n_x,n_y)
       real(RD), allocatable       :: PS(:,:,:)
       type(vector_t), allocatable :: PV(:,:,:)
 
@@ -63,6 +68,7 @@ contains
       ! Construct the renderbuff from the dimensions
 
       PD = -HUGE(0._RD)
+      PT = NULL_TAG
 
       allocate(PS(n_scalar_,n_x,n_y))
       PS = 0._RD
@@ -70,7 +76,7 @@ contains
       allocate(PV(n_vector_,n_x,n_y))
       PV = vector_t(0._RD, 0._RD, 0._RD)
 
-      rbuff = renderbuff_t_data_(PD, PS, PV)
+      rbuff = renderbuff_t_data_(PD, PT, PS, PV)
 
       ! Finish
 
@@ -87,6 +93,7 @@ contains
       integer                     :: n_scalar
       integer                     :: n_vector
       real(RD), allocatable       :: PD(:,:)
+      integer, allocatable        :: PT(:,:)
       real(RD), allocatable       :: PS(:,:,:)
       type(vector_t), allocatable :: PV(:,:,:)
       logical, allocatable        :: mask(:,:)
@@ -108,10 +115,12 @@ contains
       n_vector = rbuffs(1)%n_vector
 
       allocate(PD(n_x,n_y))
+      allocate(PT(n_x,n_y))
       allocate(PS(n_scalar,n_x,n_y))
       allocate(PV(n_vector,n_x,n_y))
 
       PD = rbuffs(1)%PD
+      PT = rbuffs(1)%PT
       PS = rbuffs(1)%PS
       PV = rbuffs(1)%PV
 
@@ -122,12 +131,13 @@ contains
          mask = rbuffs(i)%PD > PD
 
          PD = MERGE(rbuffs(i)%PD, PD, mask)
+         PT = MERGE(rbuffs(i)%PT, PT, mask)
          PS = MERGE(rbuffs(i)%PS, PS, SPREAD(mask, DIM=1, NCOPIES=n_scalar))
          PV = MERGE(rbuffs(i)%PV, PV, SPREAD(mask, DIM=1, NCOPIES=n_vector))
 
       end do rbuff_loop
 
-      rbuff = renderbuff_t_data_(PD, PS, PV)
+      rbuff = renderbuff_t_data_(PD, PT, PS, PV)
 
       ! Finish
 

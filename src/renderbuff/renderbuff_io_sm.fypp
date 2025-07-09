@@ -56,16 +56,18 @@ contains
          integer                     :: n_x
          integer                     :: n_y
          real(RD), allocatable       :: PD(:,:)
+         integer, allocatable        :: PT(:,:)
          real(RD), allocatable       :: PS(:,:,:)
          type(vector_t), allocatable :: PV(:,:,:)
          real(RD), allocatable       :: pixel_vector_comps(:,:,:,:)
 
-         call hdf5io%read_attr('n_x', n_x)
-         call hdf5io%read_attr('n_y', n_y)
          call hdf5io%read_attr('n_scalar', n_scalar)
          call hdf5io%read_attr('n_vector', n_vector)
+         call hdf5io%read_attr('n_x', n_x)
+         call hdf5io%read_attr('n_y', n_y)
 
          call hdf5io%alloc_read_dset('pixel_depths', PD)
+         call hdf5io%alloc_read_dset('pixel_tags', PT)
 
          call hdf5io%alloc_read_dset('pixel_scalars', PS)
 
@@ -75,6 +77,7 @@ contains
 
          if (.NOT. ( &
             ALL(SHAPE(PD) == [n_x, n_y]) .AND. &
+            ALL(SHAPE(PT) == [n_x, n_y]) .AND. &
             ALL(SHAPE(PS) == [n_scalar, n_x, n_y]) .AND. &
             ALL(SHAPE(PV) == [n_vector, n_x, n_y]))) then
             if (PRESENT(stat)) then
@@ -87,7 +90,7 @@ contains
 
          select type(self)
          type is(renderbuff_t)
-            self = renderbuff_t_data_(PD, PS, PV)
+            self = renderbuff_t_data_(PD, PT, PS, PV)
          class default
             @:ABORT('invalid type')
          end select
@@ -113,12 +116,13 @@ contains
       call hdf5io%write_attr('TYPE', 'renderbuff_t')
       call hdf5io%write_attr('REVISION', 1)
 
-      call hdf5io%write_attr('n_x', self%n_x)
-      call hdf5io%write_attr('n_y', self%n_y)
       call hdf5io%write_attr('n_scalar', self%n_scalar)
       call hdf5io%write_attr('n_vector', self%n_vector)
+      call hdf5io%write_attr('n_x', self%n_x)
+      call hdf5io%write_attr('n_y', self%n_y)
 
       call hdf5io%write_dset('pixel_depths', self%PD)
+      call hdf5io%write_dset('pixel_tags', self%PT)
 
       call hdf5io%write_dset('pixel_scalars', self%PS)
 

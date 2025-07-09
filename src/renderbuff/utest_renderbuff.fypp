@@ -31,7 +31,8 @@ program utest_renderbuff
 
    ! Run the tests
 
-   call test_triangle()
+   call test_render_triangle()
+   call test_render_mesh()
    call test_construction()
    call test_io()
 
@@ -39,7 +40,7 @@ program utest_renderbuff
 
 contains
 
-   subroutine test_triangle()
+   subroutine test_render_triangle()
 
       type(renderbuff_t)    :: rbuff
       real(RD), allocatable :: z(:,:)
@@ -157,8 +158,34 @@ contains
 
       return
 
-   end subroutine test_triangle
+   end subroutine test_render_triangle
 
+   !****
+
+   subroutine test_render_mesh()
+
+      type(mesh_t)           :: mesh
+      type(view_t)           :: view
+      type(renderbuff_t)     :: rbuff
+
+      print *,'Checking renderbuff mesh rendering'
+
+      mesh = tetrahedron_mesh()
+
+      view = view_t(point_t(0._RD, 0._RD, 0._RD), &
+         0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
+         2.4_RD, 2.4_RD)
+
+      rbuff = renderbuff_t(64, 64)
+      call rbuff%render(mesh, view, 1)
+
+      @:CHECK(rbuff%pixel_count(1) == 840, 'tetrahedron mesh pixel count')
+
+      ! Finish
+
+      return
+
+   end subroutine test_render_mesh
 
    !****
 
@@ -207,7 +234,7 @@ contains
 
       print *,'Checking renderbuff i/o'
 
-      mesh = polar_mesh(sphere_surface_t(1._RD), 0, 1, 1)
+      mesh = tetrahedron_mesh(1, 1)
 
       do v = 1, mesh%n_vert
 
@@ -220,8 +247,8 @@ contains
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
-      rbuff_out = renderbuff_t(256, 256, 1, 1)
-      call rbuff_out%render(mesh, view)
+      rbuff_out = renderbuff_t(64, 64, 1, 1)
+      call rbuff_out%render(mesh, view, 1)
 
       hdf5io = hdf5io_t('utest_renderbuff.h5', CREATE_FILE)
       call rbuff_out%write(hdf5io, stat)

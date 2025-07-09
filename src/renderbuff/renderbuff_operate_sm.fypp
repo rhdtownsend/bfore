@@ -27,6 +27,7 @@ contains
 
       equals = &
          ALL(self%PD == other%PD) .AND. &
+         ALL(self%PT == other%PT) .AND. &
          ALL(self%PS == other%PS) .AND. &
          ALL(self%PV == other%PV)
 

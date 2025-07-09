@@ -21,13 +21,18 @@ module renderbuff_m
 
    implicit none (type, external)
 
+   ! Parameter definitions
+
+   integer, parameter :: NULL_TAG = -HUGE(0)
+
    ! Derived-type definitions
 
    type :: renderbuff_t
       private
       real(RD), allocatable       :: PD(:,:)   ! Pixel depth buffer
+      integer, allocatable        :: PT(:,:)   ! Pixel tag buffer
       real(RD), allocatable       :: PS(:,:,:) ! Pixel scalar buffer
-      type(vector_t), allocatable :: PV(:,:,:) ! Pixel vector buffert
+      type(vector_t), allocatable :: PV(:,:,:) ! Pixel vector buffer
       integer, public             :: n_scalar
       integer, public             :: n_vector
       integer, public             :: n_x
@@ -37,8 +42,10 @@ module renderbuff_m
       procedure         :: equals_
       generic, public   :: operator(==) => equals_
       procedure, public :: pixel_depth
+      procedure, public :: pixel_tag
       procedure, public :: pixel_scalar
       procedure, public :: pixel_vector
+      procedure, public :: pixel_count
       procedure, public :: render
       procedure, public :: render_triangle
       procedure, public :: read
@@ -52,13 +59,14 @@ module renderbuff_m
       module procedure renderbuff_t_merge_
    end interface renderbuff_t
 
+   ! In renderbuff_construct_sm
+
    interface
 
-      ! In renderbuff_construct_sm
-
-      module function renderbuff_t_data_(PD, PS, PV) result(rbuff)
+      module function renderbuff_t_data_(PD, PT, PS, PV) result(rbuff)
          implicit none (type, external)
          real(RD), intent(in)       :: PD(:,:)
+         integer, intent(in)        :: PT(:,:)
          real(RD), intent(in)       :: PS(:,:,:)
          type(vector_t), intent(in) :: PV(:,:,:)
          type(renderbuff_t)         :: rbuff
@@ -79,7 +87,11 @@ module renderbuff_m
          type(renderbuff_t)             :: rbuff
       end function renderbuff_t_merge_
 
-      ! In renderbuff_operate_sm
+   end interface
+
+   ! In renderbuff_operate_sm
+
+   interface
 
       module function equals_(self, other) result(equals)
          implicit none (type, external)
@@ -88,7 +100,11 @@ module renderbuff_m
          logical                         :: equals
       end function equals_
 
-      ! In renderbuff_pixel_sm
+   end interface
+
+   ! In renderbuff_pixel_sm
+
+   interface
 
       module function pixel_depth(self, i_x, i_y) result(depth)
          implicit none (type, external)
@@ -98,42 +114,67 @@ module renderbuff_m
          real(RD), pointer                       :: depth
       end function pixel_depth
 
-      module function pixel_scalar(self, i, i_x, i_y) result(scalar)
+      module function pixel_tag(self, i_x, i_y) result(tag)
          implicit none (type, external)
          class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i
+         integer, intent(in)                     :: i_x
+         integer, intent(in)                     :: i_y
+         integer, pointer                        :: tag
+      end function pixel_tag
+
+      module function pixel_scalar(self, a, i_x, i_y) result(scalar)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in), target :: self
+         integer, intent(in)                     :: a
          integer, intent(in)                     :: i_x
          integer, intent(in)                     :: i_y
          real(RD), pointer                       :: scalar
       end function pixel_scalar
 
-      module function pixel_vector(self, i, i_x, i_y) result(vector)
+      module function pixel_vector(self, a, i_x, i_y) result(vector)
          implicit none (type, external)
          class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i
+         integer, intent(in)                     :: a
          integer, intent(in)                     :: i_x
          integer, intent(in)                     :: i_y
          type(vector_t), pointer                 :: vector
       end function pixel_vector
 
-      ! In renderbuff_render_sm
+      module function pixel_count(self, tag) result(count_)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in) :: self
+         integer, intent(in), optional   :: tag
+         integer                         :: count_
+      end function pixel_count
 
-      module subroutine render(self, mesh, view)
+   end interface
+
+   ! In renderbuff_render_sm
+
+   interface
+
+      module subroutine render(self, mesh, view, tag)
          implicit none (type, external)
          class(renderbuff_t), intent(inout) :: self
          type(mesh_t), intent(in)           :: mesh
          type(view_t), intent(in)           :: view
+         integer, intent(in), optional      :: tag
       end subroutine render
 
-      module subroutine render_triangle(self, points, scalars, vectors)
+      module subroutine render_triangle(self, points, scalars, vectors, tag)
          implicit none (type, external)
          class(renderbuff_t), intent(inout) :: self
          type(point_t), intent(in)          :: points(:)
          real(RD), intent(in)               :: scalars(:,:)
          type(vector_t), intent(in)         :: vectors(:,:)
+         integer, intent(in), optional      :: tag
       end subroutine render_triangle
 
-      ! In renderbuff_io_sm
+   end interface
+
+   ! In renderbuff_io_sm
+
+   interface
 
       module subroutine read(self, hdf5io, stat)
          implicit none (type, external)
@@ -155,6 +196,7 @@ module renderbuff_m
 
    private
 
+   public :: NULL_TAG
    public :: renderbuff_t
 
 end module renderbuff_m
