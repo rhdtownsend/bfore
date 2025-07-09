@@ -74,9 +74,9 @@ module mesh_m
       module procedure mesh_t_merge_
    end interface mesh_t
 
-   interface
+   ! In mesh_construct_sm
 
-      ! In mesh_construct_sm
+   interface
 
       module function mesh_t_data_(EV, ET, VE, VP, VS, VV) result(mesh)
          implicit none (type, external)
@@ -104,7 +104,11 @@ module mesh_m
          type(mesh_t)             :: mesh
       end function mesh_t_merge_
 
-      ! In mesh_operate_sm
+   end interface
+
+   ! In mesh_operate_sm
+
+   interface
 
       module function equals_(self, other) result(equals)
          implicit none (type, external)
@@ -113,7 +117,11 @@ module mesh_m
          logical                   :: equals
       end function equals_
 
-      ! In mesh_connect_sm
+   end interface
+
+   ! In mesh_connect_sm
+
+   interface
 
       impure elemental module function edge_prev(self, e) result(e_p)
          implicit none (type, external)
@@ -192,7 +200,11 @@ module mesh_m
          integer                   :: chi
       end function euler_characteristic
 
-      ! In mesh_modify_sm
+   end interface
+
+   ! In mesh_modify_sm
+
+   interface
 
       module subroutine flip_edge(self, e, clockwise)
          implicit none (type, external)
@@ -221,7 +233,11 @@ module mesh_m
          logical, intent(in), optional     :: clockwise
       end subroutine refine_and_flip
 
-      ! In mesh_vert_sm
+   end interface
+
+   ! In mesh_vert_sm
+
+   interface
 
       module function vert_point(self, v) result(point)
          implicit none (type, external)
@@ -230,23 +246,27 @@ module mesh_m
          type(point_t), pointer            :: point
       end function vert_point
 
-      module function vert_scalar(self, i, v) result(scalar)
+      module function vert_scalar(self, a, v) result(scalar)
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
-         integer, intent(in)               :: i
+         integer, intent(in)               :: a
          integer, intent(in)               :: v
          real(RD), pointer                 :: scalar
       end function vert_scalar
 
-      module function vert_vector(self, i, v) result(vector)
+      module function vert_vector(self, a, v) result(vector)
          implicit none (type, external)
          class(mesh_t), intent(in), target :: self
-         integer, intent(in)               :: i
+         integer, intent(in)               :: a
          integer, intent(in)               :: v
          type(vector_t), pointer           :: vector
       end function vert_vector
 
-      ! In mesh_face_sm
+   end interface
+
+   ! In mesh_face_sm
+
+   interface
 
       module function face_area(self, f) result(area)
          implicit none (type, external)
@@ -262,7 +282,11 @@ module mesh_m
          type(point_t)                     :: midpoint
       end function face_midpoint
 
-      ! In mesh_io_sm
+   end interface
+
+   ! In mesh_io_sm
+
+   interface
 
       module subroutine read(self, hdf5io, stat)
          implicit none (type, external)
