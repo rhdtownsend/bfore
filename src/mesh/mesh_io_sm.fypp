@@ -7,12 +7,8 @@ submodule(mesh_m) mesh_io_sm
 
    ! Uses
 
-   use forum_m
-
    use file_m
    use stat_m
-
-   use ISO_FORTRAN_ENV
 
    ! No implicit typing
 
@@ -89,13 +85,13 @@ contains
          allocate(VV${ARRAY_SPEC(2, "SIZE(vert_vector_comps, {0}+1)")}$)
          call from_array(vert_vector_comps, VV)
 
-         if (.NOT. &
+         if (.NOT. ( &
             ALL(SHAPE(EV) == [n_edge]) .AND. &
             ALL(SHAPE(ET) == [n_edge]) .AND. &
             ALL(SHAPE(VE) == [n_vert]) .AND. &
             ALL(SHAPE(VP) == [n_vert]) .AND. &
             ALL(SHAPE(VS) == [n_scalar, n_vert]) .AND. &
-            ALL(SHAPE(VV) == [n_vector, n_vert])) then
+            ALL(SHAPE(VV) == [n_vector, n_vert]))) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
