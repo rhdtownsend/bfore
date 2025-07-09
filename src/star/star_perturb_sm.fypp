@@ -1,0 +1,96 @@
+! Submodule : star_io_sm
+! Purpose   : Perturbation routines for star_t
+
+#:include 'forum.inc'
+
+submodule (star_m) star_perturb_sm
+
+   ! Uses
+
+   use basis_vectors_m
+   use mesh_utils_m
+   use point_m
+   use vector_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure perturb_modes
+
+      integer        :: v
+      type(point_t)  :: point
+      real(RD)       :: r
+      real(RD)       :: theta
+      real(RD)       :: phi
+      type(vector_t) :: vN
+      real(RD)       :: T
+      real(RD)       :: g
+      type(vector_t) :: vbasis(3)
+      real(RD)       :: vxi(3)
+      real(RD)       :: delta_T
+      real(RD)       :: delta_g
+      integer        :: j
+
+      ! Perturb the star using the modes
+
+      associate(mesh => self%mesh)
+
+         vert_loop : do v = 1, mesh%n_vert
+
+            ! Get the vertex coordinates and properties
+
+            point = mesh%vert_point(v)
+            call point%to_polar(r, theta, phi)
+
+            vN = mesh%vert_vector(I_VN, v)
+
+            T = mesh%vert_scalar(I_T, v)
+            g = mesh%vert_scalar(I_G, v)
+
+            ! Construct the local basis vectors
+
+            vbasis = general_basis_vectors(vN, vector_t(-SIN(phi), COS(phi), 0._RD), 1)
+
+            ! Assumulate perturbations
+
+            vxi = 0._RD
+
+            delta_T = 0._RD
+            delta_g = 0._RD
+
+            mode_loop : do j = 1, SIZE(modes)
+
+               vxi = vxi + modes(j)%vxi(r, theta, phi, time)
+
+               delta_T = delta_T + modes(j)%delta_T(T, theta, phi, time)
+               delta_g = delta_g + modes(j)%delta_g(g, theta, phi, time)
+
+            end do mode_loop
+
+            ! Set perturbed values in pert_mesh
+
+            mesh%vert_point(v) = point + SUM(vxi*vbasis)
+
+            mesh%vert_scalar(i_T, v) = T + delta_T
+            mesh%vert_scalar(i_G, v) = g + delta_g
+
+         end do vert_loop
+
+         ! Store the updated normals
+
+         call store_vert_normals(mesh, i_VN)
+
+      end associate
+
+      ! Finish
+
+      return
+
+   end procedure perturb_modes
+
+end submodule star_perturb_sm

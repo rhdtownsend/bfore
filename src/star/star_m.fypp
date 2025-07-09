@@ -11,6 +11,7 @@ module star_m
 
    use mesh_m
    use mesh_primitives_m
+   use mode_m
    use point_m
    use roche_surface_m
    use vector_m
@@ -42,6 +43,7 @@ module star_m
       private
       procedure, public :: read
       procedure, public :: write
+      procedure, public :: perturb_modes
    end type star_t
 
    ! Interfaces
@@ -63,6 +65,15 @@ module star_m
          type(hdf5io_t), intent(inout)  :: hdf5io
          integer, intent(out), optional :: stat
       end subroutine write
+
+      ! In star_perturb_sm
+
+      module subroutine perturb_modes(self, modes, time)
+         implicit none (type, external)
+         class(star_t), intent(inout) :: self
+         type(mode_t), intent(in)     :: modes(:)
+         real(RD), intent(in)         :: time
+      end subroutine perturb_modes
 
    end interface
 
