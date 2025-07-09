@@ -73,10 +73,10 @@ contains
          allocate(PV${ARRAY_SPEC(3, "SIZE(pixel_vector_comps, {0}+1)")}$)
          call from_array(pixel_vector_comps, PV)
 
-         if (.NOT. &
+         if (.NOT. ( &
             ALL(SHAPE(PD) == [n_x, n_y]) .AND. &
             ALL(SHAPE(PS) == [n_scalar, n_x, n_y]) .AND. &
-            ALL(SHAPE(PV) == [n_vector, n_x, n_y])) then
+            ALL(SHAPE(PV) == [n_vector, n_x, n_y]))) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
