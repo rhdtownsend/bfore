@@ -1,5 +1,5 @@
 ! Program : pulse_star
-! Purpose : Perturb a star mesh with one or more pulsation modes
+! Purpose : Perturb a star with one or more pulsation modes
 
 #:include 'forum.inc'
 
@@ -9,13 +9,14 @@ program pulse_star
 
    use forum_m
 
-   use basis_vectors_m
+   !use basis_vectors_m
    use mesh_m
-   use mesh_utils_m
+   !use mesh_utils_m
    use mode_m
-   use point_m
-   use star_common_m
-   use vector_m
+   !use point_m
+   use star_m
+   use stat_m
+   !use vector_m
 
    use tomlf
 
@@ -33,17 +34,18 @@ program pulse_star
    type(toml_context)             :: context
    type(toml_error), allocatable  :: error
    type(mode_t), allocatable      :: modes(:)
-   type(mesh_t)                   :: mesh
-   character(:), allocatable      :: mesh_file_prefix
+   character(:), allocatable      :: input_file_name
+   character(:), allocatable      :: output_file_prefix
    real(RD), allocatable          :: times(:)
 
    integer                    :: n_times
    integer                    :: n_modes
-   character(:), allocatable  :: mesh_file_name
-   type(mesh_t)               :: pert_mesh
-   integer                    :: i
+   character(:), allocatable  :: output_file_name
    type(hdf5io_t)             :: hdf5io
-   
+   type(star_t)               :: star
+   type(star_t)               :: pert_star
+   integer                    :: i
+
    ! Read command-line arguments
 
    @:ASSERT(n_arg() == 1, 'Syntax: pulse_star <file_name>')
@@ -59,37 +61,41 @@ program pulse_star
    end if
 
    call init_modes(table, modes)
-   call init_meshes(table, mesh, mesh_file_prefix)
    call init_times(table, times)
+   call init_files(table, input_file_name, output_file_prefix)
 
    call table%destroy()
-
-   ! Other initializations
 
    n_times = SIZE(times)
    n_modes = SIZE(modes)
 
-   allocate(character(LEN(mesh_file_prefix)+7)::mesh_file_name)
+   allocate(character(LEN(output_file_prefix)+7)::output_file_name)
 
-   ! Clone the mesh
+   ! Load the mesh
 
-   pert_mesh = mesh
+   hdf5io = hdf5io_t(input_file_name, OPEN_FILE_RO)
+   call star%read(hdf5io)
+   call hdf5io%final()
 
    ! Loop over times
 
    time_loop : do i = 1, n_times
 
-      ! Apply perturbations to the mesh
+      ! Clone the star
 
-      call perturb_mesh(mesh, pert_mesh, modes, times(i))
+      pert_star = star
+
+      ! Apply perturbations to the star
+
+      call pert_star%perturb_modes(modes, times(i))
 
       ! Write out the mesh
 
-      write(mesh_file_name, 100) mesh_file_prefix, i, '.h5'
+      write(output_file_name, 100) output_file_prefix, i, '.h5'
 100   format(A, I4.4, A)
 
-      hdf5io = hdf5io_t(mesh_file_name, CREATE_FILE)
-      call pert_mesh%write(hdf5io)
+      hdf5io = hdf5io_t(output_file_name, CREATE_FILE)
+      call pert_star%write(hdf5io)
       call hdf5io%final()
 
    end do time_loop
@@ -124,7 +130,7 @@ contains
       ! Read the modes array of tables
 
       call get_value(table, 'modes', array, stat=stat, origin=origin)
-      call check_stat(stat, 'modes', origin, 'array of tables')
+      call check_toml_stat(context, stat, 'modes', origin, 'array of tables')
 
       n = len(array)
 
@@ -135,40 +141,40 @@ contains
       do i = 1, n
 
          call get_value(array, i, table_entry, stat=stat, origin=origin)
-         call check_stat(stat, 'modes', origin, 'table')
+         call check_toml_stat(context, stat, 'modes', origin, 'table')
 
          call get_value(table_entry, 'l', l, stat=stat, origin=origin)
-         call check_stat(stat, 'l', origin, 'integer') 
+         call check_toml_stat(context, stat, 'l', origin, 'integer')
 
          call get_value(table_entry, 'm', m, stat=stat, origin=origin)
-         call check_stat(stat, 'm', origin, 'integer')
+         call check_toml_stat(context, stat, 'm', origin, 'integer')
 
          call get_value(table_entry, 'A_r', A_r, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'A_r', origin, 'real')
+         call check_toml_stat(context, stat, 'A_r', origin, 'real')
 
          call get_value(table_entry, 'psi_r', psi_r, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'psi_r', origin, 'real')
+         call check_toml_stat(context, stat, 'psi_r', origin, 'real')
 
          call get_value(table_entry, 'A_h', A_h, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'A_h', origin, 'real')
+         call check_toml_stat(context, stat, 'A_h', origin, 'real')
 
          call get_value(table_entry, 'psi_h', psi_h, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'psi_h', origin, 'real')
+         call check_toml_stat(context, stat, 'psi_h', origin, 'real')
 
          call get_value(table_entry, 'A_T', A_T, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'A_T', origin, 'real')
+         call check_toml_stat(context, stat, 'A_T', origin, 'real')
 
          call get_value(table_entry, 'psi_T', psi_T, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'psi_T', origin, 'real')
+         call check_toml_stat(context, stat, 'psi_T', origin, 'real')
 
          call get_value(table_entry, 'A_g', A_g, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'A_g', origin, 'real')
+         call check_toml_stat(context, stat, 'A_g', origin, 'real')
 
          call get_value(table_entry, 'psi_g', psi_g, 0._RD, stat=stat, origin=origin)
-         call check_stat(stat, 'psi_g', origin, 'real')
+         call check_toml_stat(context, stat, 'psi_g', origin, 'real')
 
          call get_value(table_entry, 'period', period, stat=stat, origin=origin)
-         call check_stat(stat, 'period', origin, 'real')
+         call check_toml_stat(context, stat, 'period', origin, 'real')
 
          modes(i) = mode_t(l, m, &
             A_r*EXP(CMPLX(0._RD, 1._RD, RD)*psi_r*DEG_TO_RAD), &
@@ -180,41 +186,6 @@ contains
       end do
 
    end subroutine init_modes
-
-   !****
-
-   subroutine init_meshes(table, mesh, output_file_prefix)
-
-      type(toml_table), intent(inout)         :: table
-      type(mesh_t), intent(out)               :: mesh
-      character(:), allocatable, intent(out)  :: output_file_prefix
-
-      type(toml_table), pointer :: table_mesh
-      integer                   :: stat
-      integer                   :: origin
-      character(:), allocatable :: input_file_name
-      type(hdf5io_t)            :: hdf5io
-      
-      ! Read the meshes table
-
-      call get_value(table, 'meshes', table_mesh, stat=stat, origin=origin)
-      call check_stat(stat, 'meshes', origin, 'table')
-      
-      call get_value(table_mesh, 'input_file_name', input_file_name, stat=stat, origin=origin)
-      call check_stat(stat, 'input_file_name', origin, 'string')
-
-      call get_value(table_mesh, 'output_file_prefix', output_file_prefix, stat=stat, origin=origin)
-      call check_stat(stat, 'output_file_prefix', origin, 'string')
-
-      ! Load the equilibrium mesh
-
-      print *,'reading file:',input_file_name
-
-      hdf5io = hdf5io_t(input_file_name, OPEN_FILE_RO)
-      call mesh%read(hdf5io)
-      call hdf5io%final()
-
-   end subroutine init_meshes
 
    !****
 
@@ -234,16 +205,16 @@ contains
       ! Read the times table
 
       call get_value(table, 'times', table_time, stat=stat, origin=origin)
-      call check_stat(stat, 'times', origin, 'table')
+      call check_toml_stat(context, stat, 'times', origin, 'table')
       
       call get_value(table_time, 'start', start, stat=stat, origin=origin)
-      call check_stat(stat, 'start', origin, 'real')
+      call check_toml_stat(context, stat, 'start', origin, 'real')
 
       call get_value(table_time, 'end', end, stat=stat, origin=origin)
-      call check_stat(stat, 'end', origin, 'real')
+      call check_toml_stat(context, stat, 'end', origin, 'real')
 
       call get_value(table_time, 'n', n, stat=stat, origin=origin)
-      call check_stat(stat, 'n', origin, 'integer')
+      call check_toml_stat(context, stat, 'n', origin, 'integer')
 
       ! Set up the times array
 
@@ -253,92 +224,31 @@ contains
 
    !****
 
-   subroutine perturb_mesh(mesh, pert_mesh, modes, time)
+   subroutine init_files(table, input_file_name, output_file_prefix)
 
-      type(mesh_t), intent(in)    :: mesh
-      type(mesh_t), intent(inout) :: pert_mesh
-      type(mode_t), intent(in)    :: modes(:)
-      real(RD), intent(in)        :: time
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: input_file_name
+      character(:), allocatable, intent(out) :: output_file_prefix
 
-      integer        :: v
-      type(point_t)  :: point
-      real(RD)       :: r
-      real(RD)       :: theta
-      real(RD)       :: phi
-      type(vector_t) :: vN
-      real(RD)       :: T
-      type(vector_t) :: vbasis(3)
-      real(RD)       :: vxi(3)
-      real(RD)       :: delta_T
-      integer        :: j
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
 
-      ! Perturb the mesh using the modes
+      ! Read the files parameters table
 
-      vert_loop : do v = 1, mesh%n_vert
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
 
-         ! Get the vertex coordinates and properties
+      call get_value(table_files, 'input_file_name', input_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'input_file_name', origin, 'string')
 
-         point = mesh%vert_point(v)
-         call point%to_polar(r, theta, phi)
-
-         vN = mesh%vert_vector(I_N, v)
-
-         T = mesh%vert_scalar(I_T, v)
-
-         ! Construct the local basis vectors
-
-         vbasis = general_basis_vectors(vN, vector_t(-SIN(phi), COS(phi), 0._RD), 1)
-
-         ! Assumulate perturbations
-
-         vxi = 0._RD
-
-         delta_T = 0._RD
-         !delta_g = 0._RD
-
-         mode_loop : do j = 1, n_modes
-
-            vxi = vxi + modes(j)%vxi(r, theta, phi, times(i))
-
-            delta_T = delta_T + modes(j)%delta_T(T, theta, phi, times(i))
-            !delta_g = delta_g + modes(j)%delta_g(g, theta, phi, times(i))
-
-         end do mode_loop
-
-         ! Set perturbed values in pert_mesh
-
-         pert_mesh%vert_point(v) = point + SUM(vxi*vbasis)
-
-         pert_mesh%vert_scalar(i_T, v) = T + delta_T
-         !pert_mesh%vert_scalar(i_G, v) = g + delta_g
-
-      end do vert_loop
-
-      ! Store the updated normals
-
-      call store_vert_normals(pert_mesh, i_N)
+      call get_value(table_files, 'output_file_prefix', output_file_prefix, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'output_file_prefix', origin, 'string')
 
       ! Finish
 
       return
 
-   end subroutine perturb_mesh
-
-   !****
-
-   subroutine check_stat(stat, name, origin, type)
-
-      integer, intent(in)      :: stat
-      character(*), intent(in) :: name
-      integer, intent(in)      :: origin
-      character(*), intent(in) :: type
-
-      if (stat == 0) return
-
-      print *, 'non-zero stat:', stat, origin
-      print *, context%report('cannot read '//TRIM(name), origin, 'expected '//TRIM(type)//' value')
-      stop 1
-
-   end subroutine check_stat
+   end subroutine init_files
 
 end program pulse_star
