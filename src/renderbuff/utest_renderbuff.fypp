@@ -32,7 +32,6 @@ program utest_renderbuff
    ! Run the tests
 
    call test_triangle()
-   !call test_mesh()
    call test_construction()
    call test_io()
 
@@ -217,8 +216,8 @@ contains
 
       end do
 
-      view = view_t(0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD, &
-         [0._RD, 0._RD, 0._RD], &
+      view = view_t(point_t(0._RD, 0._RD, 0._RD), &
+         0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
       rbuff_out = renderbuff_t(256, 256, 1, 1)
