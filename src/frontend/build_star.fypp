@@ -1,5 +1,5 @@
 ! Program : build_star
-! Purpose : Build a meshes representing a star
+! Purpose : Build a star
 
 #:include 'forum.inc'
 
