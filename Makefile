@@ -46,7 +46,7 @@ LIB_DIR ?= $(CURDIR)/lib
 INC_DIR ?= $(CURDIR)/include
 
 SRC_DIR = $(CURDIR)/src
-SRC_DIRS = $(addprefix $(SRC_DIR)/,vector point mesh renderbuff view transform surface include common frontend)
+SRC_DIRS = $(addprefix $(SRC_DIR)/,vector point mesh renderbuff view transform surface star mode math include common frontend)
 
 ifeq ($(FORUM),yes)
    FORUM_LIB_DIR = $(LIB_DIR)

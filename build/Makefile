@@ -8,7 +8,7 @@ all:
 
 # Targets
 
-BIN_TARGETS = build_star pulse_star
+BIN_TARGETS = build_star render_star pulse_star
 
 LIB_TARGETS = 
 
@@ -33,11 +33,12 @@ renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp renderbuff_oper
 view_SRCS = view_m.fypp
 transform_SRCS = transform_m.fypp
 surface_SRCS = polar_surface_m.fypp sphere_surface_m.fypp roche_surface_m.fypp #star_surface_m.fypp rotstar_surface_m.fypp
+star_SRCS = star_m.fypp star_io_sm.fypp star_perturb_sm.fypp
 mode_SRCS = mode_m.fypp
 math_SRCS = special_m.fypp
 other_SRCS = stat_m.fypp file_m.fypp math_m.fypp
 all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) $(view_SRCS) $(transform_SRCS) \
-           $(surface_SRCS) $(mode_SRCS) $(math_SRCS) $(other_SRCS)
+           $(surface_SRCS) $(mode_SRCS) $(math_SRCS) $(star_SRCS) $(other_SRCS)
 
 utest_vector_SRCS = utest_vector.fypp $(vector_SRCS) $(transform_SRCS)
 utest_vector_USES = $(utest_vector_SRCS)
@@ -70,6 +71,10 @@ build_star_LIBS =
 pulse_star_SRCS = pulse_star.fypp star_common_m.fypp $(all_SRCS)
 pulse_star_USES = $(pulse_star_SRCS)
 pulse_star_LIBS =
+
+render_star_SRCS = render_star.fypp star_common_m.fypp $(all_SRCS)
+render_star_USES = $(render_star_SRCS)
+render_star_LIBS =
 
 # Build flags
 

@@ -1,0 +1,188 @@
+! Program : render_star
+! Purpose : Render a star mesh
+
+#:include 'forum.inc'
+
+program render_star
+
+   ! Uses
+
+   use forum_m
+
+   use point_m
+   use renderbuff_m
+   use star_m
+   use stat_m
+   use view_m
+
+   use tomlf
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Variables
+
+   character(:), allocatable :: file_name
+
+   type(toml_table), allocatable  :: table
+   type(toml_context)             :: context
+   type(toml_error), allocatable  :: error
+   type(view_t)                   :: view
+   integer                        :: n_x
+   integer                        :: n_y
+   character(:), allocatable      :: star_file_name
+   character(:), allocatable      :: rbuff_file_name
+   type(star_t)                   :: star
+   type(renderbuff_t)             :: rbuff
+   type(hdf5io_t)                 :: hdf5io
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: render_star <file_name>')
+
+   call get_arg(1, file_name)
+
+   ! Read the input file & initialize
+
+   call toml_load(table, file_name, error=error, context=context)
+   if (ALLOCATED(error)) then
+      print *,error%message
+      stop 1
+   end if
+
+   call init_view(table, view)
+   call init_renderbuff(table, n_x, n_y)
+   call init_files(table, star_file_name, rbuff_file_name)
+
+   call table%destroy()
+
+   ! Read the star
+
+   hdf5io = hdf5io_t(star_file_name, OPEN_FILE_RO)
+   call star%read(hdf5io)
+   call hdf5io%final()
+
+   ! Render the mesh
+
+   rbuff = renderbuff_t(n_x, n_y, star%mesh%n_scalar, star%mesh%n_vector)
+
+   call rbuff%render(star%mesh, view)
+
+   ! Write the renderbuffer
+
+   hdf5io = hdf5io_t(rbuff_file_name, CREATE_FILE)
+   call rbuff%write(hdf5io)
+   call hdf5io%final()
+
+   ! Finish
+
+contains
+
+   subroutine init_view(table, view)
+
+      type(toml_table), intent(inout) :: table
+      type(view_t), intent(out)       :: view
+
+      type(toml_table), pointer :: table_view
+      integer                   :: stat
+      integer                   :: origin
+      real(RD)                  :: alpha
+      real(RD)                  :: beta
+      real(RD)                  :: gamma
+      real(RD)                  :: delta_x
+      real(RD)                  :: delta_y
+
+      ! Read the view table
+
+      call get_value(table, 'view', table_view, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'view', origin, 'table')
+
+      call get_value(table_view, 'alpha', alpha, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'alpha', origin, 'real')
+
+      call get_value(table_view, 'beta', beta, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'beta', origin, 'real')
+
+      call get_value(table_view, 'gamma', gamma, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'gamma', origin, 'real')
+
+      call get_value(table_view, 'delta_x', delta_x, 2._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_x', origin, 'real')
+
+      call get_value(table_view, 'delta_y', delta_y, 2._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_y', origin, 'real')
+
+      ! Construct the view
+
+      view = view_t(point_t(0._RD, 0._RD, 0._RD), &
+         alpha*DEG_TO_RAD, beta*DEG_TO_RAD, gamma*DEG_TO_RAD, &
+         delta_x, delta_y)
+
+      ! Finish
+
+      return
+
+   end subroutine init_view
+
+   !****
+
+   subroutine init_renderbuff(table, n_x, n_y)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: n_x
+      integer, intent(out)            :: n_y
+
+      type(toml_table), pointer :: table_rbuff
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the renderbuff table
+
+      call get_value(table, 'renderbuff', table_rbuff, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'renderbuff', origin, 'table')
+
+      call get_value(table_rbuff, 'n_x', n_x, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_x', origin, 'integer')
+
+      call get_value(table_rbuff, 'n_y', n_y, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_y', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_renderbuff
+
+   !****
+
+   subroutine init_files(table, star_file_name, rbuff_file_name)
+
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: star_file_name
+      character(:), allocatable, intent(out) :: rbuff_file_name
+
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files parameters table
+
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
+
+      call get_value(table_files, 'star_file_name', star_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'star_file_name', origin, 'string')
+
+      call get_value(table_files, 'rbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'rbuff_file_name', origin, 'string')
+
+      ! Finish
+
+      return
+
+   end subroutine init_files
+
+end program render_star
