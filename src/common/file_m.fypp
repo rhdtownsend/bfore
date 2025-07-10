@@ -21,11 +21,37 @@ module file_m
 
    private
 
+   public :: get_type
    public :: check_type
 
    ! Procedures
 
 contains
+
+   subroutine get_type(hdf5io, type)
+
+      type(hdf5io_t), intent(inout)  :: hdf5io
+      character(*), intent(out)      :: type
+
+      ! Get the type attribute stored in the HDF5 group
+
+      if (hdf5io%attr_exists('TYPE')) then
+
+         call hdf5io%read_attr('TYPE', type)
+
+      else
+
+         type = ''
+
+      end if
+
+      ! Finish
+
+      return
+
+   end subroutine get_type
+
+   !****
 
    subroutine check_type(hdf5io, type, stat)
 
@@ -37,27 +63,15 @@ contains
 
       ! Check the type attribute stored in the HDF5 group
 
-      if (hdf5io%attr_exists('TYPE')) then
+      call get_type(hdf5io, type_)
 
-         call hdf5io%read_attr('TYPE', type_)
-         if (type_ /= type) then
-            if (PRESENT(stat)) then
-               stat = STAT_INVALID_GROUP_TYPE
-               return
-            else
-               @:ABORT('invalid group type')
-            end if
-         end if
-
-      else
-
+      if (type_ /= type) then
          if (PRESENT(stat)) then
             stat = STAT_INVALID_GROUP_TYPE
             return
          else
             @:ABORT('invalid group type')
          end if
-
       end if
 
       ! Finish
