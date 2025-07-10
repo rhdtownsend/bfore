@@ -9,9 +9,11 @@ program render_mesh
 
    use forum_m
 
+   use file_m
    use mesh_m
    use renderbuff_m
    use stat_m
+   use star_m
    use stream_m
    use view_m
 
@@ -21,7 +23,7 @@ program render_mesh
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 
@@ -30,7 +32,7 @@ program render_mesh
    type(toml_table), allocatable  :: table
    type(toml_context)             :: context
    type(toml_error), allocatable  :: error
-   type(mesh_t)                   :: mesh
+   class(mesh_t), allocatable     :: mesh
    type(view_t)                   :: view
    integer                        :: n_x
    integer                        :: n_y
@@ -97,14 +99,15 @@ contains
 
    subroutine init_mesh(table, mesh)
 
-      type(toml_table), intent(inout) :: table
-      type(mesh_t), intent(out)       :: mesh
+      type(toml_table), intent(inout)         :: table
+      class(mesh_t), allocatable, intent(out) :: mesh
 
       type(toml_table), pointer :: table_mesh
       integer                   :: stat
       integer                   :: origin
       character(:), allocatable :: mesh_file_name
       type(hdf5io_t)            :: hdf5io
+      character(TYPE_LEN)       :: type
 
       ! Read the mesh table
 
@@ -117,6 +120,17 @@ contains
       ! Read the mesh
 
       hdf5io = hdf5io_t(mesh_file_name, OPEN_FILE_RO)
+
+      call get_type(hdf5io, type)
+      select case(type)
+      case('mesh_t')
+         allocate(mesh_t::mesh)
+      case('star_t')
+         allocate(star_t::mesh)
+      case default
+         @:ABORT('unrecognized mesh type')
+      end select
+
       call mesh%read(hdf5io)
       call hdf5io%final()
 

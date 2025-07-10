@@ -47,7 +47,7 @@ class Mesh:
 
         return self.VS[:,i]
 
-    def vert_scalars(self, i):
+    def vert_vectors(self, i):
 
         # Return the i'th vertex-vector list
 
@@ -62,10 +62,11 @@ class Renderbuff:
         with h5.File(file_name, 'r') as f:
 
             type = f[group].attrs[f'TYPE'].decode('utf-8')
-            if type != 'framebuffer_t':
+            if type != 'renderbuff_t':
                 raise Exception(f'invalid type {type}')
 
             self.PD = f[group]['pixel_depths'][...]
+            self.PT = f[group]['pixel_tags'][...]
             self.PS = f[group]['pixel_scalars'][...]
             self.PV = f[group]['pixel_vectors'][...]
 
@@ -75,15 +76,20 @@ class Renderbuff:
 
         return self.PD
 
-    def pixel_scalars(self, i):
+    def pixel_tags(self):
 
-        # Return the i'th pixel-scalar buffer
+        # Return the pixel-tags buffer
 
-        return self.PS[:,:,i]
+        return self.PT
 
-    def pixel_vectors(self, i):
+    def pixel_scalars(self, a):
 
-        # Return the i'th ixel-vector buffer
+        # Return the a'th pixel-scalar buffer
 
-        return self.PV[:,:,i,:]
-    
+        return self.PS[:,:,a]
+
+    def pixel_vectors(self, a):
+
+        # Return the a'th pixel-vector buffer
+
+        return self.PV[:,:,a,:]

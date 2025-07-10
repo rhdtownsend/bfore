@@ -30,9 +30,9 @@ contains
 
    subroutine store_vert_normals(mesh, i)
 
-      type(mesh_t), intent(in) :: mesh
-      integer, intent(in)      :: i
-      type(vector_t)           :: normals(mesh%n_vert)
+      class(mesh_t), intent(inout) :: mesh
+      integer, intent(in)          :: i
+      type(vector_t)               :: normals(mesh%n_vert)
 
       integer        :: f
       type(vector_t) :: area

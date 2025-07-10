@@ -20,7 +20,7 @@ submodule (star_m) star_perturb_sm
 
 contains
 
-   module procedure perturb_modes
+   module procedure perturb_modes_
 
       integer        :: v
       type(point_t)  :: point
@@ -38,59 +38,55 @@ contains
 
       ! Perturb the star using the modes
 
-      associate(mesh => self%mesh)
+      vert_loop : do v = 1, self%n_vert
 
-         vert_loop : do v = 1, mesh%n_vert
+         ! Get the vertex coordinates and properties
 
-            ! Get the vertex coordinates and properties
+         point = self%vert_point(v)
+         call point%to_polar(r, theta, phi)
 
-            point = mesh%vert_point(v)
-            call point%to_polar(r, theta, phi)
+         vN = self%vert_vector(I_VN, v)
 
-            vN = mesh%vert_vector(I_VN, v)
+         T = self%vert_scalar(I_T, v)
+         g = self%vert_scalar(I_G, v)
 
-            T = mesh%vert_scalar(I_T, v)
-            g = mesh%vert_scalar(I_G, v)
+         ! Construct the local basis vectors
 
-            ! Construct the local basis vectors
+         vbasis = general_basis_vectors(vN, vector_t(-SIN(phi), COS(phi), 0._RD), 1)
 
-            vbasis = general_basis_vectors(vN, vector_t(-SIN(phi), COS(phi), 0._RD), 1)
+         ! Accumulate perturbations
 
-            ! Assumulate perturbations
+         vxi = 0._RD
 
-            vxi = 0._RD
+         delta_T = 0._RD
+         delta_g = 0._RD
 
-            delta_T = 0._RD
-            delta_g = 0._RD
+         mode_loop : do j = 1, SIZE(modes)
 
-            mode_loop : do j = 1, SIZE(modes)
+            vxi = vxi + modes(j)%vxi(r, theta, phi, time)
 
-               vxi = vxi + modes(j)%vxi(r, theta, phi, time)
+            delta_T = delta_T + modes(j)%delta_T(T, theta, phi, time)
+            delta_g = delta_g + modes(j)%delta_g(g, theta, phi, time)
 
-               delta_T = delta_T + modes(j)%delta_T(T, theta, phi, time)
-               delta_g = delta_g + modes(j)%delta_g(g, theta, phi, time)
+         end do mode_loop
 
-            end do mode_loop
+         ! Set perturbed values in pert_self
 
-            ! Set perturbed values in pert_mesh
+         self%vert_point(v) = point + SUM(vxi*vbasis)
 
-            mesh%vert_point(v) = point + SUM(vxi*vbasis)
+         self%vert_scalar(i_T, v) = T + delta_T
+         self%vert_scalar(i_G, v) = g + delta_g
 
-            mesh%vert_scalar(i_T, v) = T + delta_T
-            mesh%vert_scalar(i_G, v) = g + delta_g
+      end do vert_loop
 
-         end do vert_loop
+      ! Store the updated normals
 
-         ! Store the updated normals
-
-         call store_vert_normals(mesh, i_VN)
-
-      end associate
+      call store_vert_normals(self, i_VN)
 
       ! Finish
 
       return
 
-   end procedure perturb_modes
+   end procedure perturb_modes_
 
 end submodule star_perturb_sm

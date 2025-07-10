@@ -53,19 +53,10 @@ contains
 
       subroutine read_rev1_()
 
-         real(RD)       :: M
-         real(RD)       :: R_pole
-         real(RD)       :: T_pole
-         real(RD)       :: omega
          type(hdf5io_t) :: hdf5io_mesh
          type(mesh_t)   :: mesh
 
-         call hdf5io%read_attr('M', M)
-         call hdf5io%read_attr('R_pole', R_pole)
-         call hdf5io%read_attr('T_pole', T_pole)
-         call hdf5io%read_attr('omega', omega)
-
-         hdf5io_mesh = hdf5io_t(hdf5io, 'mesh')
+         hdf5io_mesh = hdf5io_t(hdf5io, 'mesh_t')
          call mesh%read(hdf5io_mesh, stat)
          call hdf5io_mesh%final()
          if (PRESENT(stat)) then
@@ -83,7 +74,7 @@ contains
 
          select type(self)
          type is(star_t)
-            self = star_t(mesh, M, R_pole, T_pole, omega)
+            self = star_t(mesh)
          class default
             @:ABORT('invalid type')
          end select
@@ -109,13 +100,8 @@ contains
       call hdf5io%write_attr('TYPE', 'star_t')
       call hdf5io%write_attr('REVISION', 1)
 
-      call hdf5io%write_attr('M', self%M)
-      call hdf5io%write_attr('R_pole', self%R_pole)
-      call hdf5io%write_attr('T_pole', self%T_pole)
-      call hdf5io%write_attr('omega', self%omega)
-
-      hdf5io_mesh = hdf5io_t(hdf5io, 'mesh')
-      call self%mesh%write(hdf5io_mesh, stat)
+      hdf5io_mesh = hdf5io_t(hdf5io, 'mesh_t')
+      call self%mesh_t%write(hdf5io_mesh, stat)
       call hdf5io_mesh%final()
       if (PRESENT(stat)) then
          if (stat /= STAT_OK) return

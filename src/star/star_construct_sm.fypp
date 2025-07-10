@@ -1,0 +1,86 @@
+! Submodule : star_construct_sm
+! Purpose   : Constructor routines for star_t
+
+#:include 'forum.inc'
+
+submodule (star_m) star_construct_sm
+
+   ! Uses
+
+   use mesh_primitives_m
+   use point_m
+   use roche_surface_m
+   use vector_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure star_t_data_
+
+      ! Construct the star from the data
+
+      star%mesh_t = mesh
+
+      ! Finish
+
+      return
+
+   end procedure star_t_data_
+
+   !****
+
+   module procedure star_t_params_
+
+      type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
+
+      type(roche_surface_t) :: surf
+      type(mesh_t)          :: mesh
+      type(vector_t)        :: vO
+      integer               :: v
+      type(point_t)         :: point
+      type(vector_t)        :: vr
+      type(vector_t)        :: vv
+      type(vector_t)        :: vg
+
+      ! Construct the star from the parameters
+
+      surf = roche_surface_t(1._RD, omega)
+
+      mesh = polar_mesh(surf, n_refine, N_SCALAR, N_VECTOR)
+
+      ! Set vertex scalar and vector quantities
+
+      vO = omega*SQRT(8._RD/27._RD)*vector_t(0._RD, 0._RD, 1._RD)
+
+      vert_loop: do v = 1, mesh%n_vert
+
+         point = mesh%vert_point(v)
+
+         vr = point - ORIGIN
+
+         vv = cross_product(vO, vr)
+         vg = -vr/norm2(vr)**3 - cross_product(vO, vv)
+
+         mesh%vert_vector(I_VN, v) = -vg/norm2(vg)
+         mesh%vert_vector(I_VV, v) = vv
+         mesh%vert_vector(I_VG, v) = vg
+
+         mesh%vert_scalar(I_T, v) = norm2(vg)**beta
+         mesh%vert_scalar(I_G, v) = norm2(vg)
+
+      end do vert_loop
+
+      star = star_t_data_(mesh)
+
+      ! Finish
+
+      return
+
+   end procedure star_t_params_
+
+end submodule star_construct_sm

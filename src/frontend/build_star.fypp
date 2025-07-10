@@ -1,15 +1,16 @@
-! Program : build_star_mesh
-! Purpose : Build a mesh representing a star
+! Program : build_star
+! Purpose : Build a star
 
 #:include 'forum.inc'
 
-program build_star_mesh
+program build_star
 
    ! Uses
 
    use forum_m
 
    use mesh_m
+   use star_m
    use stat_m
 
    use tomlf
@@ -20,32 +21,20 @@ program build_star_mesh
 
    implicit none (type, external)
 
-   ! Parameters
-
-   integer, parameter :: I_T = 1
-   integer, parameter :: I_G = 1
-
-   integer, parameter :: I_VN = 1
-   integer, parameter :: I_VV = 2
-   integer, parameter :: I_VG = 3
-
-   integer, parameter :: N_SCALAR = 2
-   integer, parameter :: N_VECTOR = 3
-
    ! Variables
 
    character(:), allocatable :: file_name
 
    real(RD)                  :: omega
    real(RD)                  :: beta
+   character(:), allocatable :: star_file_name
    integer                   :: n_refine
-   character(:), allocatable :: mesh_file_name
 
    type(toml_table), allocatable  :: table
    type(toml_context)             :: context
    type(toml_error), allocatable  :: error
 
-   type(mesh_t)   :: mesh
+   type(star_t)   :: star
    type(hdf5io_t) :: hdf5io
 
    ! Read command-line arguments
@@ -62,30 +51,31 @@ program build_star_mesh
       stop 1
    end if
 
-   call init_star(table, omega, beta)
-   call init_mesh(table, n_refine, mesh_file_name)
+   call init_star(table, omega, beta, star_file_name)
+   call init_mesh(table, n_refine)
 
    call table%destroy()
 
-   ! Create the mesh
+   ! Create the star
 
-   call build_mesh(omega, beta, n_refine, mesh)
+   star = star_t(omega, beta, n_refine)
 
-   ! Write the mesh
+   ! Write the star
 
-   hdf5io = hdf5io_t(mesh_file_name, CREATE_FILE)
-   call mesh%write(hdf5io)
+   hdf5io = hdf5io_t(star_file_name, CREATE_FILE)
+   call star%write(hdf5io)
    call hdf5io%final()
 
    ! Finish
 
 contains
 
-   subroutine init_star(table, omega, beta)
+   subroutine init_star(table, omega, beta, star_file_name)
 
-      type(toml_table), intent(inout) :: table
-      real(RD), intent(out)           :: omega
-      real(RD), intent(out)           :: beta
+      type(toml_table), intent(inout)        :: table
+      real(RD), intent(out)                  :: omega
+      real(RD), intent(out)                  :: beta
+      character(:), allocatable, intent(out) :: star_file_name
 
       type(toml_table), pointer :: table_star
       integer                   :: stat
@@ -102,6 +92,9 @@ contains
       call get_value(table_star, 'beta', beta, 0.25_RD, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'beta', origin, 'real')
 
+      call get_value(table_star, 'file_name', star_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'file_name', origin, 'integer')
+
       ! Finish
 
       return
@@ -110,11 +103,10 @@ contains
 
    !****
 
-   subroutine init_mesh(table, n_refine, mesh_file_name)
+   subroutine init_mesh(table, n_refine)
 
       type(toml_table), intent(inout) :: table
       integer, intent(out)            :: n_refine
-      character(:), allocatable       :: mesh_file_name
 
       type(toml_table), pointer :: table_mesh
       integer                   :: stat
@@ -129,9 +121,6 @@ contains
       call get_value(table_mesh, 'n_faces', n_faces, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'n_faces', origin, 'integer')
 
-      call get_value(table_mesh, 'file_name', mesh_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'file_name', origin, 'integer')
-
       ! Calculate the refinement level
 
       n_refine = MAX(CEILING(LOG(n_faces/20._RD)/LOG(3._RD)), 0)
@@ -142,62 +131,4 @@ contains
 
    end subroutine init_mesh
 
-   !****
-
-   subroutine build_mesh(omega, beta, n_refine, mesh)
-
-      use mesh_primitives_m
-      use roche_surface_m
-      use point_m
-      use vector_m
-
-      real(RD), intent(in)      :: omega
-      real(RD), intent(in)      :: beta
-      integer, intent(in)       :: n_refine
-      type(mesh_t), intent(out) :: mesh
-
-      type(point_t), parameter :: ORIGIN = point_t(0._RD, 0._RD, 0._RD)
-
-      type(roche_surface_t) :: surf
-      type(vector_t)        :: vO
-      integer               :: v
-      type(point_t)         :: point
-      type(vector_t)        :: vr
-      type(vector_t)        :: vv
-      type(vector_t)        :: vg
-
-      ! Create the mesh
-
-      surf = roche_surface_t(1._RD, omega)
-
-      mesh = polar_mesh(surf, n_refine, N_SCALAR, N_VECTOR)
-
-      ! Set vertex scalar and vector quantities
-
-      vO = omega*SQRT(8._RD/27._RD)*vector_t(0._RD, 0._RD, 1._RD)
-
-      vert_loop: do v = 1, mesh%n_vert
-
-         point = mesh%vert_point(v)
-
-         vr = point - ORIGIN
-
-         vv = cross_product(vO, vr)
-         vg = -vr/norm2(vr)**3 - cross_product(vO, vv)
-
-         mesh%vert_vector(I_VN, v) = -vg/norm2(vg)
-         mesh%vert_vector(I_VV, v) = vv
-         mesh%vert_vector(I_VG, v) = vg
-
-         mesh%vert_scalar(I_T, v) = norm2(vg)**beta
-         mesh%vert_scalar(I_G, v) = norm2(vg)
-
-      end do vert_loop
-
-      ! Finish
-
-      return
-
-   end subroutine build_mesh
-
-end program build_star_mesh
+end program build_star

@@ -1,5 +1,5 @@
 ! Program : pulse_star
-! Purpose : Perturb a star with one or more pulsation modes
+! Purpose : Perturb a star with pulsation modes
 
 #:include 'forum.inc'
 
@@ -9,14 +9,10 @@ program pulse_star
 
    use forum_m
 
-   !use basis_vectors_m
    use mesh_m
-   !use mesh_utils_m
    use mode_m
-   !use point_m
    use star_m
    use stat_m
-   !use vector_m
 
    use tomlf
 
@@ -71,7 +67,7 @@ program pulse_star
 
    allocate(character(LEN(output_file_prefix)+7)::output_file_name)
 
-   ! Load the mesh
+   ! Load the star
 
    hdf5io = hdf5io_t(input_file_name, OPEN_FILE_RO)
    call star%read(hdf5io)
@@ -85,9 +81,9 @@ program pulse_star
 
       pert_star = star
 
-      ! Apply perturbations to the star
+      ! Apply perturbations
 
-      call pert_star%perturb_modes(modes, times(i))
+      call pert_star%perturb(modes, times(i))
 
       ! Write out the mesh
 
@@ -219,6 +215,8 @@ contains
       ! Set up the times array
 
       times = [((start*(n-i) + end*(i-1))/(n-1), i=1,n)]
+
+      ! Finish
 
    end subroutine init_times
 

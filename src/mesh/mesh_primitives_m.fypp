@@ -127,7 +127,7 @@ contains
 
    !****
 
-   function icosahedron_mesh(n_scalar, n_vector) result(mesh)
+   function icosahedron_mesh_old(n_scalar, n_vector) result(mesh)
 
       integer, intent(in), optional :: n_scalar
       integer, intent(in), optional :: n_vector
@@ -174,6 +174,67 @@ contains
       vert_coords(:,10) = [ phi,  0._RD,  1._RD]
       vert_coords(:,11) = [-phi,  0._RD, -1._RD]
       vert_coords(:,12) = [-phi,  0._RD,  1._RD]
+
+      mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
+
+      ! Finish
+
+      return
+
+   end function icosahedron_mesh_old
+
+   !****
+
+   function icosahedron_mesh(n_scalar, n_vector) result(mesh)
+
+      integer, intent(in), optional :: n_scalar
+      integer, intent(in), optional :: n_vector
+      type(mesh_t)                  :: mesh
+
+      integer  :: face_verts(3, 20)
+      real(RD) :: vert_coords(3, 12)
+      integer  :: i
+      real(RD) :: theta
+      real(RD) :: phi
+
+      ! Create an icosahedron mesh_t, with top/bottom vertices at [0,0,1] and [0,0,-1]
+
+      face_verts(:,1) = [1, 4, 5]
+      face_verts(:,2) = [1, 3, 4]
+      face_verts(:,3) = [1, 2, 3]
+      face_verts(:,4) = [1, 6, 2]
+      face_verts(:,5) = [1, 5, 6]
+      face_verts(:,6) = [5, 4, 9]
+      face_verts(:,7) = [4, 3, 8]
+      face_verts(:,8) = [3, 2, 7]
+      face_verts(:,9) = [2, 6, 11]
+      face_verts(:,10) = [6, 5, 10]
+      face_verts(:,11) = [4, 8, 9]
+      face_verts(:,12) = [3, 7, 8]
+      face_verts(:,13) = [2, 11, 7]
+      face_verts(:,14) = [6, 10, 11]
+      face_verts(:,15) = [5, 9, 10]
+      face_verts(:,16) = [12, 9, 8]
+      face_verts(:,17) = [12, 8, 7]
+      face_verts(:,18) = [12, 7, 11]
+      face_verts(:,19) = [12, 11, 10]
+      face_verts(:,20) = [12, 10, 9]
+
+      vert_coords(:,1) = [0._RD, 0._RD, 1._RD]
+
+      do i = 1, 5
+
+         theta = ATAN(2._RD)
+         phi = (i-1._RD)*TWOPI/5._RD
+         vert_coords(:,i+1) = [COS(phi)*SIN(theta), SIN(phi)*SIN(theta), COS(theta)]
+
+         theta = PI - ATAN(2._RD)
+         phi = (i-0.5_RD)*TWOPI/5._RD
+         vert_coords(:,i+6) = [COS(phi)*SIN(theta), SIN(phi)*SIN(theta), COS(theta)]
+
+      enddo
+
+      vert_coords(:,12) = [0._RD, 0._RD, -1._RD]
 
       mesh = mesh_t(face_verts, vert_coords, n_scalar, n_vector)
 
