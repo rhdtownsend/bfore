@@ -1,18 +1,18 @@
-! Program : render_star
-! Purpose : Render a star mesh
+! Program : render_mesh
+! Purpose : Render a mesh
 
 #:include 'forum.inc'
 
-program render_star
+program render_mesh
 
    ! Uses
 
    use forum_m
 
-   use point_m
+   use mesh_m
    use renderbuff_m
-   use star_m
    use stat_m
+   use stream_m
    use view_m
 
    use tomlf
@@ -30,18 +30,19 @@ program render_star
    type(toml_table), allocatable  :: table
    type(toml_context)             :: context
    type(toml_error), allocatable  :: error
+   type(mesh_t)                   :: mesh
    type(view_t)                   :: view
    integer                        :: n_x
    integer                        :: n_y
-   character(:), allocatable      :: star_file_name
    character(:), allocatable      :: rbuff_file_name
-   type(star_t)                   :: star
+   character(:), allocatable      :: stream_file_name
    type(renderbuff_t)             :: rbuff
+   type(stream_t)                 :: stream
    type(hdf5io_t)                 :: hdf5io
 
    ! Read command-line arguments
 
-   @:ASSERT(n_arg() == 1, 'Syntax: render_star <file_name>')
+   @:ASSERT(n_arg() == 1, 'Syntax: render_mesh <file_name>')
 
    call get_arg(1, file_name)
 
@@ -53,35 +54,83 @@ program render_star
       stop 1
    end if
 
+   call init_mesh(table, mesh)
    call init_view(table, view)
-   call init_renderbuff(table, n_x, n_y)
-   call init_files(table, star_file_name, rbuff_file_name)
+   call init_renderbuff(table, n_x, n_y, rbuff_file_name)
+   call init_stream(table, stream_file_name)
 
    call table%destroy()
 
-   ! Read the star
-
-   hdf5io = hdf5io_t(star_file_name, OPEN_FILE_RO)
-   call star%read(hdf5io)
-   call hdf5io%final()
-
    ! Render the mesh
 
-   rbuff = renderbuff_t(n_x, n_y, star%mesh%n_scalar, star%mesh%n_vector)
+   rbuff = renderbuff_t(n_x, n_y, mesh%n_scalar, mesh%n_vector)
 
-   call rbuff%render(star%mesh, view)
+   call rbuff%render(mesh, view, 1)
 
-   ! Write the renderbuffer
+   ! Stream the renderbuff
 
-   hdf5io = hdf5io_t(rbuff_file_name, CREATE_FILE)
-   call rbuff%write(hdf5io)
-   call hdf5io%final()
+   stream = stream_t(rbuff, 1)
+
+   ! Write the renderbuff
+
+   if (rbuff_file_name /= '') then
+
+      hdf5io = hdf5io_t(rbuff_file_name, CREATE_FILE)
+      call rbuff%write(hdf5io)
+      call hdf5io%final()
+
+   end if
+
+   ! Write the stream
+
+   if (stream_file_name /= '') then
+
+      hdf5io = hdf5io_t(stream_file_name, CREATE_FILE)
+      call stream%write(hdf5io)
+      call hdf5io%final()
+
+   end if
 
    ! Finish
 
 contains
 
+   subroutine init_mesh(table, mesh)
+
+      type(toml_table), intent(inout) :: table
+      type(mesh_t), intent(out)       :: mesh
+
+      type(toml_table), pointer :: table_mesh
+      integer                   :: stat
+      integer                   :: origin
+      character(:), allocatable :: mesh_file_name
+      type(hdf5io_t)            :: hdf5io
+
+      ! Read the mesh table
+
+      call get_value(table, 'mesh', table_mesh, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'mesh', origin, 'table')
+
+      call get_value(table_mesh, 'file_name', mesh_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'file_name', origin, 'string')
+
+      ! Read the mesh
+
+      hdf5io = hdf5io_t(mesh_file_name, OPEN_FILE_RO)
+      call mesh%read(hdf5io)
+      call hdf5io%final()
+
+      ! Finish
+
+      return
+
+   end subroutine init_mesh
+
+   !****
+
    subroutine init_view(table, view)
+
+      use point_m
 
       type(toml_table), intent(inout) :: table
       type(view_t), intent(out)       :: view
@@ -129,11 +178,12 @@ contains
 
    !****
 
-   subroutine init_renderbuff(table, n_x, n_y)
+   subroutine init_renderbuff(table, n_x, n_y, rbuff_file_name)
 
-      type(toml_table), intent(inout) :: table
-      integer, intent(out)            :: n_x
-      integer, intent(out)            :: n_y
+      type(toml_table), intent(inout)        :: table
+      integer, intent(out)                   :: n_x
+      integer, intent(out)                   :: n_y
+      character(:), allocatable, intent(out) :: rbuff_file_name
 
       type(toml_table), pointer :: table_rbuff
       integer                   :: stat
@@ -150,6 +200,9 @@ contains
       call get_value(table_rbuff, 'n_y', n_y, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'n_y', origin, 'integer')
 
+      call get_value(table_rbuff, 'file_name', rbuff_file_name, '',  stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'file_name', origin, 'string')
+
       ! Finish
 
       return
@@ -158,31 +211,27 @@ contains
 
    !****
 
-   subroutine init_files(table, star_file_name, rbuff_file_name)
+   subroutine init_stream(table, stream_file_name)
 
       type(toml_table), intent(inout)        :: table
-      character(:), allocatable, intent(out) :: star_file_name
-      character(:), allocatable, intent(out) :: rbuff_file_name
+      character(:), allocatable, intent(out) :: stream_file_name
 
-      type(toml_table), pointer :: table_files
+      type(toml_table), pointer :: table_stream
       integer                   :: stat
       integer                   :: origin
 
-      ! Read the files parameters table
+      ! Read the stream parameters table
 
-      call get_value(table, 'files', table_files, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'files', origin, 'table')
+      call get_value(table, 'stream', table_stream, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream', origin, 'table')
 
-      call get_value(table_files, 'star_file_name', star_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'star_file_name', origin, 'string')
-
-      call get_value(table_files, 'rbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'rbuff_file_name', origin, 'string')
+      call get_value(table_stream, 'file_name', stream_file_name, '', stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'file_name', origin, 'string')
 
       ! Finish
 
       return
 
-   end subroutine init_files
+   end subroutine init_stream
 
-end program render_star
+end program render_mesh
