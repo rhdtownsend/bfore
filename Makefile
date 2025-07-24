@@ -11,7 +11,7 @@ FORUM ?= yes
 # you must set MSG_LIB_DIR and MSG_INC_DIR to
 # point to where the ForUM library and module files,
 # respectively, are located
-MSG ?= no
+MSG ?= yes
 
 # Enable debugging (with a performance penalty)
 DEBUG ?= yes
@@ -64,10 +64,10 @@ endif
 install : build | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
 	@$(MAKE) -C build $@
 
-build : install-forum
+build : install-forum install-msg
 	@$(MAKE) -C build $@
 
-clean : clean-forum
+clean : clean-forum clean-msg
 	@$(MAKE) -C build $@
 	@rm -rf $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
 
@@ -78,6 +78,8 @@ ifeq ($(FORUM),yes)
 
    clean-forum :
 	@$(MAKE) -C src/forum clean
+
+   install-forum : TESTS = no
 
 else
 
