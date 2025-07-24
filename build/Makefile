@@ -8,7 +8,7 @@ all:
 
 # Targets
 
-BIN_TARGETS = build_star render_mesh pulse_star
+BIN_TARGETS = build_star render_mesh pulse_star color_star
 
 LIB_TARGETS = 
 
@@ -43,7 +43,7 @@ surface_SRCS = polar_surface_m.fypp sphere_surface_m.fypp roche_surface_m.fypp
 star_SRCS = star_m.fypp star_construct_sm.fypp star_perturb_sm.fypp star_io_sm.fypp
 mode_SRCS = mode_m.fypp
 math_SRCS = special_m.fypp
-other_SRCS = stat_m.fypp file_m.fypp math_m.fypp
+other_SRCS = stat_m.fypp file_m.fypp math_m.fypp propmap_m.fypp
 all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) \
            $(stream_SRCS) $(view_SRCS) $(transform_SRCS) $(surface_SRCS) \
            $(mode_SRCS) $(math_SRCS) $(star_SRCS) $(other_SRCS)
@@ -72,6 +72,10 @@ ptest_renderbuff_SRCS = ptest_renderbuff.fypp $(all_SRCS)
 ptest_renderbuff_USES = $(ptest_renderbuff_SRCS)
 ptest_renderbuff_LIBS =
 
+render_mesh_SRCS = render_mesh.fypp $(all_SRCS)
+render_mesh_USES = $(render_mesh_SRCS)
+render_mesh_LIBS =
+
 build_star_SRCS = build_star.fypp $(all_SRCS)
 build_star_USES = $(build_star_SRCS)
 build_star_LIBS =
@@ -80,17 +84,17 @@ pulse_star_SRCS = pulse_star.fypp $(all_SRCS)
 pulse_star_USES = $(pulse_star_SRCS)
 pulse_star_LIBS =
 
-render_mesh_SRCS = render_mesh.fypp $(all_SRCS)
-render_mesh_USES = $(render_mesh_SRCS)
-render_mesh_LIBS =
+color_star_SRCS = color_star.fypp $(all_SRCS)
+color_star_USES = $(color_star_SRCS)
+color_star_LIBS =
 
 # Build flags
 
-FFLAGS = -I$(FORUM_INC_DIR)
+FFLAGS = -I$(FORUM_INC_DIR) -I$(MSG_INC_DIR)
 
 FPPFLAGS = -I$(FORUM_INC_DIR)
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum `toml-f_link`
+LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum -L$(MSG_LIB_DIR) -lmsg `toml-f_link`
 
 # Include standard rules
 

@@ -1,0 +1,415 @@
+! Program : color_star
+! Purpose : Synthesize colors from a star stream
+
+#:include 'forum.inc'
+
+program before_colors
+
+   ! Uses
+
+   use forum_m
+   use msg_m
+
+   use stream_m
+   use propmap_m
+   use star_m
+   use stat_m
+
+   use tomlf
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Variables
+
+   character(:), allocatable :: file_name
+
+   type(toml_table), allocatable  :: table
+   type(toml_error), allocatable  :: error
+   type(toml_context)             :: context
+   real(RD)                       :: M
+   real(RD)                       :: R_pole
+   real(RD)                       :: T_pole
+   real(RD)                       :: D
+   type(stream_t)                 :: stream
+   type(photgrid_t), allocatable  :: photgrids(:)
+   type(axis_t), allocatable      :: axes(:)
+   type(propmap_t)                :: propmap
+   logical                        :: use_interp_irradiance
+   integer                        :: order
+
+   integer               :: n_colors
+   integer               :: n_axes
+   real(RD), allocatable :: colors(:)
+   real(RD), allocatable :: x_vec(:,:)
+   real(RD), allocatable :: mu(:)
+   real(RD), allocatable :: dA(:)
+   real(RD), allocatable :: D_(:)
+   integer               :: i
+   integer               :: j
+   real(RD)              :: intensity
+   integer(ID)           :: c_beg, c_end, c_rate
+   integer               :: usage, limit
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: before_colors <file_name>')
+
+   call get_arg(1, file_name)
+
+   ! Read the input file & initialize
+
+   call toml_load(table, file_name, error=error, context=context)
+   if (ALLOCATED(error)) then
+      print *,error%message
+      stop 1
+   end if
+
+   call init_star(table, M, R_pole, T_pole, D)
+   call init_stream(table, stream)
+   call init_msg(table, photgrids, axes, use_interp_irradiance, order)
+   call init_propmap(table, axes, propmap)
+
+   call table%destroy()
+
+   ! Other initializations
+
+   n_colors = SIZE(photgrids)
+   n_axes = SIZE(axes)
+
+   allocate(colors(n_colors))
+
+   ! Process the stream
+
+   call process_stream(stream, propmap, x_vec, mu, dA)
+
+   print *,'stream processed'
+
+   allocate(D_(stream%n))
+   D_ = D
+
+   ! Evaluate the color contribution
+
+   call SYSTEM_CLOCK(c_beg)
+
+   if (use_interp_irradiance) then
+
+      do j = 1, n_colors
+         print *,'proc color (irrad)', j
+         call SYSTEM_CLOCK(c_beg, c_rate)
+!         call photgrids(j)%interp_irradiance_fast(x_vec, mu, dA, D_, colors(j))
+         call photgrids(j)%interp_irradiance(x_vec, mu, dA, D_, colors(j), order=order)
+         call SYSTEM_CLOCK(c_end)
+         print *,'done, t=', REAL(c_end - c_beg, RD)/c_rate
+         call photgrids(j)%get_cache_usage(usage)
+         call photgrids(j)%get_cache_limit(limit)
+         print *,'cache usage', usage, limit
+      end do
+
+   else
+
+      colors = 0._RD
+
+      do j = 1, n_colors
+         print *,'proc color',j
+         call SYSTEM_CLOCK(c_beg, c_rate)
+         do i = 1, stream%n
+            !if (MOD(i, 1000) == 0) print *,i
+            if (mu(i) > 0._RD) then
+               call photgrids(j)%interp_intensity(x_vec(:,i), mu(i), intensity, order=order)
+               colors(j) = colors(j) + intensity*dA(i)/D_(i)**2
+            end if
+         end do
+         call SYSTEM_CLOCK(c_end)
+         print *,'done', REAL(c_end - c_beg, RD)/c_rate
+         call photgrids(j)%get_cache_usage(usage)
+         call photgrids(j)%get_cache_limit(limit)
+         print *,'cache usage', usage, limit
+      end do
+
+   end if
+
+   write(OUTPUT_UNIT, *) colors
+
+   ! Finish
+
+contains
+
+   subroutine init_star(table, M, R_pole, T_pole, D)
+
+      type(toml_table), intent(inout) :: table
+      real(RD), intent(out)           :: M
+      real(RD), intent(out)           :: R_pole
+      real(RD), intent(out)           :: T_pole
+      real(RD), intent(out)           :: D
+
+      type(toml_table), pointer :: table_star
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the star parameters table
+
+      call get_value(table, 'star', table_star, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'star', origin, 'table')
+
+      call get_value(table_star, 'M', M, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'M', origin, 'real')
+
+      call get_value(table_star, 'R_pole', R_pole, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'R_pole', origin, 'real')
+
+      call get_value(table_star, 'T_pole', T_pole, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'T_pole', origin, 'real')
+
+      call get_value(table_star, 'D', D, 10._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'D', origin, 'real')
+
+      M = M*M_SUN
+      R_pole = R_pole*R_sun
+      D = D*PARSEC
+
+      ! Finish
+
+      return
+
+   end subroutine init_star
+
+   !****
+
+   subroutine init_stream(table, stream)
+
+      type(toml_table), intent(inout) :: table
+      type(stream_t), intent(out)     :: stream
+
+      type(toml_table), pointer :: table_stream
+      integer                   :: stat
+      integer                   :: origin
+      character(:), allocatable :: stream_file_name
+      type(hdf5io_t)            :: hdf5io
+
+      ! Read the stream parameters table
+
+      call get_value(table, 'stream', table_stream, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream', origin, 'table')
+
+      call get_value(table_stream, 'file_name', stream_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'file_name', origin, 'string')
+
+      ! Read the stream
+
+      hdf5io = hdf5io_t(stream_file_name, OPEN_FILE_RO)
+      call stream%read(hdf5io)
+      call hdf5io%final()
+
+      ! Finish
+
+      return
+
+   end subroutine init_stream
+
+   !****
+
+   subroutine init_msg(table, photgrids, axes, use_interp_irradiance, order)
+
+      type(toml_table), intent(inout)            :: table
+      type(photgrid_t), allocatable, intent(out) :: photgrids(:)
+      type(axis_t), allocatable, intent(out)     :: axes(:)
+      logical, intent(out)                       :: use_interp_irradiance
+      integer, intent(out)                       :: order
+
+      type(toml_table), pointer :: table_msg
+      type(toml_array), pointer :: array
+      integer                   :: stat
+      integer                   :: origin
+      character(:), allocatable :: specgrid_file_name
+      integer                   :: n
+      type(specgrid_t)          :: specgrid
+      integer                   :: n_axes
+      integer                   :: i
+      character(:), allocatable :: passband_file_name
+      type(hdf5io_t)            :: hdf5io
+      type(passband_t)          :: passband
+
+      character(16) :: label
+
+      ! Read the msg table
+
+      call get_value(table, 'msg', table_msg, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'msg', origin, 'table')
+
+      call get_value(table_msg, 'specgrid_file_name', specgrid_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'specgrid_file_name', origin, 'string')
+
+      call get_value(table_msg, 'passband_file_names', array, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'passband_file_names', origin, 'array')
+
+      call get_value(table_msg, 'use_interp_irradiance', use_interp_irradiance, .FALSE., stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'use_interp_irradiance', origin, 'logical')
+
+      call get_value(table_msg, 'order', order, 3, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'order', origin, 'integer')
+
+      n = len(array)
+
+      ! Load the specgrid
+
+      call open_file(specgrid_file_name, hdf5io)
+      call specgrid%read(hdf5io)
+      call hdf5io%final()
+
+      call specgrid%set_cache_limit(0)
+
+      print *,'loaded specgrid'
+
+      ! Cache the axes
+
+      call specgrid%get_rank(n_axes)
+
+      allocate(axes(n_axes))
+
+      do i = 1, n_axes
+         call specgrid%get_axis(i, axes(i))
+         call axes(i)%get_label(label)
+         print *,'axis label:', i, label
+      end do
+
+      ! Create the photgrids
+
+      allocate(photgrids(n))
+
+      do i = 1, n
+
+         call get_value(array, i, passband_file_name, stat=stat, origin=origin)
+         call check_toml_stat(context, stat, 'passband_file_names', origin, 'string')
+
+         ! Load the passband
+
+         call open_file(passband_file_name, hdf5io)
+         call passband%read(hdf5io)
+         call hdf5io%final()
+
+         ! Create the photgrid
+
+         call specgrid%filter(passband, photgrids(i))
+
+      end do
+
+      ! Finish
+
+      return
+
+   end subroutine init_msg
+
+   !****
+
+   subroutine init_propmap(table, axes, propmap)
+
+      type(toml_table), intent(inout) :: table
+      type(axis_t), intent(in)        :: axes(:)
+      type(propmap_t), intent(out)    :: propmap
+
+      type(toml_array), pointer :: array
+      integer                   :: stat
+      integer                   :: origin
+      integer                   :: n
+      integer                   :: i
+      type(toml_table), pointer :: table_entry
+      character(:), allocatable :: name
+      character(:), allocatable :: op
+      integer                   :: index
+      real(RD)                  :: default
+
+      ! Read the propmap array of tables
+
+      call get_value(table, 'propmap', array, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'prompap', origin, 'array of tables')
+
+      n = len(array)
+
+      ! Initialize the propmap
+
+      propmap = propmap_t(axes)
+
+      do i = 1, n
+
+         call get_value(array, i, table_entry, stat=stat, origin=origin)
+         call check_toml_stat(context, stat, 'propmap', origin, 'table')
+
+         call get_value(table_entry, 'name', name, stat=stat, origin=origin)
+         call check_toml_stat(context, stat, 'name', origin, 'string')
+
+         call get_value(table_entry, 'op', op, '', stat=stat, origin=origin)
+         call check_toml_stat(context, stat, 'op', origin, 'string')
+
+         call get_value(table_entry, 'index', index, 0, stat=stat, origin=origin)
+         call check_toml_stat(context, stat, 'index', origin, 'integer')
+
+         if (index > 0) then
+
+            call propmap%add_mapping(name, index, op)
+
+         else
+
+            call get_value(table_entry, 'default', default, stat=stat, origin=origin)
+            call check_toml_stat(context, stat, 'default', origin, 'real')
+
+            call propmap%add_mapping(name, default, op)
+
+         endif
+
+      end do
+
+      ! Finish
+
+      return
+
+   end subroutine init_propmap
+
+   !****
+
+   subroutine process_stream(stream, propmap, x_vec, mu, dA)
+
+      use vector_m
+
+      type(stream_t), intent(in)         :: stream
+      type(propmap_t), intent(in)        :: propmap
+      real(RD), allocatable, intent(out) :: x_vec(:,:)
+      real(RD), allocatable, intent(out) :: mu(:)
+      real(RD), allocatable, intent(out) :: dA(:)
+
+      integer                 :: i
+      real(RD)                :: T
+      real(RD)                :: g
+      type(vector_t), pointer :: vector
+
+      ! Process the stream
+
+      allocate(x_vec(propmap%n,stream%n))
+      allocate(mu(stream%n))
+      allocate(dA(stream%n))
+
+      pixel_loop: do i = 1, stream%n
+
+         T = stream%pixel_scalar(I_T, i)*T_pole
+         g = stream%pixel_scalar(I_G, i)*G_GRAVITY*M/R_pole**2
+
+         call propmap%eval_x_vec([T, g], x_vec(:,i))
+
+         vector => stream%pixel_vector(I_VN, i)
+         vector = vector/norm2(vector)
+
+         mu(i) = vector%z
+         dA(i) = stream%pixel_area(i)
+
+      end do pixel_loop
+
+      ! Finish
+
+      return
+
+   end subroutine process_stream
+
+end program before_colors
