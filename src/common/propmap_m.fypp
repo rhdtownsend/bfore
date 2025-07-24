@@ -1,0 +1,206 @@
+! Module  : propmap_m
+! Purpose : Define propmap_t datatype, for defining mappings between
+!           mesh properties and atmosphere parameters
+
+#:include 'forum.inc'
+
+module propmap_m
+   
+   ! Uses
+
+   use forum_m
+   use msg_m
+   
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none
+
+   ! Parameter definitions
+
+   integer, parameter :: OP_LEN = 16
+
+   ! Derived-type definitions
+
+   type propmap_t
+      private
+      character(LABEL_LEN), allocatable :: labels(:)
+      integer, allocatable              :: indices(:)
+      character(OP_LEN), allocatable    :: ops(:)
+      real(RD), allocatable             :: defaults(:)
+      logical, allocatable              :: mapped(:)
+      integer, public                   :: n
+   contains
+      private
+      procedure         :: add_mapping_index_
+      procedure         :: add_mapping_default_
+      generic, public   :: add_mapping => add_mapping_index_, add_mapping_default_
+      procedure, public :: eval_x_vec
+   end type propmap_t
+
+   ! Interfaces
+
+   interface propmap_t
+      module procedure propmap_t_
+   end interface propmap_t
+
+   ! Access specifiers
+
+   private
+
+   public :: propmap_t
+   public :: OP_LEN
+
+   ! Procedures
+
+contains
+
+   function propmap_t_(axes) result(propmap)
+
+      type(axis_t), intent(in) :: axes(:)
+      type(propmap_t)          :: propmap
+
+      integer :: n
+      integer :: i
+
+      ! Construct the propmap_t type
+
+      n = SIZE(axes)
+
+      allocate(propmap%labels(n))
+
+      do i = 1, n
+         call axes(i)%get_label(propmap%labels(i))
+      end do
+
+      allocate(propmap%indices(n))
+      allocate(propmap%ops(n))
+      allocate(propmap%defaults(n))
+
+      allocate(propmap%mapped(n))
+      propmap%mapped = .FALSE.
+
+      propmap%n = n
+
+      ! Finish
+
+      return
+
+   end function propmap_t_
+
+   !****
+
+   subroutine add_mapping_index_(self, label, index, op)
+
+      class(propmap_t), intent(inout)    :: self
+      character(*), intent(in)           :: label
+      integer, intent(in)                :: index
+      character(*), intent(in), optional :: op
+
+      integer :: i
+
+      ! Set the mapping to an index
+
+      i = FINDLOC(self%labels, label, DIM=1)
+      @:ASSERT(i /= 0, 'unable to find label in propmap')
+
+      self%indices(i) = index
+      self%defaults(i) = 0._RD
+
+      if (PRESENT(op)) then
+         self%ops(i) = op
+      else
+         self%ops(i) = ''
+      end if
+
+      self%mapped(i) = .TRUE.
+
+      ! Finish
+
+      return
+
+   end subroutine add_mapping_index_
+
+   !****
+
+   subroutine add_mapping_default_(self, label, default, op)
+
+      class(propmap_t), intent(inout)    :: self
+      character(*), intent(in)           :: label
+      real(RD), intent(in)               :: default
+      character(*), intent(in), optional :: op
+
+      integer :: i
+
+      ! Set the mapping to a default value
+
+      i = FINDLOC(self%labels, label, DIM=1)
+      @:ASSERT(i /= 0, 'unable to find label in propmap')
+
+      self%indices(i) = 0
+      self%defaults(i) = default
+
+      if (PRESENT(op)) then
+         self%ops(i) = op
+      else
+         self%ops(i) = ''
+      end if
+
+      self%mapped(i) = .TRUE.
+
+      ! Finish
+
+      return
+
+   end subroutine add_mapping_default_
+
+   !****
+
+   subroutine eval_x_vec(self, values, x_vec)
+
+      class(propmap_t), intent(in) :: self
+      real(RD), intent(in)         :: values(:)
+      real(RD), intent(out)        :: x_vec(:)
+
+      integer  :: i
+      real(RD) :: value
+
+      @:CHECK_BOUNDS(SIZE(x_vec), self%n)
+      @:ASSERT(ALL(self%mapped), 'propmap has undefined mappings')
+
+      ! Evaluate the vector of atmospheric parameters
+
+      do i = 1, self%n
+
+         if (self%indices(i) > 0) then
+            value = values(self%indices(i))
+         else
+            value = self%defaults(i)
+         end if
+
+         select case(self%ops(i))
+         case ('LOG')
+            value = LOG(value)
+         case ('LOG10')
+            value = LOG10(value)
+         case ('EXP')
+            value = EXP(value)
+         case ('EXP10')
+            value = 10**value
+         case ('')
+         case default
+            @:ABORT('invalid op in propmap')
+         end select
+
+         x_vec(i) = value
+
+      end do
+
+      ! Finish
+
+      return
+
+   end subroutine eval_x_vec
+
+end module propmap_m
