@@ -1,5 +1,5 @@
 ! Submodule : mesh_io_sm
-! Purpose   : Input/output for mesh_t
+! Purpose   : Input/output routines for mesh_t
 
 #:include 'forum.inc'
 
