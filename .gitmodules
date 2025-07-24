@@ -1,6 +1,6 @@
 [submodule "src/forum"]
 	path = src/forum
 	url = git@github.com:rhdtownsend/forum.git
-[submodule "msg"]
+[submodule "src/msg"]
 	path = src/msg
-	url = https://github.com/rhdtownsend/msg.git
+	url = git@github.com:rhdtownsend/gyre.git
