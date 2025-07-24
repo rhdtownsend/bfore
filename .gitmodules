@@ -2,5 +2,5 @@
 	path = src/forum
 	url = git@github.com:rhdtownsend/forum.git
 [submodule "msg"]
-	path = msg
+	path = src/msg
 	url = https://github.com/rhdtownsend/msg.git
