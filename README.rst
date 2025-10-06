@@ -1,6 +1,6 @@
-###############
-The MSG Library
-###############
+#####
+BFORE
+#####
 
 .. image:: https://img.shields.io/github/license/rhdtownsend/bfore
    :alt: GitHub
@@ -14,11 +14,6 @@ The MSG Library
 .. image:: https://img.shields.io/readthedocs/bfore
    :alt: Read the Docs
    :target: https://bfore.readthedocs.io/en/stable
-.. image:: https://joss.theoj.org/papers/10.21105/joss.04602/status.svg
-   :target: https://doi.org/10.21105/joss.04602
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7559319.svg
-   :target: https://doi.org/10.5281/zenodo.7559319
-
 
 Overview
 ========
