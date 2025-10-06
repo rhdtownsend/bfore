@@ -13,7 +13,7 @@ BFORE
    :target: https://github.com/rhdtownsend/bfore/issues
 .. image:: https://img.shields.io/readthedocs/bfore
    :alt: Read the Docs
-   :target: https://bfore.readthedocs.io/en/stable
+   :target: https://bfore.readthedocs.io/en/latest
 
 Overview
 ========
@@ -32,4 +32,5 @@ information for the object.
 Documentation
 =============
 
-Full documentation for BFORE can be found at https://bfore.readthedocs.io/en/stable.
+Full documentation for BFORE can be found at
+https://bfore.readthedocs.io/en/latest.
