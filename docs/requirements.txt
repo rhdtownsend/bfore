@@ -1,0 +1,6 @@
+Sphinx>=8.2.3
+Sphinx-Substitution-Extensions>=2025.6.6
+sphinxcontrib-spelling>=8.0.1
+sphinx-rtd-theme>=3.0.2
+sphinx-copybutton>=0.5.2
+ads>=0.12.7
