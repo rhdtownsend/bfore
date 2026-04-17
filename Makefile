@@ -1,17 +1,22 @@
 # File     : Makefile
 # Purpose  : top-level makefile
 
-# Build ForUM internally. If not set to "yes", then
-# you must set FORUM_LIB_DIR and FORUM_INC_DIR to
-# point to where the ForUM library and module files,
-# respectively, are located
-FORUM ?= yes
+# Link against an external ForUM library
+#
+# If set to "yes", then the build system will use pkgconf to search
+# for the library, with a package name speficied by
+# EXTERNAL_FORUM_PKG. Otherwise, the ForUM library will be built and
+# linked internally
+EXTERNAL_FORUM ?= no
+EXTERNAL_FORUM_PKG ?= forum
 
-# Build MSG internally. If not set to "yes", then
-# you must set MSG_LIB_DIR and MSG_INC_DIR to
-# point to where the ForUM library and module files,
-# respectively, are located
-MSG ?= yes
+# Link against an external ForUM library
+#
+# If set to "yes", then the build system will use pkgconf to search
+# for library, with a package name speficied by EXTERNAL_MSG_PKG.
+# Otherwise, the MSG library will be built and linked internally
+EXTERNAL_MSG ?= no
+EXTERNAL_MSG_PKG ?= msg
 
 # Enable debugging (with a performance penalty)
 DEBUG ?= yes
@@ -32,36 +37,37 @@ UTESTS ?= yes
 ### (unless you think you know what you're doing) ###
 #####################################################
 
+# Export options
+
+export EXTERNAL_FORUM
+export EXTERNAL_FORUM_PKG
+export EXTERNAL_MSG
+export EXTERNAL_MSG
+export DEBUG
+export SHARED
+export OMP
+export FPE
+export UTESTS
+
 # General make settings
 
-export
-
 SH = /bin/bash
-MAKEFLAGS += --no-print-directory
+MAKEFLAGS += --print-directory
 
 # Paths
 
-BIN_DIR ?= $(CURDIR)/bin
-LIB_DIR ?= $(CURDIR)/lib
-INC_DIR ?= $(CURDIR)/include
+export BIN_DIR ?= $(CURDIR)/bin
+export LIB_DIR ?= $(CURDIR)/lib
+export PKG_DIR ?= $(LIB_DIR)/pkgconfig
+export INC_DIR ?= $(CURDIR)/include
 
-SRC_DIR = $(CURDIR)/src
-SRC_DIRS = $(addprefix $(SRC_DIR)/,vector point mesh renderbuff stream \
-           view transform surface star mode math include common frontend)
-
-ifeq ($(FORUM),yes)
-   FORUM_LIB_DIR = $(LIB_DIR)
-   FORUM_INC_DIR = $(INC_DIR)
-endif
-
-ifeq ($(MSG),yes)
-   MSG_LIB_DIR = $(LIB_DIR)
-   MSG_INC_DIR = $(INC_DIR)
-endif
+export SRC_DIR := $(CURDIR)/src
+export SRC_DIRS := $(addprefix $(SRC_DIR)/,vector point mesh renderbuff stream \
+   view transform surface star mode math include common frontend)
 
 # Rules
 
-install : build | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+install : build | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 	@$(MAKE) -C build $@
 
 build : install-forum install-msg
@@ -69,17 +75,21 @@ build : install-forum install-msg
 
 clean : clean-forum clean-msg
 	@$(MAKE) -C build $@
-	@rm -rf $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
+	@rm -rf $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 
-ifeq ($(FORUM),yes)
+ifneq ($(EXTERNAL_FORUM),yes)
 
-   install-forum : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@$(MAKE) -C src/forum install
+   install-forum : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
+	@echo running $(MAKE) -C $(SRC_DIR)/forum
+	@$(MAKE) -C $(SRC_DIR)/forum
 
    clean-forum :
-	@$(MAKE) -C src/forum clean
+	@echo running $(MAKE) -C $(SRC_DIR)/forum clean
+	@$(MAKE) -C $(SRC_DIR)/forum clean
 
    install-forum : TESTS = no
+
+   export TESTS
 
 else
 
@@ -88,22 +98,29 @@ else
 
 endif
 
-ifeq ($(MSG),yes)
+ifneq ($(EXTERNAL_MSG),yes)
 
-   install-msg : | $(BIN_DIR) $(LIB_DIR) $(INC_DIR)
-	@MSG_DIR=src/msg $(MAKE) -C src/msg install
+   install-msg : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
+	@MSG_DIR=$(SRC_DIR)/msg $(MAKE) -C $(SRC_DIR)/msg
 
    clean-msg :
-	@$(MAKE) -C src/msg clean
+	@$(MAKE) -C $(SRC_DIR)/msg clean
 
-   ifeq ($(FORUM),yes)
+   ifneq ($(EXTERNAL_FORUM),yes)
       install-msg : install-forum
    endif
 
-   install-msg clean-msg : FORUM = no
+   install-msg clean-msg : EXTERNAL_FORUM = yes
+   install-msg : PKG_CONFIG_PATH += $(PKG_DIR)
    install-msg : TESTS = no
    install-msg : TOOLS = no
    install-msg : PYTHON = no
+
+   export PKG_CONFIG_PATH
+   export TESTS
+   export TOOLS
+   export PYTHON
+
 
 else
 
@@ -114,5 +131,5 @@ endif
 
 .PHONY: install build clean install-forum clean-forum install-msg clean-msg
 
-$(BIN_DIR) $(LIB_DIR) $(INC_DIR) :
+$(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR) :
 	@mkdir -p $@

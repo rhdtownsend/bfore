@@ -12,6 +12,7 @@ BIN_TARGETS = build_star render_mesh pulse_star color_star
 
 LIB_TARGETS = 
 
+PKG_FILES =
 INC_FILES =
 
 ifeq ($(UTESTS),yes)
@@ -90,11 +91,27 @@ color_star_LIBS =
 
 # Build flags
 
-FFLAGS = -I$(FORUM_INC_DIR) -I$(MSG_INC_DIR)
+PKGS = hdf5_fortran toml-f
 
-FPPFLAGS = -I$(FORUM_INC_DIR)
+PKGCONF_FLAGS =
 
-LDFLAGS = `lapack_link` `hdf5_link` `lapack95_link` `odepack_link` -L$(FORUM_LIB_DIR) -lforum -L$(MSG_LIB_DIR) -lmsg `toml-f_link`
+ifeq ($(EXTERNAL_FORUM),yes)
+   PKGS += $(EXTERNAL_FORUM_PKG)
+else
+   PKGS += forum
+   PKGCONF_FLAGS += --with-path=$(PKG_DIR)
+endif
+
+ifeq ($(EXTERNAL_MSG),yes)
+   PKGS += $(EXTERNAL_MSG_PKG)
+else
+   PKGS += msg
+   PKGCONF_FLAGS += --with-path=$(PKG_DIR)
+endif
+
+FFLAGS := `pkgconf $(PKGCONF_FLAGS) --cflags $(PKGS)`
+FPPFLAGS := `pkgconf $(PKGCONF_FLAGS) --cflags-only-I $(PKGS)` -m os
+LDFLAGS := `pkgconf $(PKGCONF_FLAGS) --libs $(PKGS)`
 
 # Include standard rules
 
@@ -107,11 +124,11 @@ linter :
 
 # Targets for source checking
 
-SRC_DIR = ../src
-SRC_DIRS = $(addprefix $(SRC_DIR)/,vector point mesh renderbuff stream \
-           view transform surface star mode math include common frontend)
+check_src:
+	@for src in $(ALL_SRCS); do \
+             find $(SRC_DIRS) -path '*/forum/*' -prune -or -name $$src -print | grep -q  . || echo $$src MISSING; \
+         done
 
-check:
-	@for src in $(all_SRCS); do find $(SRC_DIRS) -name $$src | grep -q . || echo $$src missing; done
+check_src : SRC_DIRS ?= ../src
 
-.PHONY: all linter check
+.PHONY: all linter check_src
