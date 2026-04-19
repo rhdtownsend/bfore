@@ -27,8 +27,8 @@ program build_star
 
    real(RD)                  :: omega
    real(RD)                  :: beta
-   character(:), allocatable :: star_file_name
    integer                   :: n_refine
+   character(:), allocatable :: star_file_name
 
    type(toml_table), allocatable  :: table
    type(toml_context)             :: context
@@ -51,8 +51,9 @@ program build_star
       stop 1
    end if
 
-   call init_star(table, omega, beta, star_file_name)
+   call init_star(table, omega, beta)
    call init_mesh(table, n_refine)
+   call init_files(table, star_file_name)
 
    call table%destroy()
 
@@ -70,12 +71,11 @@ program build_star
 
 contains
 
-   subroutine init_star(table, omega, beta, star_file_name)
+   subroutine init_star(table, omega, beta)
 
       type(toml_table), intent(inout)        :: table
       real(RD), intent(out)                  :: omega
       real(RD), intent(out)                  :: beta
-      character(:), allocatable, intent(out) :: star_file_name
 
       type(toml_table), pointer :: table_star
       integer                   :: stat
@@ -91,9 +91,6 @@ contains
 
       call get_value(table_star, 'beta', beta, 0.25_RD, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'beta', origin, 'real')
-
-      call get_value(table_star, 'file_name', star_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'file_name', origin, 'integer')
 
       ! Finish
 
@@ -130,5 +127,30 @@ contains
       return
 
    end subroutine init_mesh
+
+   !****
+
+   subroutine init_files(table, star_file_name)
+
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: star_file_name
+
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files parameters table
+
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
+
+      call get_value(table_files, 'star_file_name', star_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'star_file_name', origin, 'string')
+
+      ! Finish
+
+      return
+
+   end subroutine init_files
 
 end program build_star
