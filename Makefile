@@ -19,7 +19,7 @@ EXTERNAL_MSG ?= no
 EXTERNAL_MSG_PKG ?= msg
 
 # Enable debugging (with a performance penalty)
-DEBUG ?= yes
+DEBUG ?= no
 
 # Build & link against shared libraries
 SHARED ?= yes
