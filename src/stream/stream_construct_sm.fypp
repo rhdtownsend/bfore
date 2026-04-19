@@ -15,19 +15,19 @@ contains
 
    module procedure stream_t_data_
 
-      @:CHECK_BOUNDS(SIZE(PS, 2), SIZE(PA))
+      @:CHECK_BOUNDS(SIZE(FS, 2), SIZE(FA))
 
-      @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PA))
+      @:CHECK_BOUNDS(SIZE(FV, 2), SIZE(FA))
 
       ! Construct the stream from the data
 
-      stream%PA = PA
-      stream%PS = PS
-      stream%PV = PV
+      stream%FA = FA
+      stream%FS = FS
+      stream%FV = FV
 
-      stream%n_scalar = SIZE(PS, 1)
-      stream%n_vector = SIZE(PV, 1)
-      stream%n = SIZE(PA)
+      stream%n_scalar = SIZE(FS, 1)
+      stream%n_vector = SIZE(FV, 1)
+      stream%n = SIZE(FA)
 
       ! Finish
 
@@ -39,9 +39,9 @@ contains
 
    module procedure stream_t_mesh_
 
-      real(RD), allocatable       :: PA(:)
-      real(RD), allocatable       :: PS(:,:)
-      type(vector_t), allocatable :: PV(:,:)
+      real(RD), allocatable       :: FA(:)
+      real(RD), allocatable       :: FS(:,:)
+      type(vector_t), allocatable :: FV(:,:)
       type(transform_t)           :: tform_camera
       integer                     :: i
       integer                     :: f
@@ -50,9 +50,9 @@ contains
 
       ! Construct the stream from the mesh
 
-      allocate(PA(mesh%n_face))
-      allocate(PS(mesh%n_scalar,mesh%n_face))
-      allocate(PV(mesh%n_vector,mesh%n_face))
+      allocate(FA(mesh%n_face))
+      allocate(FS(mesh%n_scalar,mesh%n_face))
+      allocate(FV(mesh%n_vector,mesh%n_face))
 
       tform_camera = view%camera_transform()
 
@@ -69,24 +69,24 @@ contains
 
             i = i + 1
 
-            ! Add data to the stream
+            ! Add fragment data to the stream
 
-            PA(i) = A_%z
+            FA(i) = A_%z
 
             do a = 1, mesh%n_scalar
-               PS(a,i) = mesh%face_scalar(a, f)
+               FS(a,i) = mesh%face_scalar(a, f)
             end do
 
             do a = 1, mesh%n_vector
-               PV(a,i) = mesh%face_vector(a, f)
-               PV(a,i) = PV(a,i)%image(tform_camera)
+               FV(a,i) = mesh%face_vector(a, f)
+               FV(a,i) = FV(a,i)%image(tform_camera)
             end do
 
          end if
 
       end do face_loop
 
-      stream = stream_t_data_(PA(:i), PS(:,:i), PV(:,:i))
+      stream = stream_t_data_(FA(:i), FS(:,:i), FV(:,:i))
 
       ! Finish
 
@@ -100,9 +100,9 @@ contains
 
       integer                     :: tag_
       integer                     :: n
-      real(RD), allocatable       :: PA(:)
-      real(RD), allocatable       :: PS(:,:)
-      type(vector_t), allocatable :: PV(:,:)
+      real(RD), allocatable       :: FA(:)
+      real(RD), allocatable       :: FS(:,:)
+      type(vector_t), allocatable :: FV(:,:)
       integer                     :: i
       integer                     :: i_x
       integer                     :: i_y
@@ -118,9 +118,9 @@ contains
 
       n = rbuff%pixel_count(tag)
 
-      allocate(PA(n))
-      allocate(PS(rbuff%n_scalar,n))
-      allocate(PV(rbuff%n_vector,n))
+      allocate(FA(n))
+      allocate(FS(rbuff%n_scalar,n))
+      allocate(FV(rbuff%n_vector,n))
 
       ! Loop over pixels
 
@@ -133,16 +133,16 @@ contains
 
                i = i + 1
 
-               ! Add data to the stream
+               ! Add fragment data to the stream
 
-               PA(i) = rbuff%pixel_area()
+               FA(i) = rbuff%pixel_area()
 
                do a = 1, rbuff%n_scalar
-                  PS(a,i) = rbuff%pixel_scalar(a, i_x, i_y)
+                  FS(a,i) = rbuff%pixel_scalar(a, i_x, i_y)
                end do
 
                do a = 1, rbuff%n_vector
-                  PV(a,i) = rbuff%pixel_vector(a, i_x, i_y)
+                  FV(a,i) = rbuff%pixel_vector(a, i_x, i_y)
                end do
 
             endif
@@ -152,7 +152,7 @@ contains
 
       @:ASSERT_DEBUG(i == n, 'stream length mismatch')
 
-      stream = stream_t_data_(PA, PS, PV)
+      stream = stream_t_data_(FA, FS, FV)
 
       ! Finish
 
@@ -167,9 +167,9 @@ contains
       integer                     :: n
       integer                     :: n_scalar
       integer                     :: n_vector
-      real(RD), allocatable       :: PA(:)
-      real(RD), allocatable       :: PS(:,:)
-      type(vector_t), allocatable :: PV(:,:)
+      real(RD), allocatable       :: FA(:)
+      real(RD), allocatable       :: FS(:,:)
+      type(vector_t), allocatable :: FV(:,:)
       integer                     :: i
       integer                     :: i1
       integer                     :: i2
@@ -187,22 +187,22 @@ contains
       n_scalar = streams(1)%n_scalar
       n_vector = streams(1)%n_vector
 
-      allocate(PA(n))
-      allocate(PS(n_scalar,n))
-      allocate(PV(n_vector,n))
+      allocate(FA(n))
+      allocate(FS(n_scalar,n))
+      allocate(FV(n_vector,n))
 
       stream_loop: do i = 1, SIZE(streams)
 
          i1 = SUM(streams(:i-1)%n) + 1
          i2 = i1 + streams(i)%n - 1
 
-         PA(i1:i2) = streams(i)%PA
-         PS(:,i1:i2) = streams(i)%PS
-         PV(:,i1:i2) = streams(i)%PV
+         FA(i1:i2) = streams(i)%FA
+         FS(:,i1:i2) = streams(i)%FS
+         FV(:,i1:i2) = streams(i)%FV
 
       end do stream_loop
 
-      stream = stream_t_data_(PA, PS, PV)
+      stream = stream_t_data_(FA, FS, FV)
 
       ! Finish
 

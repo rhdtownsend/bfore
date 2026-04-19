@@ -394,16 +394,16 @@ contains
 
       pixel_loop: do i = 1, stream%n
 
-         T = stream%pixel_scalar(I_T, i)*T_pole
-         g = stream%pixel_scalar(I_G, i)*G_GRAVITY*M/R_pole**2
+         T = stream%frag_scalar(I_T, i)*T_pole
+         g = stream%frag_scalar(I_G, i)*G_GRAVITY*M/R_pole**2
 
          call propmap%eval_x_vec([T, g], x_vec(:,i))
 
-         vector => stream%pixel_vector(I_VN, i)
+         vector => stream%frag_vector(I_VN, i)
          vector = vector/norm2(vector)
 
          mu(i) = vector%z
-         dA(i) = stream%pixel_area(i)*R_pole**2
+         dA(i) = stream%frag_area(i)*R_pole**2
 
       end do pixel_loop
 

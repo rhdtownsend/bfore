@@ -25,9 +25,9 @@ contains
       if (.NOT. equals) return
 
       equals = &
-         ALL(self%PA == other%PA) .AND. &
-         ALL(self%PS == other%PS) .AND. &
-         ALL(self%PV == other%PV)
+         ALL(self%FA == other%FA) .AND. &
+         ALL(self%FS == other%FS) .AND. &
+         ALL(self%FV == other%FV)
 
       ! Finish
 

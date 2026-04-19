@@ -1,5 +1,5 @@
 ! Module  : stream_m
-! Purpose : Define stream_t datatype, representing a stream of pixel data
+! Purpose : Define stream_t datatype, representing a stream of fragment data
 
 #:include 'forum.inc'
 
@@ -25,9 +25,9 @@ module stream_m
 
    type :: stream_t
       private
-      real(RD), allocatable       :: PA(:)   ! Pixel areas
-      real(RD), allocatable       :: PS(:,:) ! Pixel scalars
-      type(vector_t), allocatable :: PV(:,:) ! Pixel vectors
+      real(RD), allocatable       :: FA(:)   ! Fragment areas
+      real(RD), allocatable       :: FS(:,:) ! Fragment scalars
+      type(vector_t), allocatable :: FV(:,:) ! Fragment vectors
       integer, public             :: n_scalar
       integer, public             :: n_vector
       integer, public             :: n
@@ -35,9 +35,9 @@ module stream_m
       private
       procedure         :: equals_
       generic, public   :: operator(==) => equals_
-      procedure, public :: pixel_area
-      procedure, public :: pixel_scalar
-      procedure, public :: pixel_vector
+      procedure, public :: frag_area
+      procedure, public :: frag_scalar
+      procedure, public :: frag_vector
       procedure, public :: read
       procedure, public :: write
    end type stream_t
@@ -54,11 +54,11 @@ module stream_m
 
    interface
 
-      module function stream_t_data_(PA, PS, PV) result(stream)
+      module function stream_t_data_(FA, FS, FV) result(stream)
          implicit none (type, external)
-         real(RD), intent(in)       :: PA(:)
-         real(RD), intent(in)       :: PS(:,:)
-         type(vector_t), intent(in) :: PV(:,:)
+         real(RD), intent(in)       :: FA(:)
+         real(RD), intent(in)       :: FS(:,:)
+         type(vector_t), intent(in) :: FV(:,:)
          type(stream_t)             :: stream
       end function stream_t_data_
 
@@ -97,32 +97,32 @@ module stream_m
 
    end interface
 
-   ! In stream_pixel_sm
+   ! In stream_frag_sm
 
    interface
 
-      module function pixel_area(self, i) result(area)
+      module function frag_area(self, i) result(area)
          implicit none (type, external)
          class(stream_t), intent(in), target :: self
          integer, intent(in)                 :: i
          real(RD), pointer                   :: area
-      end function pixel_area
+      end function frag_area
 
-      module function pixel_scalar(self, j, i) result(scalar)
+      module function frag_scalar(self, j, i) result(scalar)
          implicit none (type, external)
          class(stream_t), intent(in), target :: self
          integer, intent(in)                 :: j
          integer, intent(in)                 :: i
          real(RD), pointer                   :: scalar
-      end function pixel_scalar
+      end function frag_scalar
 
-      module function pixel_vector(self, j, i) result(vector)
+      module function frag_vector(self, j, i) result(vector)
          implicit none (type, external)
          class(stream_t), intent(in), target :: self
          integer, intent(in)                 :: j
          integer, intent(in)                 :: i
          type(vector_t), pointer             :: vector
-      end function pixel_vector
+      end function frag_vector
 
    end interface
 

@@ -54,27 +54,27 @@ contains
          integer                     :: n_scalar
          integer                     :: n_vector
          integer                     :: n
-         real(RD), allocatable       :: PA(:)
-         real(RD), allocatable       :: PS(:,:)
-         type(vector_t), allocatable :: PV(:,:)
-         real(RD), allocatable       :: pixel_vector_comps(:,:,:)
+         real(RD), allocatable       :: FA(:)
+         real(RD), allocatable       :: FS(:,:)
+         type(vector_t), allocatable :: FV(:,:)
+         real(RD), allocatable       :: frag_vector_comps(:,:,:)
 
          call hdf5io%read_attr('n_scalar', n_scalar)
          call hdf5io%read_attr('n_vector', n_vector)
          call hdf5io%read_attr('n', n)
 
-         call hdf5io%alloc_read_dset('pixel_areas', PA)
+         call hdf5io%alloc_read_dset('frag_areas', FA)
 
-         call hdf5io%alloc_read_dset('pixel_scalars', PS)
+         call hdf5io%alloc_read_dset('frag_scalars', FS)
 
-         call hdf5io%alloc_read_dset('pixel_vectors', pixel_vector_comps)
-         allocate(PV${ARRAY_SPEC(2, "SIZE(pixel_vector_comps, {0}+1)")}$)
-         call from_array(pixel_vector_comps, PV)
+         call hdf5io%alloc_read_dset('frag_vectors', frag_vector_comps)
+         allocate(FV${ARRAY_SPEC(2, "SIZE(frag_vector_comps, {0}+1)")}$)
+         call from_array(frag_vector_comps, FV)
 
          if (.NOT. ( &
-            ALL(SHAPE(PA) == [n]) .AND. &
-            ALL(SHAPE(PS) == [n_scalar, n]) .AND. &
-            ALL(SHAPE(PV) == [n_vector, n]))) then
+            ALL(SHAPE(FA) == [n]) .AND. &
+            ALL(SHAPE(FS) == [n_scalar, n]) .AND. &
+            ALL(SHAPE(FV) == [n_vector, n]))) then
             if (PRESENT(stat)) then
                stat = STAT_INVALID_DATASET_DIM
                return
@@ -85,7 +85,7 @@ contains
 
          select type(self)
          type is(stream_t)
-            self = stream_t_data_(PA, PS, PV)
+            self = stream_t_data_(FA, FS, FV)
          class default
             @:ABORT('invalid type')
          end select
@@ -104,7 +104,7 @@ contains
 
    module procedure write
 
-      real(RD) :: pixel_vector_comps(3,self%n_vector,self%n)
+      real(RD) :: frag_vector_comps(3,self%n_vector,self%n)
 
       ! Write the stream
 
@@ -115,12 +115,12 @@ contains
       call hdf5io%write_attr('n_scalar', self%n_scalar)
       call hdf5io%write_attr('n_vector', self%n_vector)
 
-      call hdf5io%write_dset('pixel_areas', self%PA)
+      call hdf5io%write_dset('frag_areas', self%FA)
 
-      call hdf5io%write_dset('pixel_scalars', self%PS)
+      call hdf5io%write_dset('frag_scalars', self%FS)
 
-      call to_array(self%PV, pixel_vector_comps)
-      call hdf5io%write_dset('pixel_vectors', pixel_vector_comps)
+      call to_array(self%FV, frag_vector_comps)
+      call hdf5io%write_dset('frag_vectors', frag_vector_comps)
 
       ! Finish
 
