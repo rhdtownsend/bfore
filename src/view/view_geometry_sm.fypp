@@ -1,0 +1,28 @@
+! Submodule : view_geometry_sm
+! Purpose   : Geometry-related routines for view_t
+
+#:include 'forum.inc'
+
+submodule(view_m) view_geometry_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure view_area
+
+      ! Evaluate the view area
+
+      area = self%delta_x*self%delta_y
+
+      ! Finish
+
+      return
+
+   end procedure view_area
+
+end submodule view_geometry_sm

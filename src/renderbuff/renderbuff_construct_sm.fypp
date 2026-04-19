@@ -24,7 +24,9 @@ contains
       @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PD, 1))
       @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PD, 2))
 
-      ! Construct the renderbuff from the data
+      ! Construct the renderbuff from the view and data
+
+      rbuff%view = view
 
       rbuff%PD = PD
       rbuff%PT = PT
@@ -65,7 +67,7 @@ contains
          n_vector_ = 0
       end if
 
-      ! Construct the renderbuff from the dimensions
+      ! Construct the renderbuff from the view and dimensions
 
       PD = -HUGE(0._RD)
       PT = NULL_TAG
@@ -76,7 +78,7 @@ contains
       allocate(PV(n_vector_,n_x,n_y))
       PV = vector_t(0._RD, 0._RD, 0._RD)
 
-      rbuff = renderbuff_t_data_(PD, PT, PS, PV)
+      rbuff = renderbuff_t_data_(view, PD, PT, PS, PV)
 
       ! Finish
 
@@ -88,6 +90,7 @@ contains
 
    module procedure renderbuff_t_merge_
 
+      type(view_t)                :: view
       integer                     :: n_x
       integer                     :: n_y
       integer                     :: n_scalar
@@ -101,6 +104,8 @@ contains
 
       @:ASSERT_DEBUG(SIZE(rbuffs) >= 1, 'invalid dimension')
 
+      @:ASSERT_DEBUG(ALL(rbuffs%view == rbuffs(1)%view), 'view mismatch')
+
       @:ASSERT_DEBUG(ALL(rbuffs%n_x == rbuffs(1)%n_x), 'dimension mismatch')
       @:ASSERT_DEBUG(ALL(rbuffs%n_y == rbuffs(1)%n_y), 'dimension mismatch')
 
@@ -108,6 +113,8 @@ contains
       @:ASSERT_DEBUG(ALL(rbuffs%n_vector == rbuffs(1)%n_vector), 'dimension mismatch')
 
       ! Construct the renderbuff by merging rbuffs
+
+      view = rbuffs(1)%view
 
       n_x = rbuffs(1)%n_x
       n_y = rbuffs(1)%n_y
@@ -137,7 +144,7 @@ contains
 
       end do rbuff_loop
 
-      rbuff = renderbuff_t_data_(PD, PT, PS, PV)
+      rbuff = renderbuff_t_data_(view, PD, PT, PS, PV)
 
       ! Finish
 

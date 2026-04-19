@@ -58,8 +58,8 @@ contains
 
       ! Apply transformations
 
-      tform_camera = view%camera_transform()
-      tform_pixel = view%pixel_transform(self%n_x, self%n_y)
+      tform_camera = self%view%camera_transform()
+      tform_pixel = self%view%pixel_transform(self%n_x, self%n_y)
 
       points = points%image(tform_pixel)
       vectors = vectors%image(tform_camera)

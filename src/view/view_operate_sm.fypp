@@ -1,0 +1,34 @@
+! Submodule : view_operate_sm
+! Purpose   : Operators for view_t
+
+#:include 'forum.inc'
+
+submodule(view_m) view_operate_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure equals_
+
+      ! Test the views for equality
+
+      equals = &
+         self%origin == other%origin .AND. &
+         self%alpha == other%alpha .AND. &
+         self%beta == other%beta .AND. &
+         self%gamma == other%gamma .AND. &
+         self%delta_x == other%delta_x .AND. &
+         self%delta_y == other%delta_y
+
+      ! Finish
+
+      return
+
+   end procedure equals_
+
+end submodule view_operate_sm

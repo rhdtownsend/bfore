@@ -63,11 +63,11 @@ contains
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
-      rbuff = renderbuff_t(8192, 8192, 3, 1)
+      rbuff = renderbuff_t(view, 8192, 8192, 3, 1)
 
       call SYSTEM_CLOCK(start, count)
 
-      call rbuff%render(mesh, view)
+      call rbuff%render(mesh)
 
       call SYSTEM_CLOCK(end)
 

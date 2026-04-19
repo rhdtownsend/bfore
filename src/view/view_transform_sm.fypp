@@ -1,0 +1,68 @@
+! Submodule : view_transform_sm
+! Purpose   : Transformation generation routines for view_t
+
+#:include 'forum.inc'
+
+submodule (view_m) view_transform_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure camera_transform
+
+      ! Construct a transform_t for mapping from world coordinates to
+      ! camera coordinates
+
+      tform = transform_t()
+
+      call tform%translate(-self%origin%x, -self%origin%y, -self%origin%z)
+      call tform%rotate(self%alpha, self%beta, self%gamma)
+
+      ! Finish
+
+      return
+
+   end procedure camera_transform
+
+   !****
+
+   module procedure normal_transform
+
+      ! Construct a transform_t for mapping from world coordinates to
+      ! normalized coordinates
+
+      tform = self%camera_transform()
+
+      call tform%translate(0.5_RD*self%delta_x, 0.5*self%delta_y, 0._RD)
+      call tform%scale(1._RD/self%delta_x, 1._RD/self%delta_y, 1._RD)
+
+      ! Finish
+
+      return
+
+   end procedure normal_transform
+
+   !****
+
+   module procedure pixel_transform
+
+      ! Construct a transform_t for mapping from world coordinates to
+      ! pixel coordinates
+
+      tform = self%normal_transform()
+
+      call tform%scale(REAL(n_x, RD), REAL(n_y, RD), 1._RD)
+      call tform%translate(0.5_RD, 0.5_RD, 0._RD)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_transform
+
+end submodule view_transform_sm

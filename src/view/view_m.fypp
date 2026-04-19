@@ -21,6 +21,7 @@ module view_m
    ! Derived-type definitions
 
    type :: view_t
+      private
       type(point_t) :: origin
       real(RD)      :: alpha
       real(RD)      :: beta
@@ -29,82 +30,114 @@ module view_m
       real(RD)      :: delta_y
    contains
       private
+      procedure         :: equals_
+      generic, public   :: operator(==) => equals_
       procedure, public :: camera_transform
       procedure, public :: normal_transform
       procedure, public :: pixel_transform
+      procedure, public :: view_area
+      procedure, public :: read
+      procedure, public :: write
    end type view_t
+
+   ! Interfaces
+
+   interface view_t
+      module procedure view_t_data_
+   end interface view_t
+
+   ! In view_construct_sm
+
+   interface
+
+      module function view_t_data_(origin, alpha, beta, gamma, delta_x, delta_y) result(view)
+         implicit none (type, external)
+         type(point_t), intent(in) :: origin
+         real(RD), intent(in)      :: alpha
+         real(RD), intent(in)      :: beta
+         real(RD), intent(in)      :: gamma
+         real(RD), intent(in)      :: delta_x
+         real(RD), intent(in)      :: delta_y
+         type(view_t)              :: view
+      end function view_t_data_
+
+   end interface
+
+   ! In view_operate_sm
+
+   interface
+
+      elemental module function equals_(self, other) result(equals)
+         implicit none (type, external)
+         class(view_t), intent(in) :: self
+         type(view_t), intent(in)  :: other
+         logical                   :: equals
+      end function equals_
+
+   end interface
+
+   ! In view_transform_sm
+
+   interface
+
+      module function camera_transform(self) result(tform)
+         implicit none (type, external)
+         class(view_t), intent(in) :: self
+         type(transform_t)         :: tform
+      end function camera_transform
+
+      module function normal_transform(self) result(tform)
+         implicit none (type, external)
+         class(view_t), intent(in) :: self
+         type(transform_t)         :: tform
+      end function normal_transform
+
+      module function pixel_transform(self, n_x, n_y) result(tform)
+         implicit none (type, external)
+         class(view_t), intent(in) :: self
+         integer, intent(in)       :: n_x
+         integer, intent(in)       :: n_y
+         type(transform_t)         :: tform
+      end function pixel_transform
+
+   end interface
+
+   ! In view_geometry_sm
+
+   interface
+
+      module function view_area(self) result(area)
+         implicit none (type, external)
+         class(view_t), intent(in) :: self
+         real(RD)                  :: area
+      end function view_area
+
+   end interface
+
+   ! In view_io_sm
+
+   interface
+
+      module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
+         class(view_t), intent(out)     :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
+         class(view_t), intent(in)      :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine write
+
+   end interface
 
    ! Accessibility
 
    private
 
    public :: view_t
-
-   ! Procedures
-
-contains
-
-   function camera_transform(self) result(tform)
-
-      class(view_t), intent(in) :: self
-      type(transform_t)         :: tform
-
-      ! Construct a transform_t for mapping from world coordinates to
-      ! camera coordinates
-
-      tform = transform_t()
-
-      call tform%translate(-self%origin%x, -self%origin%y, -self%origin%z)
-      call tform%rotate(self%alpha, self%beta, self%gamma)
-
-      ! Finish
-
-      return
-
-   end function camera_transform
-
-   !****
-
-   function normal_transform(self) result(tform)
-
-      class(view_t), intent(in) :: self
-      type(transform_t)         :: tform
-
-      ! Construct a transform_t for mapping from world coordinates to
-      ! normalized coordinates
-
-      tform = self%camera_transform()
-
-      call tform%translate(0.5_RD*self%delta_x, 0.5*self%delta_y, 0._RD)
-      call tform%scale(1._RD/self%delta_x, 1._RD/self%delta_y, 1._RD)
-
-      ! Finish
-
-      return
-
-   end function normal_transform
-
-   !****
-
-   function pixel_transform(self, n_x, n_y) result(tform)
-
-      class(view_t), intent(in) :: self
-      integer, intent(in)       :: n_x
-      integer, intent(in)       :: n_y
-      type(transform_t)         :: tform
-
-      ! Construct a transform_t for mapping from world coordinates to
-      ! pixel coordinates
-
-      tform = self%normal_transform()
-
-      call tform%scale(REAL(n_x, RD), REAL(n_y, RD), 1._RD)
-      call tform%translate(0.5_RD, 0.5_RD, 0._RD)
-
-      ! Finish
-
-      return
-
-   end function pixel_transform
 
 end module view_m

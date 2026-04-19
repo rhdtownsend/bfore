@@ -103,4 +103,18 @@ contains
 
    end procedure pixel_count
 
+   !****
+
+   module procedure pixel_area
+
+      ! Evaluate the pixel area
+
+      area = self%view%view_area()/(self%n_x*self%n_y)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_area
+
 end submodule renderbuff_pixel_sm

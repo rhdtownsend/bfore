@@ -29,6 +29,7 @@ module renderbuff_m
 
    type :: renderbuff_t
       private
+      type(view_t)                :: view
       real(RD), allocatable       :: PD(:,:)   ! Pixel depth buffer
       integer, allocatable        :: PT(:,:)   ! Pixel tag buffer
       real(RD), allocatable       :: PS(:,:,:) ! Pixel scalar buffer
@@ -46,6 +47,7 @@ module renderbuff_m
       procedure, public :: pixel_scalar
       procedure, public :: pixel_vector
       procedure, public :: pixel_count
+      procedure, public :: pixel_area
       procedure, public :: render
       procedure, public :: render_triangle
       procedure, public :: read
@@ -63,8 +65,9 @@ module renderbuff_m
 
    interface
 
-      module function renderbuff_t_data_(PD, PT, PS, PV) result(rbuff)
+      module function renderbuff_t_data_(view, PD, PT, PS, PV) result(rbuff)
          implicit none (type, external)
+         type(view_t), intent(in)   :: view
          real(RD), intent(in)       :: PD(:,:)
          integer, intent(in)        :: PT(:,:)
          real(RD), intent(in)       :: PS(:,:,:)
@@ -72,8 +75,9 @@ module renderbuff_m
          type(renderbuff_t)         :: rbuff
       end function renderbuff_t_data_
 
-      module function renderbuff_t_dims_(n_x, n_y, n_scalar, n_vector) result(rbuff)
+      module function renderbuff_t_dims_(view, n_x, n_y, n_scalar, n_vector) result(rbuff)
          implicit none (type, external)
+         type(view_t), intent(in)      :: view
          integer, intent(in)           :: n_x
          integer, intent(in)           :: n_y
          integer, intent(in), optional :: n_scalar
@@ -93,7 +97,7 @@ module renderbuff_m
 
    interface
 
-      module function equals_(self, other) result(equals)
+      elemental module function equals_(self, other) result(equals)
          implicit none (type, external)
          class(renderbuff_t), intent(in) :: self
          type(renderbuff_t), intent(in)  :: other
@@ -147,17 +151,22 @@ module renderbuff_m
          integer                         :: count_
       end function pixel_count
 
+      module function pixel_area(self) result(area)
+         implicit none (type, external)
+         class(renderbuff_t), intent(in) :: self
+         real(RD)                        :: area
+      end function pixel_area
+
    end interface
 
    ! In renderbuff_render_sm
 
    interface
 
-      module subroutine render(self, mesh, view, tag)
+      module subroutine render(self, mesh, tag)
          implicit none (type, external)
          class(renderbuff_t), intent(inout) :: self
          type(mesh_t), intent(in)           :: mesh
-         type(view_t), intent(in)           :: view
          integer, intent(in), optional      :: tag
       end subroutine render
 

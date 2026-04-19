@@ -60,6 +60,8 @@ contains
          real(RD), allocatable       :: PS(:,:,:)
          type(vector_t), allocatable :: PV(:,:,:)
          real(RD), allocatable       :: pixel_vector_comps(:,:,:,:)
+         type(hdf5io_t)              :: hdf5io_view
+         type(view_t)                :: view
 
          call hdf5io%read_attr('n_scalar', n_scalar)
          call hdf5io%read_attr('n_vector', n_vector)
@@ -88,9 +90,13 @@ contains
             end if
          end if
 
+         hdf5io_view = hdf5io_t(hdf5io, 'view')
+         call view%read(hdf5io_view)
+         call hdf5io_view%final()
+
          select type(self)
          type is(renderbuff_t)
-            self = renderbuff_t_data_(PD, PT, PS, PV)
+            self = renderbuff_t_data_(view, PD, PT, PS, PV)
          class default
             @:ABORT('invalid type')
          end select
@@ -109,7 +115,8 @@ contains
 
    module procedure write
 
-      real(RD) :: pixel_vector_comps(3,self%n_vector,self%n_x,self%n_y)
+      real(RD)       :: pixel_vector_comps(3,self%n_vector,self%n_x,self%n_y)
+      type(hdf5io_t) :: hdf5io_view
 
       ! Write the renderbuff
 
@@ -128,6 +135,10 @@ contains
 
       call to_array(self%PV, pixel_vector_comps)
       call hdf5io%write_dset('pixel_vectors', pixel_vector_comps)
+
+      hdf5io_view = hdf5io_t(hdf5io, 'view')
+      call self%view%write(hdf5io_view)
+      call hdf5io_view%final()
 
       ! Finish
 
