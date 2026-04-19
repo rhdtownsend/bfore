@@ -32,6 +32,7 @@ module polar_surface_m
       function radius(self, theta, phi) result(r)
          use forum_m
          import polar_surface_t
+         implicit none (type, external)
          class(polar_surface_t), intent(in) :: self
          real(RD), intent(in)               :: theta
          real(RD), intent(in)               :: phi

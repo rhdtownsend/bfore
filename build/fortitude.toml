@@ -8,3 +8,6 @@ ignore = [
 ]
 respect-gitignore = false
 line-length = 132
+
+[check.per-file-ignores]
+"file_m.f90" = ["C072"]  # assumed-size character intent

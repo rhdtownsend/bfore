@@ -21,7 +21,7 @@ program pulse_star
 
    ! No implicit typing
 
-   implicit none
+   implicit none (type, external)
 
    ! Variables
 
