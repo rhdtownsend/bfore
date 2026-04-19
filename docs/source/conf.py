@@ -27,7 +27,7 @@ author = 'Rich Townsend'
 version = '0.1'
 release = version
 branch = 'main'
-copyright = '2024-2025, Rich Townsend'
+copyright = '2024-2026, Rich Townsend'
 
 
 # -- General configuration ---------------------------------------------------
