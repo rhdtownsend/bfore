@@ -1,0 +1,67 @@
+! Submodule : stream_m
+! Purpose   : Pixel routines for stream_t
+
+#:include 'forum.inc'
+
+submodule (stream_m) stream_pixel_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure pixel_area
+
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n, 'invalid index')
+
+      ! Get the area associated with pixel i. Can also be
+      ! used to set the area
+
+      area => self%PA(i)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_area
+
+   !****
+
+   module procedure pixel_scalar
+
+      @:ASSERT_DEBUG(j >= 1 .AND. j <= self%n_scalar, 'invalid index')
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n, 'invalid index')
+
+      ! Get the j'th scalar associated with pixel i. Can also be
+      ! used to set the scalar
+
+      scalar => self%PS(j,i)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_scalar
+
+   !****
+
+   module procedure pixel_vector
+
+      @:ASSERT_DEBUG(j >= 1 .AND. j <= self%n_vector, 'invalid index')
+      @:ASSERT_DEBUG(i >= 1 .AND. i <= self%n, 'invalid index')
+
+      ! Get the j'th vectorr associated with pixel (i_x,i_y). Can also be
+      ! used to set the vector
+
+      vector => self%PV(j,i)
+
+      ! Finish
+
+      return
+
+   end procedure pixel_vector
+
+end submodule stream_pixel_sm

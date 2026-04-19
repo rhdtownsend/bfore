@@ -1,0 +1,36 @@
+! Submodule : stream_operate_sm
+! Purpose   : Operators for stream_t
+
+#:include 'forum.inc'
+
+submodule(stream_m) stream_operate_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure equals_
+
+      ! Test the streams for equality
+
+      equals = &
+         self%n_scalar == other%n_scalar .AND. &
+         self%n_vector == other%n_vector .AND. &
+         self%n == other%n
+
+      if (.NOT. equals) return
+
+      equals = &
+         ALL(self%PA == other%PA) .AND. &
+         ALL(self%PS == other%PS) .AND. &
+         ALL(self%PV == other%PV)
+
+      ! Finish
+
+   end procedure equals_
+
+end submodule stream_operate_sm

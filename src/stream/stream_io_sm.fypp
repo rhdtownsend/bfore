@@ -1,0 +1,133 @@
+! Submodule : stream_io_sm
+! Purpose   : Input/output routines for stream_t
+
+#:include 'forum.inc'
+
+submodule (stream_m) stream_io_sm
+
+   ! Uses
+
+   use file_m
+   use stat_m
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure read
+
+      integer :: revision
+
+      ! Read the stream
+
+      call check_type(hdf5io, 'stream_t', stat)
+      if (PRESENT(stat)) then
+         if (stat /= STAT_OK) return
+      end if
+
+      call hdf5io%read_attr('REVISION', revision)
+
+      select case(revision)
+      case(1)
+         call read_rev1_()
+      case default
+         if (PRESENT(stat)) then
+            stat = STAT_INVALID_GROUP_REVISION
+            return
+         else
+            @:ABORT('invalid group revision')
+         end if
+      end select
+
+      ! Finish
+
+      return
+
+   contains
+
+      subroutine read_rev1_()
+
+         integer                     :: n_scalar
+         integer                     :: n_vector
+         integer                     :: n
+         real(RD), allocatable       :: PA(:)
+         real(RD), allocatable       :: PS(:,:)
+         type(vector_t), allocatable :: PV(:,:)
+         real(RD), allocatable       :: pixel_vector_comps(:,:,:)
+
+         call hdf5io%read_attr('n_scalar', n_scalar)
+         call hdf5io%read_attr('n_vector', n_vector)
+         call hdf5io%read_attr('n', n)
+
+         call hdf5io%alloc_read_dset('pixel_areas', PA)
+
+         call hdf5io%alloc_read_dset('pixel_scalars', PS)
+
+         call hdf5io%alloc_read_dset('pixel_vectors', pixel_vector_comps)
+         allocate(PV${ARRAY_SPEC(2, "SIZE(pixel_vector_comps, {0}+1)")}$)
+         call from_array(pixel_vector_comps, PV)
+
+         if (.NOT. ( &
+            ALL(SHAPE(PA) == [n]) .AND. &
+            ALL(SHAPE(PS) == [n_scalar, n]) .AND. &
+            ALL(SHAPE(PV) == [n_vector, n]))) then
+            if (PRESENT(stat)) then
+               stat = STAT_INVALID_DATASET_DIM
+               return
+            else
+               @:ABORT('invalid dataset dimension')
+            end if
+         end if
+
+         select type(self)
+         type is(stream_t)
+            self = stream_t_data_(PA, PS, PV)
+         class default
+            @:ABORT('invalid type')
+         end select
+
+         ! Finish
+
+         if (PRESENT(stat)) stat = STAT_OK
+
+         return
+
+      end subroutine read_rev1_
+
+   end procedure read
+
+   !****
+
+   module procedure write
+
+      real(RD) :: pixel_vector_comps(3,self%n_vector,self%n)
+
+      ! Write the stream
+
+      call hdf5io%write_attr('TYPE', 'stream_t')
+      call hdf5io%write_attr('REVISION', 1)
+
+      call hdf5io%write_attr('n', self%n)
+      call hdf5io%write_attr('n_scalar', self%n_scalar)
+      call hdf5io%write_attr('n_vector', self%n_vector)
+
+      call hdf5io%write_dset('pixel_areas', self%PA)
+
+      call hdf5io%write_dset('pixel_scalars', self%PS)
+
+      call to_array(self%PV, pixel_vector_comps)
+      call hdf5io%write_dset('pixel_vectors', pixel_vector_comps)
+
+      ! Finish
+
+      if (PRESENT(stat)) stat = STAT_OK
+
+      return
+
+   end procedure write
+
+end submodule stream_io_sm

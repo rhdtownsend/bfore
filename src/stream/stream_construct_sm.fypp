@@ -1,0 +1,213 @@
+! Submodule : stream_construct_sm
+! Purpose   : Constructor routines for stream_t
+
+#:include 'forum.inc'
+
+submodule (stream_m) stream_construct_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure stream_t_data_
+
+      @:CHECK_BOUNDS(SIZE(PS, 2), SIZE(PA))
+
+      @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PA))
+
+      ! Construct the stream from the data
+
+      stream%PA = PA
+      stream%PS = PS
+      stream%PV = PV
+
+      stream%n_scalar = SIZE(PS, 1)
+      stream%n_vector = SIZE(PV, 1)
+      stream%n = SIZE(PA)
+
+      ! Finish
+
+      return
+
+   end procedure stream_t_data_
+
+   !****
+
+   module procedure stream_t_mesh_
+
+      real(RD), allocatable       :: PA(:)
+      real(RD), allocatable       :: PS(:,:)
+      type(vector_t), allocatable :: PV(:,:)
+      type(transform_t)           :: tform_camera
+      integer                     :: i
+      integer                     :: f
+      type(vector_t)              :: A_
+      integer                     :: a
+
+      ! Construct the stream from the mesh
+
+      allocate(PA(mesh%n_face))
+      allocate(PS(mesh%n_scalar,mesh%n_face))
+      allocate(PV(mesh%n_vector,mesh%n_face))
+
+      tform_camera = view%camera_transform()
+
+      ! Loop through faces
+
+      i = 0
+
+      face_loop: do f = 1, mesh%n_face
+
+         A_ = mesh%face_area(f)
+         A_ = A_%image(tform_camera)
+
+         if (A_%z > 0._RD) then
+
+            i = i + 1
+
+            ! Add data to the stream
+
+            PA(i) = A_%z
+
+            do a = 1, mesh%n_scalar
+               PS(a,i) = mesh%face_scalar(a, f)
+            end do
+
+            do a = 1, mesh%n_vector
+               PV(a,i) = mesh%face_vector(a, f)
+               PV(a,i) = PV(a,i)%image(tform_camera)
+            end do
+
+         end if
+
+      end do face_loop
+
+      stream = stream_t_data_(PA(:i), PS(:,:i), PV(:,:i))
+
+      ! Finish
+
+      return
+
+   end procedure stream_t_mesh_
+
+   !****
+
+   module procedure stream_t_renderbuff_
+
+      integer                     :: tag_
+      integer                     :: n
+      real(RD), allocatable       :: PA(:)
+      real(RD), allocatable       :: PS(:,:)
+      type(vector_t), allocatable :: PV(:,:)
+      integer                     :: i
+      integer                     :: i_x
+      integer                     :: i_y
+      integer                     :: a
+
+      if (PRESENT(tag)) then
+         tag_ = tag
+      else
+         tag_ = NULL_TAG
+      end if
+
+      ! Construct the stream from the renderbuff
+
+      n = rbuff%pixel_count(tag)
+
+      allocate(PA(n))
+      allocate(PS(rbuff%n_scalar,n))
+      allocate(PV(rbuff%n_vector,n))
+
+      ! Loop over pixels
+
+      i = 0
+
+      do i_y = 1, rbuff%n_x
+         do i_x = 1, rbuff%n_x
+
+            if (tag_ == NULL_TAG .OR. rbuff%pixel_tag(i_x,i_y) == tag_) then
+
+               i = i + 1
+
+               ! Add data to the stream
+
+               PA(i) = rbuff%pixel_area()
+
+               do a = 1, rbuff%n_scalar
+                  PS(a,i) = rbuff%pixel_scalar(a, i_x, i_y)
+               end do
+
+               do a = 1, rbuff%n_vector
+                  PV(a,i) = rbuff%pixel_vector(a, i_x, i_y)
+               end do
+
+            endif
+
+         end do
+      end do
+
+      @:ASSERT_DEBUG(i == n, 'stream length mismatch')
+
+      stream = stream_t_data_(PA, PS, PV)
+
+      ! Finish
+
+      return
+
+   end procedure stream_t_renderbuff_
+
+   !****
+
+   module procedure stream_t_merge_
+
+      integer                     :: n
+      integer                     :: n_scalar
+      integer                     :: n_vector
+      real(RD), allocatable       :: PA(:)
+      real(RD), allocatable       :: PS(:,:)
+      type(vector_t), allocatable :: PV(:,:)
+      integer                     :: i
+      integer                     :: i1
+      integer                     :: i2
+
+      @:ASSERT_DEBUG(SIZE(streams) >= 1, 'invalid dimension')
+
+      @:ASSERT_DEBUG(ALL(streams%n == streams(1)%n), 'dimension mismatch')
+
+      @:ASSERT_DEBUG(ALL(streams%n_scalar == streams(1)%n_scalar), 'dimension mismatch')
+      @:ASSERT_DEBUG(ALL(streams%n_vector == streams(1)%n_vector), 'dimension mismatch')
+
+      ! Construct the stream by merging streams
+
+      n = streams(1)%n
+      n_scalar = streams(1)%n_scalar
+      n_vector = streams(1)%n_vector
+
+      allocate(PA(n))
+      allocate(PS(n_scalar,n))
+      allocate(PV(n_vector,n))
+
+      stream_loop: do i = 1, SIZE(streams)
+
+         i1 = SUM(streams(:i-1)%n) + 1
+         i2 = i1 + streams(i)%n - 1
+
+         PA(i1:i2) = streams(i)%PA
+         PS(:,i1:i2) = streams(i)%PS
+         PV(:,i1:i2) = streams(i)%PV
+
+      end do stream_loop
+
+      stream = stream_t_data_(PA, PS, PV)
+
+      ! Finish
+
+      return
+
+   end procedure stream_t_merge_
+
+end submodule stream_construct_sm

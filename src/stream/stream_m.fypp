@@ -1,0 +1,155 @@
+! Module  : stream_m
+! Purpose : Define stream_t datatype, representing a stream of pixel data
+
+#:include 'forum.inc'
+
+module stream_m
+
+   ! Uses
+
+   use forum_m
+
+   use mesh_m
+   use renderbuff_m
+   use transform_m
+   use vector_m
+   use view_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Derived-type definitions
+
+   type :: stream_t
+      private
+      real(RD), allocatable       :: PA(:)   ! Pixel areas
+      real(RD), allocatable       :: PS(:,:) ! Pixel scalars
+      type(vector_t), allocatable :: PV(:,:) ! Pixel vectors
+      integer, public             :: n_scalar
+      integer, public             :: n_vector
+      integer, public             :: n
+   contains
+      private
+      procedure         :: equals_
+      generic, public   :: operator(==) => equals_
+      procedure, public :: pixel_area
+      procedure, public :: pixel_scalar
+      procedure, public :: pixel_vector
+      procedure, public :: read
+      procedure, public :: write
+   end type stream_t
+
+   ! Interfaces
+
+   interface stream_t
+      module procedure stream_t_mesh_
+      module procedure stream_t_renderbuff_
+      module procedure stream_t_merge_
+   end interface stream_t
+
+   ! In stream_construct_sm
+
+   interface
+
+      module function stream_t_data_(PA, PS, PV) result(stream)
+         implicit none (type, external)
+         real(RD), intent(in)       :: PA(:)
+         real(RD), intent(in)       :: PS(:,:)
+         type(vector_t), intent(in) :: PV(:,:)
+         type(stream_t)             :: stream
+      end function stream_t_data_
+
+      module function stream_t_mesh_(mesh, view) result(stream)
+         implicit none (type, external)
+         type(mesh_t), intent(in)       :: mesh
+         type(view_t), intent(in)       :: view
+         type(stream_t)                 :: stream
+      end function stream_t_mesh_
+
+      module function stream_t_renderbuff_(rbuff, tag) result(stream)
+         implicit none (type, external)
+         type(renderbuff_t), intent(in) :: rbuff
+         integer, intent(in), optional  :: tag
+         type(stream_t)                 :: stream
+      end function stream_t_renderbuff_
+
+      module function stream_t_merge_(streams) result(stream)
+         implicit none (type, external)
+         type(stream_t), intent(in) :: streams(:)
+         type(stream_t)             :: stream
+      end function stream_t_merge_
+
+   end interface
+
+   ! In stream_operate_sm
+
+   interface
+
+      module function equals_(self, other) result(equals)
+         implicit none (type, external)
+         class(stream_t), intent(in) :: self
+         type(stream_t), intent(in)  :: other
+         logical                     :: equals
+      end function equals_
+
+   end interface
+
+   ! In stream_pixel_sm
+
+   interface
+
+      module function pixel_area(self, i) result(area)
+         implicit none (type, external)
+         class(stream_t), intent(in), target :: self
+         integer, intent(in)                 :: i
+         real(RD), pointer                   :: area
+      end function pixel_area
+
+      module function pixel_scalar(self, j, i) result(scalar)
+         implicit none (type, external)
+         class(stream_t), intent(in), target :: self
+         integer, intent(in)                 :: j
+         integer, intent(in)                 :: i
+         real(RD), pointer                   :: scalar
+      end function pixel_scalar
+
+      module function pixel_vector(self, j, i) result(vector)
+         implicit none (type, external)
+         class(stream_t), intent(in), target :: self
+         integer, intent(in)                 :: j
+         integer, intent(in)                 :: i
+         type(vector_t), pointer             :: vector
+      end function pixel_vector
+
+   end interface
+
+   ! In stream_io_sm
+
+   interface
+
+      module subroutine read(self, hdf5io, stat)
+         implicit none (type, external)
+         class(stream_t), intent(out)   :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine read
+
+      module subroutine write(self, hdf5io, stat)
+         implicit none (type, external)
+         class(stream_t), intent(in)    :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
+      end subroutine write
+
+   end interface
+
+   ! Accessibility
+
+   private
+
+   public :: stream_t
+
+end module stream_m
