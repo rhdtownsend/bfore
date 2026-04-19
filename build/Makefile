@@ -38,7 +38,7 @@ renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp \
                   renderbuff_operate_sm.fypp renderbuff_render_sm.fypp \
                   renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
 stream_SRCS = stream_m.fypp stream_construct_sm.fypp stream_operate_sm.fypp \
-              stream_pixel_sm.fypp stream_io_sm.fypp
+              stream_frag_sm.fypp stream_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_operate_sm.fypp view_transform_sm.fypp \
             view_geometry_sm.fypp view_io_sm.fypp
 transform_SRCS = transform_m.fypp
