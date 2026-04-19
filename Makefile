@@ -52,7 +52,7 @@ export UTESTS
 # General make settings
 
 SH = /bin/bash
-MAKEFLAGS += --print-directory
+MAKEFLAGS += --no-print-directory
 
 # Paths
 
@@ -80,11 +80,9 @@ clean : clean-forum clean-msg
 ifneq ($(EXTERNAL_FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
-	@echo running $(MAKE) -C $(SRC_DIR)/forum
 	@$(MAKE) -C $(SRC_DIR)/forum
 
    clean-forum :
-	@echo running $(MAKE) -C $(SRC_DIR)/forum clean
 	@$(MAKE) -C $(SRC_DIR)/forum clean
 
    install-forum : TESTS = no
