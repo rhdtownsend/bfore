@@ -13,6 +13,7 @@ program pulse_star
    use mode_m
    use star_m
    use stat_m
+   use string_m
 
    use tomlf
 
@@ -31,16 +32,19 @@ program pulse_star
    type(toml_error), allocatable  :: error
    type(mode_t), allocatable      :: modes(:)
    character(:), allocatable      :: input_file_name
-   character(:), allocatable      :: output_file_prefix
-   real(RD), allocatable          :: times(:)
+   character(:), allocatable      :: output_file_name
+   integer                        :: i_0
+   integer                        :: delta_i
+   integer                        :: n_i
+   real(RD)                       :: t_0
+   real(RD)                       :: delta_t
 
-   integer                    :: n_times
-   integer                    :: n_modes
-   character(:), allocatable  :: output_file_name
-   type(hdf5io_t)             :: hdf5io
-   type(star_t)               :: star
-   type(star_t)               :: pert_star
-   integer                    :: i
+   integer                   :: i
+   real(RD)                  :: time
+   character(:), allocatable :: input_file_name_i
+   character(:), allocatable :: output_file_name_i
+   type(hdf5io_t)            :: hdf5io
+   type(star_t)              :: star
 
    ! Read command-line arguments
 
@@ -57,44 +61,38 @@ program pulse_star
    end if
 
    call init_modes(table, modes)
-   call init_times(table, times)
-   call init_files(table, input_file_name, output_file_prefix)
+   call init_files(table, input_file_name, output_file_name)
+   call init_loop(table, i_0, delta_i, n_i)
+   call init_time(table, t_0, delta_t)
 
    call table%destroy()
 
-   n_times = SIZE(times)
-   n_modes = SIZE(modes)
+   ! Loop over indices
 
-   allocate(character(LEN(output_file_prefix)+7)::output_file_name)
+   indx_loop : do i = i_0, n_i, delta_i
 
-   ! Load the star
+      time = t_0 + i*delta_t
 
-   hdf5io = hdf5io_t(input_file_name, OPEN_FILE_RO)
-   call star%read(hdf5io)
-   call hdf5io%final()
+      input_file_name_i = subst(input_file_name, '{i}', i, '(I4.4)')
+      output_file_name_i = subst(output_file_name, '{i}', i, '(I4.4)')
 
-   ! Loop over times
+      ! Load the star
 
-   time_loop : do i = 1, n_times
-
-      ! Clone the star
-
-      pert_star = star
+      hdf5io = hdf5io_t(input_file_name_i, OPEN_FILE_RO)
+      call star%read(hdf5io)
+      call hdf5io%final()
 
       ! Apply perturbations
 
-      call pert_star%perturb(modes, times(i))
+      call star%perturb(modes, time)
 
-      ! Write out the mesh
+      ! Write the perturbed star
 
-      write(output_file_name, 100) output_file_prefix, i, '.h5'
-100   format(A, I4.4, A)
-
-      hdf5io = hdf5io_t(output_file_name, CREATE_FILE)
-      call pert_star%write(hdf5io)
+      hdf5io = hdf5io_t(output_file_name_i, CREATE_FILE)
+      call star%write(hdf5io)
       call hdf5io%final()
 
-   end do time_loop
+   end do indx_loop
 
    ! Finish
 
@@ -181,52 +179,19 @@ contains
 
       end do
 
+      ! Finish
+
+      return
+
    end subroutine init_modes
 
    !****
 
-   subroutine init_times(table, times)
-
-      type(toml_table), intent(inout)    :: table
-      real(RD), allocatable, intent(out) :: times(:)
-
-      type(toml_table), pointer :: table_time
-      integer                   :: stat
-      integer                   :: origin
-      real(RD)                  :: start
-      real(RD)                  :: end
-      integer                   :: n
-      integer                   :: i
-
-      ! Read the times table
-
-      call get_value(table, 'times', table_time, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'times', origin, 'table')
-      
-      call get_value(table_time, 'start', start, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'start', origin, 'real')
-
-      call get_value(table_time, 'end', end, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'end', origin, 'real')
-
-      call get_value(table_time, 'n', n, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'n', origin, 'integer')
-
-      ! Set up the times array
-
-      times = [((start*(n-i) + end*(i-1))/(n-1), i=1,n)]
-
-      ! Finish
-
-   end subroutine init_times
-
-   !****
-
-   subroutine init_files(table, input_file_name, output_file_prefix)
+   subroutine init_files(table, input_file_name, output_file_name)
 
       type(toml_table), intent(inout)        :: table
       character(:), allocatable, intent(out) :: input_file_name
-      character(:), allocatable, intent(out) :: output_file_prefix
+      character(:), allocatable, intent(out) :: output_file_name
 
       type(toml_table), pointer :: table_files
       integer                   :: stat
@@ -240,13 +205,75 @@ contains
       call get_value(table_files, 'input_file_name', input_file_name, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'input_file_name', origin, 'string')
 
-      call get_value(table_files, 'output_file_prefix', output_file_prefix, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'output_file_prefix', origin, 'string')
+      call get_value(table_files, 'output_file_name', output_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'output_file_name', origin, 'string')
 
       ! Finish
 
       return
 
    end subroutine init_files
+
+   !****
+
+   subroutine init_loop(table, i_0, delta_i, n_i)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: i_0
+      integer, intent(out)            :: delta_i
+      integer, intent(out)            :: n_i
+
+      type(toml_table), pointer :: table_loop
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files parameters table
+
+      call get_value(table, 'loop', table_loop, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'loop', origin, 'table')
+
+      call get_value(table_loop, 'i_0', i_0, default=0, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'i_0', origin, 'integer')
+
+      call get_value(table_loop, 'delta_i', delta_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_i', origin, 'integer')
+
+      call get_value(table_loop, 'n_i', n_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_i', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_loop
+
+   !****
+
+   subroutine init_time(table, t_0, delta_t)
+
+      type(toml_table), intent(inout) :: table
+      real(RD), intent(out)           :: t_0
+      real(RD), intent(out)           :: delta_t
+
+      type(toml_table), pointer :: table_time
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the times table
+
+      call get_value(table, 'times', table_time, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'times', origin, 'table')
+
+      call get_value(table_time, 't_0', t_0, default=0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 't_0', origin, 'real')
+
+      call get_value(table_time, 'delta_t', delta_t, default=1._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_t', origin, 'real')
+
+      ! Finish
+
+      return
+
+   end subroutine init_time
 
 end program pulse_star

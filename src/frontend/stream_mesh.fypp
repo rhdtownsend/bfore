@@ -1,9 +1,9 @@
-! Program : render_mesh
-! Purpose : Render a mesh
+! Program : stream_mesh
+! Purpose : Stream a mesh
 
 #:include 'forum.inc'
 
-program render_mesh
+program stream_mesh
 
    ! Uses
 
@@ -11,9 +11,9 @@ program render_mesh
 
    use file_m
    use mesh_m
-   use renderbuff_m
    use stat_m
    use star_m
+   use stream_m
    use string_m
    use view_m
 
@@ -33,25 +33,23 @@ program render_mesh
    type(toml_context)            :: context
    type(toml_error), allocatable :: error
    type(view_t)                  :: view
-   integer                       :: n_x
-   integer                       :: n_y
    character(:), allocatable     :: mesh_file_name
-   character(:), allocatable     :: rbuff_file_name
+   character(:), allocatable     :: stream_file_name
    integer                       :: i_0
    integer                       :: delta_i
    integer                       :: n_i
 
    integer                    :: i
    character(:), allocatable  :: mesh_file_name_i
-   character(:), allocatable  :: rbuff_file_name_i
+   character(:), allocatable  :: stream_file_name_i
    type(hdf5io_t)             :: hdf5io
    character(TYPE_LEN)        :: type
    class(mesh_t), allocatable :: mesh
-   type(renderbuff_t)         :: rbuff
+   type(stream_t)             :: stream
 
    ! Read command-line arguments
 
-   @:ASSERT(n_arg() == 1, 'Syntax: render_mesh <file_name>')
+   @:ASSERT(n_arg() == 1, 'Syntax: stream_mesh <file_name>')
 
    call get_arg(1, file_name)
 
@@ -64,8 +62,7 @@ program render_mesh
    end if
 
    call init_view(table, view)
-   call init_renderbuff(table, n_x, n_y)
-   call init_files(table, mesh_file_name, rbuff_file_name)
+   call init_files(table, mesh_file_name, stream_file_name)
    call init_loop(table, i_0, delta_i, n_i)
 
    call table%destroy()
@@ -75,7 +72,7 @@ program render_mesh
    indx_loop : do i = i_0, n_i, delta_i
 
       mesh_file_name_i = subst(mesh_file_name, '{i}', i, '(I4.4)')
-      rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
+      stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
 
       ! Load the mesh
 
@@ -94,14 +91,12 @@ program render_mesh
       call mesh%read(hdf5io)
       call hdf5io%final()
 
-      ! Render the mesh
+      ! Stream the mesh
 
-      rbuff = renderbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
+      stream = stream_t(mesh, view)
 
-      call rbuff%render(mesh, 1)
-
-      hdf5io = hdf5io_t(rbuff_file_name_i, CREATE_FILE)
-      call rbuff%write(hdf5io)
+      hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
+      call stream%write(hdf5io)
       call hdf5io%final()
 
       ! Clean up
@@ -124,28 +119,14 @@ contains
       type(toml_table), pointer :: table_view
       integer                   :: stat
       integer                   :: origin
-      real(RD)                  :: origin_x
-      real(RD)                  :: origin_y
-      real(RD)                  :: origin_z
       real(RD)                  :: alpha
       real(RD)                  :: beta
       real(RD)                  :: gamma
-      real(RD)                  :: delta_x
-      real(RD)                  :: delta_y
 
       ! Read the view table
 
       call get_value(table, 'view', table_view, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'view', origin, 'table')
-
-      call get_value(table_view, 'origin_x', origin_x, 0._RD, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'origin_x', origin, 'real')
-
-      call get_value(table_view, 'origin_y', origin_y, 0._RD, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'origin_y', origin, 'real')
-
-      call get_value(table_view, 'origin_z', origin_z, 0._RD, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'origin_z', origin, 'real')
 
       call get_value(table_view, 'alpha', alpha, 0._RD, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'alpha', origin, 'real')
@@ -156,17 +137,11 @@ contains
       call get_value(table_view, 'gamma', gamma, 0._RD, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'gamma', origin, 'real')
 
-      call get_value(table_view, 'delta_x', delta_x, 2._RD, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'delta_x', origin, 'real')
-
-      call get_value(table_view, 'delta_y', delta_y, 2._RD, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'delta_y', origin, 'real')
-
       ! Construct the view
 
-      view = view_t(point_t(origin_x, origin_y, origin_z), &
+      view = view_t(point_t(0._RD, 0._RD, 0._RD), &
          alpha*DEG_TO_RAD, beta*DEG_TO_RAD, gamma*DEG_TO_RAD, &
-         delta_x, delta_y)
+         2._RD, 2._RD)
 
       ! Finish
 
@@ -176,40 +151,11 @@ contains
 
    !****
 
-   subroutine init_renderbuff(table, n_x, n_y)
-
-      type(toml_table), intent(inout) :: table
-      integer, intent(out)            :: n_x
-      integer, intent(out)            :: n_y
-
-      type(toml_table), pointer :: table_rbuff
-      integer                   :: stat
-      integer                   :: origin
-
-      ! Read the renderbuff table
-
-      call get_value(table, 'renderbuff', table_rbuff, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'renderbuff', origin, 'table')
-
-      call get_value(table_rbuff, 'n_x', n_x, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'n_x', origin, 'integer')
-
-      call get_value(table_rbuff, 'n_y', n_y, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'n_y', origin, 'integer')
-
-      ! Finish
-
-      return
-
-   end subroutine init_renderbuff
-
-   !****
-
-   subroutine init_files(table, mesh_file_name, rbuff_file_name)
+   subroutine init_files(table, mesh_file_name, stream_file_name)
 
       type(toml_table), intent(inout)        :: table
       character(:), allocatable, intent(out) :: mesh_file_name
-      character(:), allocatable, intent(out) :: rbuff_file_name
+      character(:), allocatable, intent(out) :: stream_file_name
 
       type(toml_table), pointer :: table_files
       integer                   :: stat
@@ -223,8 +169,8 @@ contains
       call get_value(table_files, 'mesh_file_name', mesh_file_name, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'mesh_file_name', origin, 'string')
 
-      call get_value(table_files, 'renderbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'renderbuff_file_name', origin, 'string')
+      call get_value(table_files, 'stream_file_name', stream_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream_file_name', origin, 'string')
 
       ! Finish
 
@@ -265,4 +211,4 @@ contains
 
    end subroutine init_loop
 
-end program render_mesh
+end program stream_mesh

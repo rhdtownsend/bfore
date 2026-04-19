@@ -1,0 +1,52 @@
+! Module  : string_m
+! Purpose : string manipulation routines
+
+#:include 'forum.inc'
+
+module string_m
+
+   ! Uses
+
+   use forum_m
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Access specifiers
+
+   public :: subst
+
+   ! Default access
+
+   private
+
+contains
+
+   function subst(string, pattern, i, format) result(new_string)
+
+      character(*), intent(in)  :: string
+      character(*), intent(in)  :: pattern
+      integer, intent(in)       :: i
+      character(*), intent(in)  :: format
+      character(:), allocatable :: new_string
+
+      character(64) :: substring
+
+      ! Write i into the substring buffer
+
+      write(substring, format) i
+
+      ! Do the replacement
+
+      new_string = replace(string, pattern, TRIM(substring), every=.TRUE.)
+
+      ! Finish
+
+      return
+
+   end function subst
+
+end module string_m

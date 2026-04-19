@@ -75,4 +75,74 @@ contains
 
    end procedure face_midpoint
 
+   !****
+
+   module procedure face_scalar
+
+      integer           :: f_e
+      integer           :: v1
+      integer           :: v2
+      integer           :: v3
+      real(RD), pointer :: scalar1
+      real(RD), pointer :: scalar2
+      real(RD), pointer :: scalar3
+
+      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_scalar, 'invalid scalar')
+      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid face')
+
+      ! Get the a'th scalar attribute of face f
+
+      f_e = self%face_edge(f)
+
+      v1 = self%edge_vert(f_e)
+      v2 = self%edge_vert(self%edge_next(f_e))
+      v3 = self%edge_vert(self%edge_prev(f_e))
+
+      scalar1 => self%vert_scalar(a, v1)
+      scalar2 => self%vert_scalar(a, v2)
+      scalar3 => self%vert_scalar(a, v3)
+
+      scalar = 1._RD/3._RD*(scalar1 + scalar2 + scalar3)
+
+      ! Finish
+
+      return
+
+   end procedure face_scalar
+
+   !****
+
+   module procedure face_vector
+
+      integer                 :: f_e
+      integer                 :: v1
+      integer                 :: v2
+      integer                 :: v3
+      type(vector_t), pointer :: vector1
+      type(vector_t), pointer :: vector2
+      type(vector_t), pointer :: vector3
+
+      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_vector, 'invalid vector')
+      @:ASSERT_DEBUG(f >= 1 .AND. f <= self%n_face, 'invalid vert')
+
+      ! Get the a'th vector attribute of face f
+
+      f_e = self%face_edge(f)
+
+      v1 = self%edge_vert(f_e)
+      v2 = self%edge_vert(self%edge_next(f_e))
+      v3 = self%edge_vert(self%edge_prev(f_e))
+
+      vector1 => self%vert_vector(a, v1)
+      vector2 => self%vert_vector(a, v2)
+      vector3 => self%vert_vector(a, v3)
+
+      vector = 1._RD/3._RD*(vector1 + vector2 + vector3)
+
+      ! Finish
+
+      return
+
+   end procedure face_vector
+
 end submodule mesh_face_sm

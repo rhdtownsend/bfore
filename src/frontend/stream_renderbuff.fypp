@@ -1,0 +1,152 @@
+! Program : stream_renderbuff
+! Purpose : Stream a renderbuff
+
+#:include 'forum.inc'
+
+program stream_renderbuff
+
+   ! Uses
+
+   use forum_m
+
+   use file_m
+   use stat_m
+   use renderbuff_m
+   use stream_m
+   use string_m
+
+   use tomlf
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Variables
+
+   character(:), allocatable :: file_name
+
+   type(toml_table), allocatable :: table
+   type(toml_context)            :: context
+   type(toml_error), allocatable :: error
+   character(:), allocatable     :: rbuff_file_name
+   character(:), allocatable     :: stream_file_name
+   integer                       :: i_0
+   integer                       :: delta_i
+   integer                       :: n_i
+
+   integer                    :: i
+   character(:), allocatable  :: rbuff_file_name_i
+   character(:), allocatable  :: stream_file_name_i
+   type(hdf5io_t)             :: hdf5io
+   type(renderbuff_t)         :: rbuff
+   type(stream_t)             :: stream
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: stream_renderbuff <file_name>')
+
+   call get_arg(1, file_name)
+
+   ! Read the input file & initialize
+
+   call toml_load(table, file_name, error=error, context=context)
+   if (ALLOCATED(error)) then
+      print *,error%message
+      stop 1
+   end if
+
+   call init_files(table, rbuff_file_name, stream_file_name)
+   call init_loop(table, i_0, delta_i, n_i)
+
+   call table%destroy()
+
+   ! Loop over indices
+
+   indx_loop : do i = i_0, n_i, delta_i
+
+      rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
+      stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
+
+      ! Load the renderbuff
+
+      hdf5io = hdf5io_t(rbuff_file_name_i, OPEN_FILE_RO)
+      call rbuff%read(hdf5io)
+      call hdf5io%final()
+
+      ! Stream the renderbuff
+
+      stream = stream_t(rbuff)
+
+      hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
+      call stream%write(hdf5io)
+      call hdf5io%final()
+
+   end do indx_loop
+
+   ! Finish
+
+contains
+
+   subroutine init_files(table, rbuff_file_name, stream_file_name)
+
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: rbuff_file_name
+      character(:), allocatable, intent(out) :: stream_file_name
+
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files table
+
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
+
+      call get_value(table_files, 'renderbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'rbuff_file_name', origin, 'string')
+
+      call get_value(table_files, 'stream_file_name', stream_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream_file_name', origin, 'string')
+
+      ! Finish
+
+      return
+
+   end subroutine init_files
+
+   !****
+
+   subroutine init_loop(table, i_0, delta_i, n_i)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: i_0
+      integer, intent(out)            :: delta_i
+      integer, intent(out)            :: n_i
+
+      type(toml_table), pointer :: table_loop
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files parameters table
+
+      call get_value(table, 'loop', table_loop, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'loop', origin, 'table')
+
+      call get_value(table_loop, 'i_0', i_0, default=0, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'i_0', origin, 'integer')
+
+      call get_value(table_loop, 'delta_i', delta_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_i', origin, 'integer')
+
+      call get_value(table_loop, 'n_i', n_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_i', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_loop
+
+end program stream_renderbuff

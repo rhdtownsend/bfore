@@ -8,7 +8,8 @@ all:
 
 # Targets
 
-BIN_TARGETS = build_star render_mesh pulse_star color_star
+BIN_TARGETS = render_mesh stream_mesh stream_renderbuff \
+              build_star pulse_star color_star
 
 LIB_TARGETS = 
 
@@ -45,7 +46,7 @@ surface_SRCS = polar_surface_m.fypp sphere_surface_m.fypp roche_surface_m.fypp
 star_SRCS = star_m.fypp star_construct_sm.fypp star_perturb_sm.fypp star_io_sm.fypp
 mode_SRCS = mode_m.fypp
 math_SRCS = special_m.fypp
-other_SRCS = stat_m.fypp file_m.fypp math_m.fypp propmap_m.fypp
+other_SRCS = stat_m.fypp file_m.fypp math_m.fypp propmap_m.fypp string_m.fypp
 all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) \
            $(stream_SRCS) $(view_SRCS) $(transform_SRCS) $(surface_SRCS) \
            $(mode_SRCS) $(math_SRCS) $(star_SRCS) $(other_SRCS)
@@ -77,6 +78,14 @@ ptest_renderbuff_LIBS =
 render_mesh_SRCS = render_mesh.fypp $(all_SRCS)
 render_mesh_USES = $(render_mesh_SRCS)
 render_mesh_LIBS =
+
+stream_mesh_SRCS = stream_mesh.fypp $(all_SRCS)
+stream_mesh_USES = $(stream_mesh_SRCS)
+stream_mesh_LIBS =
+
+stream_renderbuff_SRCS = stream_renderbuff.fypp $(all_SRCS)
+stream_renderbuff_USES = $(stream_renderbuff_SRCS)
+stream_renderbuff_LIBS =
 
 build_star_SRCS = build_star.fypp $(all_SRCS)
 build_star_USES = $(build_star_SRCS)

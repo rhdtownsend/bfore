@@ -61,6 +61,8 @@ module mesh_m
       procedure, public :: vert_vector
       procedure, public :: face_area
       procedure, public :: face_midpoint
+      procedure, public :: face_scalar
+      procedure, public :: face_vector
       procedure, public :: validate
       procedure, public :: euler_characteristic
       procedure, public :: read
@@ -281,6 +283,22 @@ module mesh_m
          integer, intent(in)               :: f
          type(point_t)                     :: midpoint
       end function face_midpoint
+
+      module function face_scalar(self, a, f) result(scalar)
+         implicit none (type, external)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: a
+         integer, intent(in)               :: f
+         real(RD)                          :: scalar
+      end function face_scalar
+
+      module function face_vector(self, a, f) result(vector)
+         implicit none (type, external)
+         class(mesh_t), intent(in), target :: self
+         integer, intent(in)               :: a
+         integer, intent(in)               :: f
+         type(vector_t)                    :: vector
+      end function face_vector
 
    end interface
 
