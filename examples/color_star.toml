@@ -1,0 +1,28 @@
+[star]
+M = 2.02
+R_pole = 1.71
+T_pole = 9909.16
+D = 2.639
+
+[msg]
+specgrid_file_name = "data/grids/sg-demo.h5"
+passband_file_names = [
+  "data/passbands/pb-Generic-Johnson.U-Vega.h5",
+  "data/passbands/pb-Generic-Johnson.B-Vega.h5",
+  "data/passbands/pb-Generic-Johnson.V-Vega.h5"
+]
+use_interp_irradiance = true
+order = 1
+
+[stream]
+file_name = 'stream.h5'
+
+[[propmap]]
+name = 'Teff'
+index = 1
+
+[[propmap]]
+name = "log(g)"
+index = 2
+op = "LOG10"
+

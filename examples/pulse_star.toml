@@ -1,0 +1,18 @@
+[[modes]]
+l = 4
+m = -4
+A_r = 0.1
+A_h = 0.025
+A_T = 0.01
+period = 1
+
+[files]
+input_file_name = 'star.h5'
+output_file_name = 'star-{i}.h5'
+
+[loop]
+n_i = 65
+
+[time]
+t_0 = 0
+delta_t = 0.015625
