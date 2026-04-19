@@ -92,7 +92,7 @@ program render_mesh
       mesh_file_name_i = subst(mesh_file_name, '{i}', i, '(I4.4)')
       rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
 
-      ! Load the mesh
+      ! Read the mesh
 
       hdf5io = hdf5io_t(mesh_file_name_i, OPEN_FILE_RO)
 

@@ -89,7 +89,7 @@ program stream_mesh
       mesh_file_name_i = subst(mesh_file_name, '{i}', i, '(I4.4)')
       stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
 
-      ! Load the mesh
+      ! Read the mesh
 
       hdf5io = hdf5io_t(mesh_file_name_i, OPEN_FILE_RO)
 
@@ -106,9 +106,11 @@ program stream_mesh
       call mesh%read(hdf5io)
       call hdf5io%final()
 
-      ! Stream the mesh
+      ! Create the stream
 
       stream = stream_t(mesh, view)
+
+      ! Write the stream
 
       hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
       call stream%write(hdf5io)

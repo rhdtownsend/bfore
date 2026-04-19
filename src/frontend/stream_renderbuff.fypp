@@ -84,15 +84,17 @@ program stream_renderbuff
       rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
       stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
 
-      ! Load the renderbuff
+      ! Read the renderbuff
 
       hdf5io = hdf5io_t(rbuff_file_name_i, OPEN_FILE_RO)
       call rbuff%read(hdf5io)
       call hdf5io%final()
 
-      ! Stream the renderbuff
+      ! Create the stream
 
       stream = stream_t(rbuff)
+
+      ! Write the stream
 
       hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
       call stream%write(hdf5io)

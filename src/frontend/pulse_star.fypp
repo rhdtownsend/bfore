@@ -91,7 +91,7 @@ program pulse_star
       input_file_name_i = subst(input_file_name, '{i}', i, '(I4.4)')
       output_file_name_i = subst(output_file_name, '{i}', i, '(I4.4)')
 
-      ! Load the star
+      ! Read the star
 
       hdf5io = hdf5io_t(input_file_name_i, OPEN_FILE_RO)
       call star%read(hdf5io)
