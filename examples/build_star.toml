@@ -1,6 +1,8 @@
 [star]
-omega = 0.0
-file_name = 'star.h5'
+omega = 0.5
 
 [mesh]
 n_faces = 1024
+
+[files]
+star_file_name = 'star.h5'
