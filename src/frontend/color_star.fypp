@@ -47,9 +47,10 @@ program before_colors
    real(RD), allocatable :: x_vec(:,:)
    real(RD), allocatable :: mu(:)
    real(RD), allocatable :: dA(:)
-   real(RD), allocatable :: D_(:)
+   real(RD), allocatable :: dOmega(:)
    integer               :: i
    integer               :: j
+   real(RD)              :: color
    real(RD)              :: intensity
    integer(ID)           :: c_beg, c_end, c_rate
    integer               :: usage, limit
@@ -86,10 +87,9 @@ program before_colors
 
    call process_stream(stream, propmap, x_vec, mu, dA)
 
-   print *,'stream processed'
+   dOmega = dA/D**2
 
-   allocate(D_(stream%n))
-   D_ = D
+   print *,'stream processed'
 
    ! Evaluate the color contribution
 
@@ -100,8 +100,7 @@ program before_colors
       do j = 1, n_colors
          print *,'proc color (irrad)', j
          call SYSTEM_CLOCK(c_beg, c_rate)
-!         call photgrids(j)%interp_irradiance_fast(x_vec, mu, dA, D_, colors(j))
-         call photgrids(j)%interp_irradiance(x_vec, mu, dA, D_, colors(j), order=order)
+         call photgrids(j)%interp_irradiance(x_vec, mu, dOmega, colors(j), order=order)
          call SYSTEM_CLOCK(c_end)
          print *,'done, t=', REAL(c_end - c_beg, RD)/c_rate
          call photgrids(j)%get_cache_usage(usage)
@@ -116,13 +115,15 @@ program before_colors
       do j = 1, n_colors
          print *,'proc color',j
          call SYSTEM_CLOCK(c_beg, c_rate)
+         color = 0._RD
+         !$OMP PARALLEL DO PRIVATE(intensity) REDUCTION(+:color)
          do i = 1, stream%n
-            !if (MOD(i, 1000) == 0) print *,i
             if (mu(i) > 0._RD) then
                call photgrids(j)%interp_intensity(x_vec(:,i), mu(i), intensity, order=order)
-               colors(j) = colors(j) + intensity*dA(i)/D_(i)**2
+               color = color + intensity*dOmega(i)
             end if
          end do
+         colors(j) = color
          call SYSTEM_CLOCK(c_end)
          print *,'done', REAL(c_end - c_beg, RD)/c_rate
          call photgrids(j)%get_cache_usage(usage)
@@ -132,7 +133,7 @@ program before_colors
 
    end if
 
-   write(OUTPUT_UNIT, *) colors
+   write(OUTPUT_UNIT, *) -2.5*LOG10(colors)
 
    ! Finish
 
@@ -402,7 +403,7 @@ contains
          vector = vector/norm2(vector)
 
          mu(i) = vector%z
-         dA(i) = stream%pixel_area(i)
+         dA(i) = stream%pixel_area(i)*R_pole**2
 
       end do pixel_loop
 

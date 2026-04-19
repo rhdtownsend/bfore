@@ -50,6 +50,8 @@ program render_mesh
 
    ! Read the input file & initialize
 
+   print *,'go load table:',file_name
+
    call toml_load(table, file_name, error=error, context=context)
    if (ALLOCATED(error)) then
       print *,error%message
@@ -57,17 +59,21 @@ program render_mesh
    end if
 
    call init_mesh(table, mesh)
+   print *,'done init mesh'
    call init_view(table, view)
+   print *,'done init view'
    call init_renderbuff(table, n_x, n_y, rbuff_file_name)
+   print *,'done init renderbuff'
    call init_stream(table, stream_file_name)
+   print *,'done init stream'
 
    call table%destroy()
 
    ! Render the mesh
 
-   rbuff = renderbuff_t(n_x, n_y, mesh%n_scalar, mesh%n_vector)
+   rbuff = renderbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
 
-   call rbuff%render(mesh, view, 1)
+   call rbuff%render(mesh, 1)
 
    ! Stream the renderbuff
 
