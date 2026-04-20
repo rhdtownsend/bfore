@@ -3,4 +3,4 @@ renderbuff_file_name = 'rbuff-{i}.h5'
 stream_file_name = 'stream-{i}.h5'
 
 [loop]
-n_i = 65
+n_i = 64

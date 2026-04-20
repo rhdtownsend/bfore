@@ -11,11 +11,10 @@ passband_file_names = [
   "data/passbands/pb-Generic-Johnson.B-Vega.h5",
   "data/passbands/pb-Generic-Johnson.V-Vega.h5"
 ]
-use_interp_irradiance = true
 order = 1
 
-[stream]
-file_name = 'stream.h5'
+[files]
+stream_file_name = 'stream-{i}.h5'
 
 [[propmap]]
 name = 'Teff'
@@ -26,3 +25,5 @@ name = "log(g)"
 index = 2
 op = "LOG10"
 
+[loop]
+n_i = 64
