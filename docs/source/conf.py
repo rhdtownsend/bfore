@@ -84,9 +84,7 @@ html_theme_options = {
 }
 
 # CSS
-html_css_files = [
-    'theme_overrides.css'
-]
+html_css_files = ["theme_overrides.css"]
 
 # Set master doc
 master_doc = 'index'
@@ -118,7 +116,7 @@ else:
 targets = {
     'tarball_url': tarball_url,
     'mesa-sdk': 'http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk',
-    'mad-sdk': 'http://user.astro.wisc.edu/~townsend/static.php?ref=madsdk',
+    'msg': 'http://msg.readthedocs.io/',
     'gyre': 'https://gyre.readthedocs.io/'
 }
 
@@ -134,13 +132,6 @@ rep_exts = {"version": version,
 
 for rep_ext_key, rep_ext_val in rep_exts.items():
     rst_prolog += "\n.. |{:s}| replace:: {:s}".format(rep_ext_key, rep_ext_val)
-
-# Add substitutions for en/em dashes
-
-rst_prolog += '''
-.. |--| unicode:: U+2013   .. en dash
-.. |---| unicode:: U+2014  .. em dash
-'''
 
 # Mathjax & Latex macros
 
@@ -182,13 +173,6 @@ exclude_patterns = ['**/.virtual_documents']
 # Enable email obfuscation
 email_automode = True
 
-# Set up intersphinx
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'numpy': ('https://numpy.org/doc/stable', None)
-}
-intersphinx_disabled_reftypes = ["std:doc"]
-
 # Spelling
 spelling_word_list_filename='spelling_wordlist.txt'
 
@@ -197,3 +181,6 @@ pygments_style = 'sphinx'
 
 # Copybutton settings
 copybutton_exclude = '.linenos, .gp, .go'
+
+# Fix rendering of quotes, dashes etc.
+smartquotes = True

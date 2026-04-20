@@ -1,0 +1,119 @@
+ Checking mesh connectivity
+   edge_next(edge_prev(e)) == e                                  ...passed
+   edge_prev(edge_next(e)) == e                                  ...passed
+   edge_next(edge_next(e)) == edge_prev(e)                       ...passed
+   edge_prev(edge_prev(e)) == edge_next(e)                       ...passed
+   edge_twin(e) == e                                             ...passed
+   edge_face(face_edge(f)) == f                                  ...passed
+   edge_face(face_edge(edge_face(e))) == edge_face(e)            ...passed
+   edge_vert(vert_edge(v)) == v                                  ...passed
+   edge_vert(vert_edge(edge_vert(e))) == edge_vert(e)            ...passed
+ Checking mesh validation
+   no faces -> valid                                             ...passed
+   one face -> valid                                             ...passed
+   two disjoint faces -> valid                                   ...passed
+   two faces w/ one shared vertex -> valid                       ...passed
+   two faces w/ one shared edge -> valid                         ...passed
+   two faces w/ one shared edge, misordeded -> valid             ...passed
+   two faces w/ two shared edges -> valid                        ...passed
+   two faces w/ two shared edges, misordered -> valid            ...passed
+   two faces w/ three shared edges -> valid                      ...passed
+   two faces w/ three shared edges, misordered -> valid          ...passed
+   one face w/ invalid vertex -> invaid                          ...passed
+   one face w/ degenerate vertices -> invaid                     ...passed
+   one face w/ missing vertex -> invalid                         ...passed
+ Checking mesh construction
+   merge two two_face_mesh -> valid                              ...passed
+ Checking mesh primitives
+   one_face_mesh -> valid                                        ...passed
+   two_face_mesh -> valid                                        ...passed
+   tetrahedron_mesh -> valid                                     ...passed
+   icosahedron_mesh -> valid                                     ...passed
+ Checking mesh modification
+   flip_edge counter-clockwise on two_face_mesh -> valid         ...passed
+   flip_edge clockwise on two_face_mesh -> valid                 ...passed
+   flip_edge counter+clockwise on two_face_mesh -> valid         ...passed
+   refine_face on two_face_mesh -> valid                         ...passed
+   refine on two_face_mesh -> valid                              ...passed
+   refine_and_flip on two_face_mesh -> valid                     ...passed
+   refine_and_flip on two_face_mesh -> valid                     ...passed
+ Checking mesh topology
+   Euler formula for tetrahedron_mesh                            ...passed
+   Euler formula for two tetrahedra_mesh                         ...passed
+ Checking mesh vertex access
+   get vertex point of tetrahedron_mesh                          ...passed
+   set vertex point of tetrahedron_mesh                          ...passed
+   edge lengths of tetrahedron_mesh                              ...passed
+   face areas of tetrahedron_mesh                                ...passed
+ Checking mesh i/o
+   write sphere_mesh to file                                     ...passed
+   read sphere_mesh from file                                    ...passed
+   read mesh equals written mesh                                 ...passed
+ Checking point arithmetic
+   addition (a)                                                  ...passed
+   addition (b)                                                  ...passed
+   subtraction (a)                                               ...passed
+   subtraction (b)                                               ...passed
+ Checking point transformation
+   rotation about x axis                                         ...passed
+   rotation about y axis                                         ...passed
+   rotation about z axis                                         ...passed
+   translation in x direction                                    ...passed
+   translation in y direction                                    ...passed
+   translation in z direction                                    ...passed
+   scaling in x direction                                        ...passed
+   scaling in y direction                                        ...passed
+   scaling in z direction                                        ...passed
+ Checking renderbuff triangle rendering
+   fill rules for edge-left triangle                             ...passed
+   fill rules for edge-bot triangle                              ...passed
+   fill rules for edge-top triangle                              ...passed
+   fill rules for corner-top-left triangle                       ...passed
+   fill rules for corner-bot-left triangle                       ...passed
+   fill rules for corner-bot-right triangle                      ...passed
+   full rules for corner-top-right triangle                      ...passed
+   square from two triangles                                     ...passed
+   square w/ two scalars                                         ...passed
+   square w/ two vectors                                         ...passed
+   square w/ two scalars and one vector                          ...passed
+ Checking renderbuff mesh rendering
+   tetrahedron mesh pixel count                                  ...passed
+ Checking renderbuff construction
+   merge two triangle renderbuffs                                ...passed
+ Checking renderbuff i/o
+   write renderbuff to file                                      ...passed
+   read renderbuff from file                                     ...passed
+   read renderbuff equals written renderbuff                     ...passed
+ Checking sphere_surface functionality
+   polar radius                                                  ...passed
+   equatorial radius                                             ...passed
+   polar point                                                   ...passed
+   equatorial point                                              ...passed
+ Checking roche_surface functionality
+   non-rotating polar radius                                     ...passed
+   non-rotating equatorial radius                                ...passed
+   non-rotating polar point                                      ...passed
+   non-rotating equatorial point                                 ...passed
+   critical-rotating polar radius                                ...passed
+   critical-rotating equatorial radius                           ...passed
+   critical-rotating polar                                       ...passed
+   critical-rotating equatorial point                            ...passed
+ Checking vector arithmetic
+   addition (a)                                                  ...passed
+   addition (b)                                                  ...passed
+   subtraction (a)                                               ...passed
+   subtraction (b)                                               ...passed
+   negation                                                      ...passed
+   scalar division                                               ...passed
+   cross_product                                                 ...passed
+   norm                                                          ...passed
+ Checking vector transformation
+   rotation about x axis                                         ...passed
+   rotation about y axis                                         ...passed
+   rotation about z axis                                         ...passed
+   translation in x direction                                    ...passed
+   translation in y direction                                    ...passed
+   translation in z direction                                    ...passed
+   scaling in x direction                                        ...passed
+   scaling in y direction                                        ...passed
+   scaling in z direction                                        ...passed

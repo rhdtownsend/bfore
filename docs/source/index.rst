@@ -25,3 +25,10 @@ Software Foundation <https://www.fsf.org/>`__, version 3.
 
    user-guide/preliminaries.rst
    user-guide/quick-start.rst
+
+.. toctree::
+   :caption: Reference Guide
+   :name: ref-guide
+   :maxdepth: 2
+
+   ref-guide/installation.rst
