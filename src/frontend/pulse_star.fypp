@@ -71,7 +71,7 @@ program pulse_star
 
    call toml_load(table, file_name, error=error, context=context)
    if (ALLOCATED(error)) then
-      print *,error%message
+      write(ERROR_UNIT, *) error%message
       stop 1
    end if
 
@@ -84,7 +84,7 @@ program pulse_star
 
    ! Loop over indices
 
-   indx_loop : do i = i_0, n_i, delta_i
+   indx_loop : do i = i_0, i_0+(n_i-1)*delta_i, delta_i
 
       time = t_0 + i*delta_t
 
@@ -276,8 +276,9 @@ contains
 
       ! Read the times table
 
-      call get_value(table, 'times', table_time, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'times', origin, 'table')
+      call get_value(table, 'time', table_time, stat=stat, origin=origin, requested=.false.)
+      @:ASSERT(ASSOCIATED(table_time), 'table not found: time')
+      call check_toml_stat(context, stat, 'time', origin, 'table')
 
       call get_value(table_time, 't_0', t_0, default=0._RD, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 't_0', origin, 'real')

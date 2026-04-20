@@ -79,7 +79,7 @@ program stream_renderbuff
 
    ! Loop over indices
 
-   indx_loop : do i = i_0, n_i, delta_i
+   indx_loop : do i = i_0, i_0+(n_i-1)*delta_i, delta_i
 
       rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
       stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
