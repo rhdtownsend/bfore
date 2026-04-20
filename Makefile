@@ -77,6 +77,9 @@ clean : clean-forum clean-msg
 	@$(MAKE) -C build $@
 	@rm -rf $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
 
+utest : install
+	@for f in $(BIN_DIR)/utest_*; do $$f; done
+
 ifneq ($(EXTERNAL_FORUM),yes)
 
    install-forum : | $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR)
@@ -127,7 +130,7 @@ else
 
 endif
 
-.PHONY: install build clean install-forum clean-forum install-msg clean-msg
+.PHONY: install build clean utest install-forum clean-forum install-msg clean-msg
 
 $(BIN_DIR) $(LIB_DIR) $(PKG_DIR) $(INC_DIR) :
 	@mkdir -p $@
