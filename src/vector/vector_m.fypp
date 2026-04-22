@@ -47,11 +47,15 @@ module vector_m
       procedure             :: neg_vector_
       procedure             :: sub_vector_vector_
       generic, public       :: operator(-) => neg_vector_, sub_vector_vector_
-      procedure             :: mul_vector_scalar_
-      procedure, pass(self) :: mul_scalar_vector_
-      generic, public       :: operator(*) => mul_vector_scalar_, mul_scalar_vector_
-      procedure             :: div_vector_scalar_
-      generic, public       :: operator(/) => div_vector_scalar_
+      procedure             :: mul_vector_scalar_i_
+      procedure             :: mul_vector_scalar_r_
+      procedure, pass(self) :: mul_scalar_vector_i_
+      procedure, pass(self) :: mul_scalar_vector_r_
+      generic, public       :: operator(*) => mul_vector_scalar_i_, mul_vector_scalar_r_, &
+                                              mul_scalar_vector_i_, mul_scalar_vector_r_
+      procedure             :: div_vector_scalar_i_
+      procedure             :: div_vector_scalar_r_
+      generic, public       :: operator(/) => div_vector_scalar_i_, div_vector_scalar_r_
       procedure, public     :: image
    end type vector_t
 
@@ -88,26 +92,47 @@ module vector_m
          type(vector_t)              :: vector
       end function neg_vector_
 
-      elemental module function mul_vector_scalar_(self, scalar) result(vector)
+      elemental module function mul_vector_scalar_i_(self, scalar) result(vector)
          implicit none (type, external)
          class(vector_t), intent(in) :: self
-         real(RD), intent(in)        :: scalar
+         integer, intent(in)         :: scalar
          type(vector_t)              :: vector
-      end function mul_vector_scalar_
+      end function mul_vector_scalar_i_
 
-      elemental module function mul_scalar_vector_(scalar, self) result(vector)
+      elemental module function mul_vector_scalar_r_(self, scalar) result(vector)
          implicit none (type, external)
-         real(RD), intent(in)        :: scalar
          class(vector_t), intent(in) :: self
+         real(RD), intent(in)        :: scalar
          type(vector_t)              :: vector
-      end function mul_scalar_vector_
+      end function mul_vector_scalar_r_
 
-      elemental module function div_vector_scalar_(self, scalar) result(vector)
+      elemental module function mul_scalar_vector_i_(scalar, self) result(vector)
+         implicit none (type, external)
+         integer, intent(in)         :: scalar
+         class(vector_t), intent(in) :: self
+         type(vector_t)              :: vector
+      end function mul_scalar_vector_i_
+
+      elemental module function mul_scalar_vector_r_(scalar, self) result(vector)
+         implicit none (type, external)
+         real(RD), intent(in)        :: scalar
+         class(vector_t), intent(in) :: self
+         type(vector_t)              :: vector
+      end function mul_scalar_vector_r_
+
+      elemental module function div_vector_scalar_i_(self, scalar) result(vector)
+         implicit none (type, external)
+         class(vector_t), intent(in) :: self
+         integer, intent(in)         :: scalar
+         type(vector_t)              :: vector
+      end function div_vector_scalar_i_
+
+      elemental module function div_vector_scalar_r_(self, scalar) result(vector)
          implicit none (type, external)
          class(vector_t), intent(in) :: self
          real(RD), intent(in)        :: scalar
          type(vector_t)              :: vector
-      end function div_vector_scalar_
+      end function div_vector_scalar_r_
 
    end interface
 

@@ -95,51 +95,54 @@ contains
 
    !****
 
-   module procedure mul_vector_scalar_
+   #:for S in ('i', 'r')
 
-      ! Post-multiply the vector by the scalar
+      module procedure mul_vector_scalar_${S}$_
 
-      vector%x = self%x * scalar
-      vector%y = self%y * scalar
-      vector%z = self%z * scalar
+         ! Post-multiply the vector by the scalar
 
-      ! Finish
+         vector%x = self%x * scalar
+         vector%y = self%y * scalar
+         vector%z = self%z * scalar
 
-      return
+         ! Finish
 
-   end procedure mul_vector_scalar_
+         return
 
+      end procedure mul_vector_scalar_${S}$_
 
-   !****
+      !****
 
-   module procedure mul_scalar_vector_
+      module procedure mul_scalar_vector_${S}$_
 
-      ! Pre-multiply the vector by the scalar
+         ! Pre-multiply the vector by the scalar
 
-      vector%x = scalar * self%x
-      vector%y = scalar * self%y
-      vector%z = scalar * self%z
+         vector%x = scalar * self%x
+         vector%y = scalar * self%y
+         vector%z = scalar * self%z
 
-      ! Finish
+         ! Finish
 
-      return
+         return
 
-   end procedure mul_scalar_vector_
+      end procedure mul_scalar_vector_${S}$_
 
-   !****
+      !****
 
-   module procedure div_vector_scalar_
+      module procedure div_vector_scalar_${S}$_
 
-      ! Divide the vector by the scalar
+         ! Divide the vector by the scalar
 
-      vector%x = self%x / scalar
-      vector%y = self%y / scalar
-      vector%z = self%z / scalar
+         vector%x = self%x / scalar
+         vector%y = self%y / scalar
+         vector%z = self%z / scalar
 
-      ! Finish
+         ! Finish
 
-      return
+         return
 
-   end procedure div_vector_scalar_
+      end procedure div_vector_scalar_${S}$_
+
+   #:endfor
 
 end submodule vector_operate_sm
