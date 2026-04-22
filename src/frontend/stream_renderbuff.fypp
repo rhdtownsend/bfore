@@ -45,6 +45,8 @@ program stream_renderbuff
    type(toml_table), allocatable :: table
    type(toml_context)            :: context
    type(toml_error), allocatable :: error
+   integer                       :: patch_n_x
+   integer                       :: patch_n_y
    character(:), allocatable     :: rbuff_file_name
    character(:), allocatable     :: stream_file_name
    integer                       :: i_0
@@ -72,6 +74,7 @@ program stream_renderbuff
       stop 1
    end if
 
+   call init_stream(table, patch_n_x, patch_n_y)
    call init_files(table, rbuff_file_name, stream_file_name)
    call init_loop(table, i_0, delta_i, n_i)
 
@@ -92,7 +95,7 @@ program stream_renderbuff
 
       ! Create the stream
 
-      stream = stream_t(rbuff)
+      stream = stream_t(rbuff, patch_n_x=patch_n_x, patch_n_y=patch_n_y)
 
       ! Write the stream
 
@@ -105,6 +108,35 @@ program stream_renderbuff
    ! Finish
 
 contains
+
+   subroutine init_stream(table, n_x, n_y)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: n_x
+      integer, intent(out)            :: n_y
+
+      type(toml_table), pointer :: table_stream
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the stream table
+
+      call get_value(table, 'stream', table_stream, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream', origin, 'table')
+
+      call get_value(table_stream, 'patch_n_x', patch_n_x, 1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'patch_n_x', origin, 'integer')
+
+      call get_value(table_stream, 'patch_n_y', patch_n_y, 1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'patch_n_y', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_stream
+
+   !****
 
    subroutine init_files(table, rbuff_file_name, stream_file_name)
 
