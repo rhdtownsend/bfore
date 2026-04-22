@@ -210,8 +210,8 @@ contains
             ! pixels from the patch was included
 
             if (PC(j_x,j_y) > 0) then
-               PS(:,j_x,j_y) = PS(:,j_x,j_y)/REAL(PC(j_x,j_y), RD)
-               PV(:,j_x,j_y) = PV(:,j_x,j_y)/REAL(PC(j_x,j_y), RD)
+               PS(:,j_x,j_y) = PS(:,j_x,j_y)/PC(j_x,j_y)
+               PV(:,j_x,j_y) = PV(:,j_x,j_y)/PC(j_x,j_y)
             end if
 
          end do

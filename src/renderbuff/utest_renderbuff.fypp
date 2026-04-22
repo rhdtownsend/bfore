@@ -437,7 +437,7 @@ contains
 
       ! Check the renderbuff scalar buffers
 
-      scalars = [(REAL(i, RD),i=1,rbuff%n_scalar)]
+      scalars = [(i, i=1,rbuff%n_scalar)]
 
       same = .TRUE.
 
@@ -469,7 +469,7 @@ contains
 
       ! Check the renderbuff vector buffers
 
-      vectors = [(REAL(i, RD),i=1,rbuff%n_vector)]*vector_t(1._RD, 1._RD, 1._RD)
+      vectors = [(i, i=1,rbuff%n_vector)]*vector_t(1._RD, 1._RD, 1._RD)
 
       same = .TRUE.
 
