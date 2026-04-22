@@ -113,59 +113,131 @@ contains
 
    module procedure stream_t_renderbuff_
 
-      integer                     :: tag_
+      integer                     :: patch_n_x_
+      integer                     :: patch_n_y_
+      integer                     :: n_scalar
+      integer                     :: n_vector
+      integer                     :: n_x
+      integer                     :: n_y
+      integer, allocatable        :: PC(:,:)
+      real(RD), allocatable       :: PS(:,:,:)
+      type(vector_t), allocatable :: PV(:,:,:)
+      integer                     :: i_x
+      integer                     :: i_y
+      integer                     :: j_x
+      integer                     :: j_y
+      integer                     :: k_x
+      integer                     :: k_y
+      logical                     :: flag
+      logical, allocatable        :: mask(:,:)
       integer                     :: n
+      integer                     :: a
       real(RD), allocatable       :: FA(:)
       real(RD), allocatable       :: FS(:,:)
       type(vector_t), allocatable :: FV(:,:)
-      integer                     :: i
-      integer                     :: i_x
-      integer                     :: i_y
-      integer                     :: a
 
-      if (PRESENT(tag)) then
-         tag_ = tag
+      if (PRESENT(patch_n_x)) then
+         patch_n_x_ = patch_n_x
       else
-         tag_ = NULL_TAG
+         patch_n_x_ = 1
       end if
 
-      ! Construct the stream from the renderbuff
+      if (PRESENT(patch_n_y)) then
+         patch_n_y_ = patch_n_y
+      else
+         patch_n_y_ = 1
+      end if
 
-      n = rbuff%pixel_count(tag)
+      @:ASSERT(MOD(rbuff%n_x, patch_n_x) == 0, 'renderbuff x-size must be an integer multiple of patch_n_x')
+      @:ASSERT(MOD(rbuff%n_y, patch_n_y) == 0, 'renderbuff y-size must be an integer multiple of patch_n_y')
 
-      allocate(FA(n))
-      allocate(FS(rbuff%n_scalar,n))
-      allocate(FV(rbuff%n_vector,n))
+      ! Construct the stream from the renderbuff. Pixels are grouped
+      ! into patches of size (patch_n_x,patch_n_y), and then flagged for
+      ! inclusion according to their tag. If one or more pixels is
+      ! flagged, then the average of all flagged pixels within the
+      ! patch is added to the stream as a single fragment
 
-      ! Loop over pixels
+      ! Set up the patch arrays
 
-      i = 0
+      n_x = rbuff%n_x/patch_n_x_
+      n_y = rbuff%n_y/patch_n_y_
 
-      do i_y = 1, rbuff%n_x
-         do i_x = 1, rbuff%n_x
+      n_scalar = rbuff%n_scalar
+      n_vector = rbuff%n_vector
 
-            if (tag_ == NULL_TAG .OR. rbuff%pixel_tag(i_x,i_y) == tag_) then
+      allocate(PC(n_x,n_y))
+      allocate(PS(n_scalar,n_x,n_y))
+      allocate(PV(n_vector,n_x,n_y))
 
-               i = i + 1
+      !$OMP PARALLEL DO COLLAPSE(2) PRIVATE(i_x, i_y, k_x, k_y, flag)
+      do j_y = 1, n_y
+         do j_x = 1, n_x
 
-               ! Add fragment data to the stream
+            PC(j_x,j_y) = 0
+            PS(:,j_x,j_y) = 0._RD
+            PV(:,j_x,j_y) = vector_t(0._RD, 0._RD, 0._RD)
 
-               FA(i) = rbuff%pixel_area()
+            ! Loop over pixels within the current patch
 
-               do a = 1, rbuff%n_scalar
-                  FS(a,i) = rbuff%pixel_scalar(a, i_x, i_y)
+            do k_y = 1, patch_n_y_
+               i_y = (j_y-1)*patch_n_y_ + k_y
+               do k_x = 1, patch_n_x_
+                  i_x = (j_x-1)*patch_n_x_ + k_x
+
+                  ! Check for pixel flagging
+
+                  if (PRESENT(tag)) then
+                     flag = rbuff%pixel_tag(i_x,i_y) == tag
+                  else
+                     flag = rbuff%pixel_tag(i_x,i_y) /= NULL_TAG
+                  end if
+
+                  if (flag) then
+
+                     ! Accumulate pixel attributes
+
+                     PC(j_x,j_y) = PC(j_x,j_y) + 1
+
+                     PS(:,j_x,j_y) = PS(:,j_x,j_y) + rbuff%pixel_scalars(i_x,i_y)
+                     PV(:,j_x,j_y) = PV(:,j_x,j_y) + rbuff%pixel_vectors(i_x,i_y)
+
+                  end if
+
                end do
+            end do
 
-               do a = 1, rbuff%n_vector
-                  FV(a,i) = rbuff%pixel_vector(a, i_x, i_y)
-               end do
+            ! Normalize the accumulated attributes if one or more
+            ! pixels from the patch was included
 
-            endif
+            if (PC(j_x,j_y) > 0) then
+               PS(:,j_x,j_y) = PS(:,j_x,j_y)/REAL(PC(j_x,j_y), RD)
+               PV(:,j_x,j_y) = PV(:,j_x,j_y)/REAL(PC(j_x,j_y), RD)
+            end if
 
          end do
       end do
 
-      @:ASSERT_DEBUG(i == n, 'stream length mismatch')
+      ! Construct the stream arrays
+
+      mask = PC > 0
+
+      n = COUNT(mask)
+
+      allocate(FA(n))
+      allocate(FS(n_scalar,n))
+      allocate(FV(n_vector,n))
+
+      FA = PACK(PC, MASK=mask)*rbuff%pixel_area()
+
+      do a = 1, n_scalar
+         FS(a,:) = PACK(PS(a,:,:), MASK=mask)
+      end do
+
+      do a = 1, n_vector
+         FV(a,:) = PACK(PV(a,:,:), MASK=mask)
+      end do
+
+      ! Construct the stream
 
       stream = stream_t_data_(FA, FS, FV)
 
@@ -198,7 +270,7 @@ contains
 
       ! Construct the stream by merging streams
 
-      n = streams(1)%n
+      n = SUM(streams%n)
       n_scalar = streams(1)%n_scalar
       n_vector = streams(1)%n_vector
 
@@ -206,14 +278,17 @@ contains
       allocate(FS(n_scalar,n))
       allocate(FV(n_vector,n))
 
+      i1 = 1
+
       stream_loop: do i = 1, SIZE(streams)
 
-         i1 = SUM(streams(:i-1)%n) + 1
          i2 = i1 + streams(i)%n - 1
 
          FA(i1:i2) = streams(i)%FA
          FS(:,i1:i2) = streams(i)%FS
          FV(:,i1:i2) = streams(i)%FV
+
+         i1 = i2 + 1
 
       end do stream_loop
 
