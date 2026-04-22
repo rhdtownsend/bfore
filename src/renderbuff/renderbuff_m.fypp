@@ -59,8 +59,8 @@ module renderbuff_m
       generic, public   :: operator(==) => equals_
       procedure, public :: pixel_depth
       procedure, public :: pixel_tag
-      procedure, public :: pixel_scalar
-      procedure, public :: pixel_vector
+      procedure, public :: pixel_scalars
+      procedure, public :: pixel_vectors
       procedure, public :: pixel_count
       procedure, public :: pixel_area
       procedure, public :: render
@@ -141,23 +141,21 @@ module renderbuff_m
          integer, pointer                        :: tag
       end function pixel_tag
 
-      module function pixel_scalar(self, a, i_x, i_y) result(scalar)
+      module function pixel_scalars(self, i_x, i_y) result(scalars)
          implicit none (type, external)
          class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: a
          integer, intent(in)                     :: i_x
          integer, intent(in)                     :: i_y
-         real(RD), pointer                       :: scalar
-      end function pixel_scalar
+         real(RD), pointer                       :: scalars(:)
+      end function pixel_scalars
 
-      module function pixel_vector(self, a, i_x, i_y) result(vector)
+      module function pixel_vectors(self, i_x, i_y) result(vectors)
          implicit none (type, external)
          class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: a
          integer, intent(in)                     :: i_x
          integer, intent(in)                     :: i_y
-         type(vector_t), pointer                 :: vector
-      end function pixel_vector
+         type(vector_t), pointer                 :: vectors(:)
+      end function pixel_vectors
 
       module function pixel_count(self, tag) result(count_)
          implicit none (type, external)

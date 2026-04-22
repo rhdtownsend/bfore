@@ -64,41 +64,39 @@ contains
 
    !****
 
-   module procedure pixel_scalar
+   module procedure pixel_scalars
 
-      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_scalar, 'invalid index')
       @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
       @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
 
-      ! Get the a'th scalar attribute of pixel (i_x,i_y). Can also be
-      ! used to set the attribute
+      ! Get the scalar attributes of pixel (i_x,i_y). Can also be
+      ! used to set the attributes
 
-      scalar => self%PS(a,i_x,i_y)
+      scalars => self%PS(:,i_x,i_y)
 
       ! Finish
 
       return
 
-   end procedure pixel_scalar
+   end procedure pixel_scalars
 
    !****
 
-   module procedure pixel_vector
+   module procedure pixel_vectors
 
-      @:ASSERT_DEBUG(a >= 1 .AND. a <= self%n_vector, 'invalid index')
       @:ASSERT_DEBUG(i_x >= 1 .AND. i_x <= self%n_x, 'invalid index')
       @:ASSERT_DEBUG(i_y >= 1 .AND. i_y <= self%n_y, 'invalid index')
 
-      ! Get the a'th vector attribute of pixel (i_x,i_y). Can also be
-      ! used to set the attribute
+      ! Get the vector attributes of pixel (i_x,i_y). Can also be used
+      ! to set the attributes
 
-      vector => self%PV(a,i_x,i_y)
+      vectors => self%PV(:,i_x,i_y)
 
       ! Finish
 
       return
 
-   end procedure pixel_vector
+   end procedure pixel_vectors
 
    !****
 
