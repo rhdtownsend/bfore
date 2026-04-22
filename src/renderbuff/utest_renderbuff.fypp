@@ -430,25 +430,21 @@ contains
       type(renderbuff_t), intent(in) :: rbuff
       logical                        :: same
 
-      integer  :: i
       integer  :: i_x
       integer  :: i_y
-      real(RD) :: rbuff_scalar(rbuff%n_x,rbuff%n_y)
+      real(RD) :: scalars(rbuff%n_scalar)
+      integer  :: i
 
       ! Check the renderbuff scalar buffers
 
+      scalars = [(REAL(i, RD),i=1,rbuff%n_scalar)]
+
       same = .TRUE.
 
-      do i = 1, rbuff%n_scalar
-
-         do i_y = 1, rbuff%n_y
-            do i_x = 1, rbuff%n_x
-               rbuff_scalar(i_x,i_y) = rbuff%pixel_scalar(i,i_x,i_y)
-            end do
+      do i_y = 1, rbuff%n_y
+         do i_x = 1, rbuff%n_x
+            same = same .AND. ALL(ABS(rbuff%pixel_scalars(i_x,i_y) - scalars) < TOL)
          end do
-
-         same = same .AND. ALL(ABS(rbuff_scalar - REAL(i, RD)) < TOL)
-
       end do
 
       ! Finish
@@ -466,25 +462,21 @@ contains
       type(renderbuff_t), intent(in) :: rbuff
       logical                        :: same
 
-      integer        :: i
       integer        :: i_x
       integer        :: i_y
-      type(vector_t) :: rbuff_vector(rbuff%n_x,rbuff%n_y)
+      type(vector_t) :: vectors(rbuff%n_vector)
+      integer        :: i
 
       ! Check the renderbuff vector buffers
 
+      vectors = [(REAL(i, RD),i=1,rbuff%n_vector)]*vector_t(1._RD, 1._RD, 1._RD)
+
       same = .TRUE.
 
-      do i = 1, rbuff%n_vector
-
-         do i_y = 1, rbuff%n_y
-            do i_x = 1, rbuff%n_x
-               rbuff_vector(i_x,i_y) = rbuff%pixel_vector(i,i_x,i_y)
-            end do
+      do i_y = 1, rbuff%n_y
+         do i_x = 1, rbuff%n_x
+            same = same .AND. ALL(NORM2(rbuff%pixel_vectors(i_x,i_y) - vectors) < TOL)
          end do
-
-         same = same .AND. ALL(NORM2(rbuff_vector - REAL(i, RD)*vector_t(1._RD, 1._RD, 1._RD)) < TOL)
-
       end do
 
       ! Finish
