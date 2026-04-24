@@ -8,9 +8,14 @@ delta_y = 3.25
 n_x = 4096
 n_y = 4096
 
+[stream]
+patch_n_x = 16
+patch_n_y = 16
+
 [files]
 mesh_file_name = 'star-{i}.h5'
-renderbuff_file_name = 'rbuff-{i}.h5'
+renderbuff_file_name = ''
+stream_file_name = 'stream-{i}.h5'
 
 [loop]
 n_i = 64
