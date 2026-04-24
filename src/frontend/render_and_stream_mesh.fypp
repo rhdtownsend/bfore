@@ -1,0 +1,362 @@
+! Program : render_and_stream_mesh
+! Purpose : Render and then stream a mesh
+!
+! Copyright 2024-2026 Rich Townsend
+!
+! This file is part of BFORE. BFORE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version
+! 3.
+!
+! BFORE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'forum.inc'
+
+program render_and_stream_mesh
+
+   ! Uses
+
+   use forum_m
+
+   use file_m
+   use mesh_m
+   use renderbuff_m
+   use stat_m
+   use star_m
+   use string_m
+   use stream_m
+   use view_m
+
+   use tomlf
+
+   use ISO_FORTRAN_ENV
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Variables
+
+   character(:), allocatable :: file_name
+
+   type(toml_table), allocatable :: table
+   type(toml_context)            :: context
+   type(toml_error), allocatable :: error
+   type(view_t)                  :: view
+   integer                       :: n_x
+   integer                       :: n_y
+   integer                       :: patch_n_x
+   integer                       :: patch_n_y
+   character(:), allocatable     :: mesh_file_name
+   character(:), allocatable     :: rbuff_file_name
+   character(:), allocatable     :: stream_file_name
+   integer                       :: i_0
+   integer                       :: delta_i
+   integer                       :: n_i
+
+   integer                    :: i
+   character(:), allocatable  :: mesh_file_name_i
+   character(:), allocatable  :: rbuff_file_name_i
+   character(:), allocatable  :: stream_file_name_i
+   type(hdf5io_t)             :: hdf5io
+   character(TYPE_LEN)        :: type
+   class(mesh_t), allocatable :: mesh
+   type(renderbuff_t)         :: rbuff
+   type(stream_t)             :: stream
+
+   integer(ID) :: c_beg, c_end, c_rate
+
+   ! Read command-line arguments
+
+   @:ASSERT(n_arg() == 1, 'Syntax: render_and_stream_mesh <file_name>')
+
+   call get_arg(1, file_name)
+
+   ! Read the input file & initialize
+
+   call toml_load(table, file_name, error=error, context=context)
+   if (ALLOCATED(error)) then
+      print *,error%message
+      stop 1
+   end if
+
+   call init_view(table, view)
+   call init_renderbuff(table, n_x, n_y)
+   call init_stream(table, patch_n_x, patch_n_y)
+   call init_files(table, mesh_file_name, rbuff_file_name, stream_file_name)
+   call init_loop(table, i_0, delta_i, n_i)
+
+   call table%destroy()
+
+   ! Loop over indices
+
+   indx_loop : do i = i_0, i_0+(n_i-1)*delta_i, delta_i
+
+      mesh_file_name_i = subst(mesh_file_name, '{i}', i, '(I4.4)')
+      rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
+      stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
+
+      ! Read the mesh
+
+      call SYSTEM_CLOCK(c_beg, c_rate)
+
+      hdf5io = hdf5io_t(mesh_file_name_i, OPEN_FILE_RO)
+
+      call get_type(hdf5io, type)
+      select case(type)
+      case('mesh_t')
+         allocate(mesh_t::mesh)
+      case('star_t')
+         allocate(star_t::mesh)
+      case default
+         @:ABORT('unrecognized mesh type')
+      end select
+
+      call mesh%read(hdf5io)
+      call hdf5io%final()
+
+      call SYSTEM_CLOCK(c_end, c_rate)
+
+      print *,'Mesh read time:',REAL(c_end-c_beg, RD)/c_rate
+
+      ! Render the mesh
+
+      call SYSTEM_CLOCK(c_beg)
+
+      rbuff = renderbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
+
+      call rbuff%render(mesh, 1)
+
+      call SYSTEM_CLOCK(c_end)
+
+      print *,'Mesh render time:',REAL(c_end-c_beg, RD)/c_rate
+
+      ! Write the mesh
+
+      if (rbuff_file_name_i /= '') then
+         print *,'writing rbuff to', rbuff_file_name_i
+         hdf5io = hdf5io_t(rbuff_file_name_i, CREATE_FILE)
+         call rbuff%write(hdf5io)
+         call hdf5io%final()
+      end if
+
+      ! Create the stream
+
+      call SYSTEM_CLOCK(c_beg)
+
+      stream = stream_t(rbuff, patch_n_x=patch_n_x, patch_n_y=patch_n_y)
+
+      call SYSTEM_CLOCK(c_end)
+
+      print *,'Rbuff stream time:',REAL(c_end-c_beg, RD)/c_rate
+
+      ! Write the stream
+
+      if (stream_file_name_i /= '') then
+         print *,'writing stream to', stream_file_name_i
+         hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
+         call stream%write(hdf5io)
+         call hdf5io%final()
+      end if
+
+      ! Clean up
+
+      deallocate(mesh)
+
+   end do indx_loop
+
+   ! Finish
+
+contains
+
+   subroutine init_view(table, view)
+
+      use point_m
+
+      type(toml_table), intent(inout) :: table
+      type(view_t), intent(out)       :: view
+
+      type(toml_table), pointer :: table_view
+      integer                   :: stat
+      integer                   :: origin
+      real(RD)                  :: origin_x
+      real(RD)                  :: origin_y
+      real(RD)                  :: origin_z
+      real(RD)                  :: alpha
+      real(RD)                  :: beta
+      real(RD)                  :: gamma
+      real(RD)                  :: delta_x
+      real(RD)                  :: delta_y
+
+      ! Read the view table
+
+      call get_value(table, 'view', table_view, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'view', origin, 'table')
+
+      call get_value(table_view, 'origin_x', origin_x, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'origin_x', origin, 'real')
+
+      call get_value(table_view, 'origin_y', origin_y, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'origin_y', origin, 'real')
+
+      call get_value(table_view, 'origin_z', origin_z, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'origin_z', origin, 'real')
+
+      call get_value(table_view, 'alpha', alpha, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'alpha', origin, 'real')
+
+      call get_value(table_view, 'beta', beta, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'beta', origin, 'real')
+
+      call get_value(table_view, 'gamma', gamma, 0._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'gamma', origin, 'real')
+
+      call get_value(table_view, 'delta_x', delta_x, 2._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_x', origin, 'real')
+
+      call get_value(table_view, 'delta_y', delta_y, 2._RD, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_y', origin, 'real')
+
+      ! Construct the view
+
+      view = view_t(point_t(origin_x, origin_y, origin_z), &
+         alpha*DEG_TO_RAD, beta*DEG_TO_RAD, gamma*DEG_TO_RAD, &
+         delta_x, delta_y)
+
+      ! Finish
+
+      return
+
+   end subroutine init_view
+
+   !****
+
+   subroutine init_renderbuff(table, n_x, n_y)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: n_x
+      integer, intent(out)            :: n_y
+
+      type(toml_table), pointer :: table_rbuff
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the renderbuff table
+
+      call get_value(table, 'renderbuff', table_rbuff, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'renderbuff', origin, 'table')
+
+      call get_value(table_rbuff, 'n_x', n_x, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_x', origin, 'integer')
+
+      call get_value(table_rbuff, 'n_y', n_y, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_y', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_renderbuff
+
+   !****
+
+   subroutine init_stream(table, patch_n_x, patch_n_y)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: patch_n_x
+      integer, intent(out)            :: patch_n_y
+
+      type(toml_table), pointer :: table_stream
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the stream table
+
+      call get_value(table, 'stream', table_stream, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream', origin, 'table')
+
+      call get_value(table_stream, 'patch_n_x', patch_n_x, 1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'patch_n_x', origin, 'integer')
+
+      call get_value(table_stream, 'patch_n_y', patch_n_y, 1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'patch_n_y', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_stream
+
+   !****
+
+   subroutine init_files(table, mesh_file_name, rbuff_file_name, stream_file_name)
+
+      type(toml_table), intent(inout)        :: table
+      character(:), allocatable, intent(out) :: mesh_file_name
+      character(:), allocatable, intent(out) :: rbuff_file_name
+      character(:), allocatable, intent(out) :: stream_file_name
+
+      type(toml_table), pointer :: table_files
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files table
+
+      call get_value(table, 'files', table_files, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'files', origin, 'table')
+
+      call get_value(table_files, 'mesh_file_name', mesh_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'mesh_file_name', origin, 'string')
+
+      call get_value(table_files, 'renderbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'renderbuff_file_name', origin, 'string')
+
+      call get_value(table_files, 'stream_file_name', stream_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'stream_file_name', origin, 'string')
+
+      ! Finish
+
+      return
+
+   end subroutine init_files
+
+   !****
+
+   subroutine init_loop(table, i_0, delta_i, n_i)
+
+      type(toml_table), intent(inout) :: table
+      integer, intent(out)            :: i_0
+      integer, intent(out)            :: delta_i
+      integer, intent(out)            :: n_i
+
+      type(toml_table), pointer :: table_loop
+      integer                   :: stat
+      integer                   :: origin
+
+      ! Read the files parameters table
+
+      call get_value(table, 'loop', table_loop, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'loop', origin, 'table')
+
+      call get_value(table_loop, 'i_0', i_0, default=0, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'i_0', origin, 'integer')
+
+      call get_value(table_loop, 'delta_i', delta_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'delta_i', origin, 'integer')
+
+      call get_value(table_loop, 'n_i', n_i, default=1, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'n_i', origin, 'integer')
+
+      ! Finish
+
+      return
+
+   end subroutine init_loop
+
+end program render_and_stream_mesh

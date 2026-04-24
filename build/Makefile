@@ -8,7 +8,7 @@ all:
 
 # Targets
 
-BIN_TARGETS = render_mesh stream_mesh stream_renderbuff \
+BIN_TARGETS = render_mesh render_and_stream_mesh stream_mesh stream_renderbuff \
               build_star pulse_star color_star
 
 LIB_TARGETS = 
@@ -78,6 +78,10 @@ ptest_renderbuff_LIBS =
 render_mesh_SRCS = render_mesh.fypp $(all_SRCS)
 render_mesh_USES = $(render_mesh_SRCS)
 render_mesh_LIBS =
+
+render_and_stream_mesh_SRCS = render_and_stream_mesh.fypp $(all_SRCS)
+render_and_stream_mesh_USES = $(render_and_stream_mesh_SRCS)
+render_and_stream_mesh_LIBS =
 
 stream_mesh_SRCS = stream_mesh.fypp $(all_SRCS)
 stream_mesh_USES = $(stream_mesh_SRCS)
