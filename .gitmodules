@@ -3,4 +3,4 @@
 	url = git@github.com:rhdtownsend/forum.git
 [submodule "src/msg"]
 	path = src/msg
-	url = git@github.com:rhdtownsend/gyre.git
+	url = git@github.com:rhdtownsend/msg.git
