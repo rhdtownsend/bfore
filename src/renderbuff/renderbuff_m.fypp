@@ -226,6 +226,7 @@ module renderbuff_m
    private
 
    public :: NULL_TAG
+   public :: DEFAULT_TAG
    public :: renderbuff_t
 
 end module renderbuff_m
