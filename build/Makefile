@@ -8,7 +8,7 @@ all:
 
 # Targets
 
-BIN_TARGETS = render_mesh render_and_stream_mesh stream_mesh stream_renderbuff \
+BIN_TARGETS = render_mesh render_and_stream_mesh stream_mesh stream_rbuff \
               build_star pulse_star color_star
 
 LIB_TARGETS = 
@@ -17,7 +17,7 @@ PKG_FILES =
 INC_FILES =
 
 ifeq ($(UTESTS),yes)
-   BIN_TARGETS += utest_vector utest_point utest_surface utest_mesh utest_renderbuff ptest_renderbuff
+   BIN_TARGETS += utest_vector utest_point utest_surface utest_mesh utest_rbuff ptest_rbuff
 endif
 
 # Source file lists & related variables
@@ -34,9 +34,9 @@ mesh_SRCS = mesh_m.fypp mesh_construct_sm.fypp mesh_operate_sm.fypp \
             mesh_connect_sm.fypp mesh_modify_sm.fypp mesh_vert_sm.fypp \
             mesh_face_sm.fypp mesh_io_sm.fypp mesh_primitives_m.fypp \
            mesh_utils_m.fypp
-renderbuff_SRCS = renderbuff_m.fypp renderbuff_construct_sm.fypp \
-                  renderbuff_operate_sm.fypp renderbuff_render_sm.fypp \
-                  renderbuff_pixel_sm.fypp renderbuff_io_sm.fypp
+rbuff_SRCS = rbuff_m.fypp rbuff_construct_sm.fypp \
+                  rbuff_operate_sm.fypp rbuff_render_sm.fypp \
+                  rbuff_pixel_sm.fypp rbuff_io_sm.fypp
 stream_SRCS = stream_m.fypp stream_construct_sm.fypp stream_operate_sm.fypp \
               stream_frag_sm.fypp stream_io_sm.fypp
 view_SRCS = view_m.fypp view_construct_sm.fypp view_operate_sm.fypp view_transform_sm.fypp \
@@ -47,7 +47,7 @@ star_SRCS = star_m.fypp star_construct_sm.fypp star_perturb_sm.fypp star_io_sm.f
 mode_SRCS = mode_m.fypp mode_construct_sm.fypp mode_perturb_sm.fypp
 math_SRCS = special_m.fypp
 other_SRCS = stat_m.fypp file_m.fypp math_m.fypp propmap_m.fypp string_m.fypp
-all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(renderbuff_SRCS) \
+all_SRCS = $(point_SRCS) $(vector_SRCS) $(mesh_SRCS) $(rbuff_SRCS) \
            $(stream_SRCS) $(view_SRCS) $(transform_SRCS) $(surface_SRCS) \
            $(mode_SRCS) $(math_SRCS) $(star_SRCS) $(other_SRCS)
 
@@ -67,13 +67,13 @@ utest_mesh_SRCS = utest_mesh.fypp $(all_SRCS)
 utest_mesh_USES = $(utest_mesh_SRCS)
 utest_mesh_LIBS = 
 
-utest_renderbuff_SRCS = utest_renderbuff.fypp $(all_SRCS)
-utest_renderbuff_USES = $(utest_renderbuff_SRCS)
-utest_renderbuff_LIBS =
+utest_rbuff_SRCS = utest_rbuff.fypp $(all_SRCS)
+utest_rbuff_USES = $(utest_rbuff_SRCS)
+utest_rbuff_LIBS =
 
-ptest_renderbuff_SRCS = ptest_renderbuff.fypp $(all_SRCS)
-ptest_renderbuff_USES = $(ptest_renderbuff_SRCS)
-ptest_renderbuff_LIBS =
+ptest_rbuff_SRCS = ptest_rbuff.fypp $(all_SRCS)
+ptest_rbuff_USES = $(ptest_rbuff_SRCS)
+ptest_rbuff_LIBS =
 
 render_mesh_SRCS = render_mesh.fypp $(all_SRCS)
 render_mesh_USES = $(render_mesh_SRCS)
@@ -87,9 +87,9 @@ stream_mesh_SRCS = stream_mesh.fypp $(all_SRCS)
 stream_mesh_USES = $(stream_mesh_SRCS)
 stream_mesh_LIBS =
 
-stream_renderbuff_SRCS = stream_renderbuff.fypp $(all_SRCS)
-stream_renderbuff_USES = $(stream_renderbuff_SRCS)
-stream_renderbuff_LIBS =
+stream_rbuff_SRCS = stream_rbuff.fypp $(all_SRCS)
+stream_rbuff_USES = $(stream_rbuff_SRCS)
+stream_rbuff_LIBS =
 
 build_star_SRCS = build_star.fypp $(all_SRCS)
 build_star_USES = $(build_star_SRCS)

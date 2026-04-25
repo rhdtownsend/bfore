@@ -1,5 +1,5 @@
-! Program : stream_renderbuff
-! Purpose : Stream a renderbuff
+! Program : stream_rbuff
+! Purpose : Stream a rbuff
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -18,7 +18,7 @@
 
 #:include 'forum.inc'
 
-program stream_renderbuff
+program stream_rbuff
 
    ! Uses
 
@@ -26,7 +26,7 @@ program stream_renderbuff
 
    use file_m
    use stat_m
-   use renderbuff_m
+   use rbuff_m
    use stream_m
    use string_m
 
@@ -53,16 +53,16 @@ program stream_renderbuff
    integer                       :: delta_i
    integer                       :: n_i
 
-   integer                    :: i
-   character(:), allocatable  :: rbuff_file_name_i
-   character(:), allocatable  :: stream_file_name_i
-   type(hdf5io_t)             :: hdf5io
-   type(renderbuff_t)         :: rbuff
-   type(stream_t)             :: stream
+   integer                   :: i
+   character(:), allocatable :: rbuff_file_name_i
+   character(:), allocatable :: stream_file_name_i
+   type(hdf5io_t)            :: hdf5io
+   type(rbuff_t)             :: rbuff
+   type(stream_t)            :: stream
 
    ! Read command-line arguments
 
-   @:ASSERT(n_arg() == 1, 'Syntax: stream_renderbuff <file_name>')
+   @:ASSERT(n_arg() == 1, 'Syntax: stream_rbuff <file_name>')
 
    call get_arg(1, file_name)
 
@@ -87,7 +87,7 @@ program stream_renderbuff
       rbuff_file_name_i = subst(rbuff_file_name, '{i}', i, '(I4.4)')
       stream_file_name_i = subst(stream_file_name, '{i}', i, '(I4.4)')
 
-      ! Read the renderbuff
+      ! Read the rbuff
 
       hdf5io = hdf5io_t(rbuff_file_name_i, OPEN_FILE_RO)
       call rbuff%read(hdf5io)
@@ -153,7 +153,7 @@ contains
       call get_value(table, 'files', table_files, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'files', origin, 'table')
 
-      call get_value(table_files, 'renderbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
+      call get_value(table_files, 'rbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'rbuff_file_name', origin, 'string')
 
       call get_value(table_files, 'stream_file_name', stream_file_name, stat=stat, origin=origin)
@@ -198,4 +198,4 @@ contains
 
    end subroutine init_loop
 
-end program stream_renderbuff
+end program stream_rbuff

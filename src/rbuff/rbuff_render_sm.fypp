@@ -1,5 +1,5 @@
-! Submodule : renderbuff_m
-! Purpose   : Rendering routines for renderbuff_t
+! Submodule : rbuff_m
+! Purpose   : Rendering routines for rbuff_t
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -18,7 +18,7 @@
 
 #:include 'forum.inc'
 
-submodule(renderbuff_m) renderbuff_render_sm
+submodule(rbuff_m) rbuff_render_sm
 
    ! Uses
 
@@ -54,6 +54,8 @@ contains
 
       @:ASSERT_DEBUG(mesh%n_scalar == self%n_scalar, 'dimension mismatch')
       @:ASSERT_DEBUG(mesh%n_vector== self%n_vector, 'dimension mismatch')
+
+      ! Render a mesh
 
       ! Extract vertex data from the mesh
 
@@ -260,7 +262,7 @@ contains
 
    module procedure clear
 
-      ! Clear the renderbuff
+      ! Clear the rbuff
 
       self%PT = NULL_TAG
 
@@ -268,4 +270,4 @@ contains
 
    end procedure clear
       
-end submodule renderbuff_render_sm
+end submodule rbuff_render_sm

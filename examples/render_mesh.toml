@@ -4,13 +4,13 @@ beta = 60
 delta_x = 3.25
 delta_y = 3.25
 
-[renderbuff]
+[rbuff]
 n_x = 4096
 n_y = 4096
 
 [files]
-mesh_file_name = 'star-{i}.h5'
-renderbuff_file_name = 'rbuff-{i}.h5'
+mesh_file_name = 'star.h5'
+rbuff_file_name = 'rbuff.h5'
 
 [loop]
-n_i = 64
+n_i = 1

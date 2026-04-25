@@ -1,5 +1,5 @@
-! Submodule : renderbuff_m
-! Purpose   : Pixel routines for renderbuff_t
+! Submodule : rbuff_m
+! Purpose   : Pixel routines for rbuff_t
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -18,7 +18,7 @@
 
 #:include 'forum.inc'
 
-submodule (renderbuff_m) renderbuff_pixel_sm
+submodule (rbuff_m) rbuff_pixel_sm
 
    ! No implicit typing
 
@@ -130,4 +130,4 @@ contains
 
    end procedure pixel_area
 
-end submodule renderbuff_pixel_sm
+end submodule rbuff_pixel_sm

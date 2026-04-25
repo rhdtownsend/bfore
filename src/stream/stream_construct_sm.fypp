@@ -111,7 +111,7 @@ contains
 
    !****
 
-   module procedure stream_t_renderbuff_
+   module procedure stream_t_rbuff_
 
       integer                     :: patch_n_x_
       integer                     :: patch_n_y_
@@ -148,11 +148,11 @@ contains
          patch_n_y_ = 1
       end if
 
-      @:ASSERT(MOD(rbuff%n_x, patch_n_x) == 0, 'renderbuff x-size must be an integer multiple of patch_n_x')
-      @:ASSERT(MOD(rbuff%n_y, patch_n_y) == 0, 'renderbuff y-size must be an integer multiple of patch_n_y')
+      @:ASSERT(MOD(rbuff%n_x, patch_n_x) == 0, 'rbuff x-size must be an integer multiple of patch_n_x')
+      @:ASSERT(MOD(rbuff%n_y, patch_n_y) == 0, 'rbuff y-size must be an integer multiple of patch_n_y')
 
-      ! Construct the stream from the renderbuff. Pixels are grouped
-      ! into patches of size (patch_n_x,patch_n_y), and then flagged for
+      ! Construct the stream from the rbuff. Pixels are grouped into
+      ! patches of size (patch_n_x,patch_n_y), and then flagged for
       ! inclusion according to their tag. If one or more pixels is
       ! flagged, then the average of all flagged pixels within the
       ! patch is added to the stream as a single fragment
@@ -245,7 +245,7 @@ contains
 
       return
 
-   end procedure stream_t_renderbuff_
+   end procedure stream_t_rbuff_
 
    !****
 

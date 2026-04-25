@@ -1,5 +1,5 @@
-! Program : utest_renderbuff
-! Purpose : Unit tests for renderbuff_m
+! Program : utest_rbuff
+! Purpose : Unit tests for rbuff_m
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -19,7 +19,7 @@
 #:include 'forum.inc'
 #:include 'utest.inc'
 
-program utest_renderbuff
+program utest_rbuff
 
    ! Uses
 
@@ -28,7 +28,7 @@ program utest_renderbuff
    use mesh_m
    use mesh_primitives_m
    use point_m
-   use renderbuff_m
+   use rbuff_m
    use sphere_surface_m
    use stat_m
    use view_m
@@ -58,10 +58,10 @@ contains
    subroutine test_render_triangle()
 
       type(view_t)          :: view
-      type(renderbuff_t)    :: rbuff
+      type(rbuff_t)    :: rbuff
       real(RD), allocatable :: z(:,:)
 
-      print *,'Checking renderbuff triangle rendering'
+      print *,'Checking rbuff triangle rendering'
 
       ! Set up the view (this is arbitrary, since render_tri bypasses the view
       ! transformations)
@@ -73,7 +73,7 @@ contains
       ! Fill-rule tests from
       ! https://learn.microsoft.com/en-us/windows/win32/direct3d9/rasterization-rules
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'L')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -84,7 +84,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'B')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -95,7 +95,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'T')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -106,7 +106,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TL')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -117,7 +117,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BL')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -128,7 +128,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'BR')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -139,7 +139,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_tri(rbuff, 1._RD, 3._RD, 1._RD, 3._RD, 0._RD, 'TR')
       z = RESHAPE([ &
          Z_MIN, Z_MIN, Z_MIN, &
@@ -150,7 +150,7 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3)
+      rbuff = rbuff_t(view, 3, 3)
       call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
       z = RESHAPE([ &
          0._RD, 0._RD, 0._RD, &
@@ -161,19 +161,19 @@ contains
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3, n_scalar=2)
+      rbuff = rbuff_t(view, 3, 3, n_scalar=2)
       call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
       @:CHECK(check_scalars(rbuff), 'square w/ two scalars')
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3, n_vector=2)
+      rbuff = rbuff_t(view, 3, 3, n_vector=2)
       call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
       @:CHECK(check_vectors(rbuff), 'square w/ two vectors')
 
       !
 
-      rbuff = renderbuff_t(view, 3, 3, n_scalar=2, n_vector=1)
+      rbuff = rbuff_t(view, 3, 3, n_scalar=2, n_vector=1)
       call render_square(rbuff, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD)
       @:CHECK(check_scalars(rbuff) .AND. check_vectors(rbuff), 'square w/ two scalars and one vector')
 
@@ -189,9 +189,9 @@ contains
 
       type(mesh_t)           :: mesh
       type(view_t)           :: view
-      type(renderbuff_t)     :: rbuff
+      type(rbuff_t)     :: rbuff
 
-      print *,'Checking renderbuff mesh rendering'
+      print *,'Checking rbuff mesh rendering'
 
       mesh = tetrahedron_mesh()
 
@@ -199,7 +199,7 @@ contains
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
-      rbuff = renderbuff_t(view, 64, 64)
+      rbuff = rbuff_t(view, 64, 64)
       call rbuff%render(mesh, 1)
 
       @:CHECK(rbuff%pixel_count(1) == 840, 'tetrahedron mesh pixel count')
@@ -215,31 +215,31 @@ contains
    subroutine test_construction()
 
       type(view_t)          :: view
-      type(renderbuff_t)    :: rbuff_a
-      type(renderbuff_t)    :: rbuff_b
-      type(renderbuff_t)    :: rbuff
+      type(rbuff_t)    :: rbuff_a
+      type(rbuff_t)    :: rbuff_b
+      type(rbuff_t)    :: rbuff
       real(RD), allocatable :: z(:,:)
 
-      print *, 'Checking renderbuff construction'
+      print *, 'Checking rbuff construction'
 
       view = view_t(point_t(0._RD, 0._RD, 0._RD), &
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          -1._RD, 1._RD)
 
-      rbuff_a = renderbuff_t(view, 3, 3)
+      rbuff_a = rbuff_t(view, 3, 3)
       call render_tri(rbuff_a, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 0._RD, 'BR')
 
-      rbuff_b = renderbuff_t(view, 3, 3)
+      rbuff_b = rbuff_t(view, 3, 3)
       call render_tri(rbuff_b, 0.5_RD, 3.5_RD, 0.5_RD, 3.5_RD, 1._RD, 'BL')
 
-      rbuff = renderbuff_t([rbuff_a, rbuff_b])
+      rbuff = rbuff_t([rbuff_a, rbuff_b])
 
       z = RESHAPE([ &
          1._RD, 1._RD, 0._RD, &
          1._RD, 0._RD, 0._RD, &
          Z_MIN, Z_MIN, 0._RD], &
          SHAPE=[3,3])
-      @:CHECK(check_depths(rbuff, z), 'merge two triangle renderbuffs')
+      @:CHECK(check_depths(rbuff, z), 'merge two triangle rbuffs')
 
       ! Finish
 
@@ -255,12 +255,12 @@ contains
       integer                :: v
       type(point_t), pointer :: point
       type(view_t)           :: view
-      type(renderbuff_t)     :: rbuff_out
-      type(renderbuff_t)     :: rbuff_in
+      type(rbuff_t)     :: rbuff_out
+      type(rbuff_t)     :: rbuff_in
       type(hdf5io_t)         :: hdf5io
       integer                :: stat
 
-      print *,'Checking renderbuff i/o'
+      print *,'Checking rbuff i/o'
 
       mesh = tetrahedron_mesh(1, 1)
 
@@ -275,20 +275,20 @@ contains
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
-      rbuff_out = renderbuff_t(view, 64, 64, 1, 1)
+      rbuff_out = rbuff_t(view, 64, 64, 1, 1)
       call rbuff_out%render(mesh, 1)
 
-      hdf5io = hdf5io_t('utest_renderbuff.h5', CREATE_FILE)
+      hdf5io = hdf5io_t('utest_rbuff.h5', CREATE_FILE)
       call rbuff_out%write(hdf5io, stat)
       call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'write renderbuff to file')
+      @:CHECK(stat == STAT_OK, 'write rbuff to file')
 
-      hdf5io = hdf5io_t('utest_renderbuff.h5', OPEN_FILE_RO)
+      hdf5io = hdf5io_t('utest_rbuff.h5', OPEN_FILE_RO)
       call rbuff_in%read(hdf5io, stat)
       call hdf5io%final()
-      @:CHECK(stat == STAT_OK, 'read renderbuff from file')
+      @:CHECK(stat == STAT_OK, 'read rbuff from file')
 
-      @:CHECK(rbuff_out == rbuff_in, 'read renderbuff equals written renderbuff')
+      @:CHECK(rbuff_out == rbuff_in, 'read rbuff equals written rbuff')
 
       ! Finish
 
@@ -300,7 +300,7 @@ contains
 
    subroutine render_tri(rbuff, x_min, x_max, y_min, y_max, z, orient)
 
-      type(renderbuff_t), intent(inout) :: rbuff
+      type(rbuff_t), intent(inout) :: rbuff
       real(RD), intent(in)              :: x_min
       real(RD), intent(in)              :: x_max
       real(RD), intent(in)              :: y_min
@@ -373,7 +373,7 @@ contains
 
    subroutine render_square(rbuff, x_min, x_max, y_min, y_max, z)
 
-      type(renderbuff_t), intent(inout) :: rbuff
+      type(rbuff_t), intent(inout) :: rbuff
       real(RD), intent(in)              :: x_min
       real(RD), intent(in)              :: x_max
       real(RD), intent(in)              :: y_min
@@ -397,7 +397,7 @@ contains
 
       real(RD), parameter :: TOL = 1E-15_RD
 
-      type(renderbuff_t), intent(in) :: rbuff
+      type(rbuff_t), intent(in) :: rbuff
       real(RD), intent(in)           :: z(:,:)
       logical                        :: same
 
@@ -405,7 +405,7 @@ contains
       integer  :: i_y
       real(RD) :: rbuff_z(rbuff%n_x,rbuff%n_y)
 
-      ! Check the renderbuff depth buffer
+      ! Check the rbuff depth buffer
 
       do i_y = 1, rbuff%n_y
          do i_x = 1, rbuff%n_x
@@ -427,7 +427,7 @@ contains
 
       real(RD), parameter :: TOL = 1E-15_RD
 
-      type(renderbuff_t), intent(in) :: rbuff
+      type(rbuff_t), intent(in) :: rbuff
       logical                        :: same
 
       integer  :: i_x
@@ -435,7 +435,7 @@ contains
       real(RD) :: scalars(rbuff%n_scalar)
       integer  :: i
 
-      ! Check the renderbuff scalar buffers
+      ! Check the rbuff scalar buffers
 
       scalars = [(i, i=1,rbuff%n_scalar)]
 
@@ -459,7 +459,7 @@ contains
 
       real(RD), parameter :: TOL = 1E-15_RD
 
-      type(renderbuff_t), intent(in) :: rbuff
+      type(rbuff_t), intent(in) :: rbuff
       logical                        :: same
 
       integer        :: i_x
@@ -467,7 +467,7 @@ contains
       type(vector_t) :: vectors(rbuff%n_vector)
       integer        :: i
 
-      ! Check the renderbuff vector buffers
+      ! Check the rbuff vector buffers
 
       vectors = [(i, i=1,rbuff%n_vector)]*vector_t(1._RD, 1._RD, 1._RD)
 
@@ -485,4 +485,4 @@ contains
 
    end function check_vectors
 
-end program utest_renderbuff
+end program utest_rbuff

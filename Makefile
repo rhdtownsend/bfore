@@ -62,7 +62,7 @@ export PKG_DIR ?= $(LIB_DIR)/pkgconfig
 export INC_DIR ?= $(CURDIR)/include
 
 export SRC_DIR := $(CURDIR)/src
-export SRC_DIRS := $(addprefix $(SRC_DIR)/,vector point mesh renderbuff stream \
+export SRC_DIRS := $(addprefix $(SRC_DIR)/,vector point mesh rbuff stream \
    view transform surface star mode math include common frontend)
 
 # Rules

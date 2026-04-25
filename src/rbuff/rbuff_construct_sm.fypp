@@ -1,5 +1,5 @@
-! Submodule : renderbuff_construct_sm
-! Purpose   : Constructor routines for renderbuff_t
+! Submodule : rbuff_construct_sm
+! Purpose   : Constructor routines for rbuff_t
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -18,7 +18,7 @@
 
 #:include 'forum.inc'
 
-submodule (renderbuff_m) renderbuff_construct_sm
+submodule (rbuff_m) rbuff_construct_sm
 
    ! No implicit typing
 
@@ -28,7 +28,7 @@ submodule (renderbuff_m) renderbuff_construct_sm
 
 contains
 
-   module procedure renderbuff_t_data_
+   module procedure rbuff_t_data_
 
       @:CHECK_BOUNDS(SIZE(PT, 1), SIZE(PD, 1))
       @:CHECK_BOUNDS(SIZE(PT, 2), SIZE(PD, 2))
@@ -39,7 +39,7 @@ contains
       @:CHECK_BOUNDS(SIZE(PV, 2), SIZE(PD, 1))
       @:CHECK_BOUNDS(SIZE(PV, 3), SIZE(PD, 2))
 
-      ! Construct the renderbuff from the view and data
+      ! Construct the rbuff from the view and data
 
       rbuff%view = view
 
@@ -57,14 +57,14 @@ contains
 
       return
 
-   end procedure renderbuff_t_data_
+   end procedure rbuff_t_data_
 
    !****
 
-   module procedure renderbuff_t_dims_
+   module procedure rbuff_t_dims_
 
-      integer                     :: n_scalar_
-      integer                     :: n_vector_
+      integer :: n_scalar_
+      integer :: n_vector_
 
       if (PRESENT(n_scalar)) then
          n_scalar_ = n_scalar
@@ -78,7 +78,7 @@ contains
          n_vector_ = 0
       end if
 
-      ! Construct the renderbuff from the view and dimensions
+      ! Construct the rbuff from the view and dimensions
 
       rbuff%view = view
 
@@ -98,11 +98,11 @@ contains
 
       return
 
-   end procedure renderbuff_t_dims_
+   end procedure rbuff_t_dims_
 
    !****
 
-   module procedure renderbuff_t_merge_
+   module procedure rbuff_t_merge_
 
       type(view_t)                :: view
       integer                     :: n_x
@@ -126,7 +126,7 @@ contains
       @:ASSERT_DEBUG(ALL(rbuffs%n_scalar == rbuffs(1)%n_scalar), 'dimension mismatch')
       @:ASSERT_DEBUG(ALL(rbuffs%n_vector == rbuffs(1)%n_vector), 'dimension mismatch')
 
-      ! Construct the renderbuff by merging rbuffs
+      ! Construct the rbuff by merging rbuffs
 
       view = rbuffs(1)%view
 
@@ -158,12 +158,12 @@ contains
 
       end do rbuff_loop
 
-      rbuff = renderbuff_t_data_(view, PD, PT, PS, PV)
+      rbuff = rbuff_t_data_(view, PD, PT, PS, PV)
 
       ! Finish
 
       return
 
-   end procedure renderbuff_t_merge_
+   end procedure rbuff_t_merge_
 
-end submodule renderbuff_construct_sm
+end submodule rbuff_construct_sm

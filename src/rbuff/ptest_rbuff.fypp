@@ -1,5 +1,5 @@
-! Program : utest_renderbuff
-! Purpose : Performance tests for renderbuff_m
+! Program : utest_rbuff
+! Purpose : Performance tests for rbuff_m
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -19,7 +19,7 @@
 #:include 'forum.inc'
 #:include 'utest.inc'
 
-program ptest_renderbuff
+program ptest_rbuff
 
    ! Uses
 
@@ -28,7 +28,7 @@ program ptest_renderbuff
    use mesh_m
    use mesh_primitives_m
    use point_m
-   use renderbuff_m
+   use rbuff_m
    use sphere_surface_m
    use vector_m
    use view_m
@@ -53,12 +53,12 @@ contains
       integer                :: v
       type(point_t), pointer :: point
       type(view_t)           :: view
-      type(renderbuff_t)     :: rbuff
+      type(rbuff_t)          :: rbuff
       integer                :: start
       integer                :: end
       integer                :: count
 
-      print *,'Checking renderbuff render time'
+      print *,'Checking rbuff render time'
 
       mesh = polar_mesh(sphere_surface_t(1._RD), 2, 3, 1)
 
@@ -78,7 +78,7 @@ contains
          0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, 0._RD*DEG_TO_RAD, &
          2.4_RD, 2.4_RD)
 
-      rbuff = renderbuff_t(view, 8192, 8192, 3, 1)
+      rbuff = rbuff_t(view, 8192, 8192, 3, 1)
 
       call SYSTEM_CLOCK(start, count)
 
@@ -94,4 +94,4 @@ contains
 
    end subroutine test_render
 
-end program ptest_renderbuff
+end program ptest_rbuff

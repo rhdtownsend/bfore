@@ -1,5 +1,5 @@
-! Module  : renderbuff_m
-! Purpose : Define renderbuff_t datatype, representing a renderbuff
+! Module  : rbuff_m
+! Purpose : Define rbuff_t datatype, representing a render buffer
 !           for rasterizing mesh_t types
 !
 ! Copyright 2024-2026 Rich Townsend
@@ -19,7 +19,7 @@
 
 #:include 'forum.inc'
 
-module renderbuff_m
+module rbuff_m
 
    ! Uses
 
@@ -43,7 +43,7 @@ module renderbuff_m
 
    ! Derived-type definitions
 
-   type :: renderbuff_t
+   type :: rbuff_t
       private
       type(view_t)                :: view
       real(RD), allocatable       :: PD(:,:)   ! Pixel depth buffer
@@ -69,154 +69,154 @@ module renderbuff_m
       procedure, public :: clear
       procedure, public :: read
       procedure, public :: write
-   end type renderbuff_t
+   end type rbuff_t
 
    ! Interfaces
 
-   interface renderbuff_t
-      module procedure renderbuff_t_dims_
-      module procedure renderbuff_t_merge_
-   end interface renderbuff_t
+   interface rbuff_t
+      module procedure rbuff_t_dims_
+      module procedure rbuff_t_merge_
+   end interface rbuff_t
 
-   ! In renderbuff_construct_sm
+   ! In rbuff_construct_sm
 
    interface
 
-      module function renderbuff_t_data_(view, PD, PT, PS, PV) result(rbuff)
+      module function rbuff_t_data_(view, PD, PT, PS, PV) result(rbuff)
          implicit none (type, external)
          type(view_t), intent(in)   :: view
          real(RD), intent(in)       :: PD(:,:)
          integer, intent(in)        :: PT(:,:)
          real(RD), intent(in)       :: PS(:,:,:)
          type(vector_t), intent(in) :: PV(:,:,:)
-         type(renderbuff_t)         :: rbuff
-      end function renderbuff_t_data_
+         type(rbuff_t)              :: rbuff
+      end function rbuff_t_data_
 
-      module function renderbuff_t_dims_(view, n_x, n_y, n_scalar, n_vector) result(rbuff)
+      module function rbuff_t_dims_(view, n_x, n_y, n_scalar, n_vector) result(rbuff)
          implicit none (type, external)
          type(view_t), intent(in)      :: view
          integer, intent(in)           :: n_x
          integer, intent(in)           :: n_y
          integer, intent(in), optional :: n_scalar
          integer, intent(in), optional :: n_vector
-         type(renderbuff_t)            :: rbuff
-      end function renderbuff_t_dims_
+         type(rbuff_t)                 :: rbuff
+      end function rbuff_t_dims_
 
-      module function renderbuff_t_merge_(rbuffs) result(rbuff)
+      module function rbuff_t_merge_(rbuffs) result(rbuff)
          implicit none (type, external)
-         type(renderbuff_t), intent(in) :: rbuffs(:)
-         type(renderbuff_t)             :: rbuff
-      end function renderbuff_t_merge_
+         type(rbuff_t), intent(in) :: rbuffs(:)
+         type(rbuff_t)             :: rbuff
+      end function rbuff_t_merge_
 
    end interface
 
-   ! In renderbuff_operate_sm
+   ! In rbuff_operate_sm
 
    interface
 
       elemental module function equals_(self, other) result(equals)
          implicit none (type, external)
-         class(renderbuff_t), intent(in) :: self
-         type(renderbuff_t), intent(in)  :: other
-         logical                         :: equals
+         class(rbuff_t), intent(in) :: self
+         type(rbuff_t), intent(in)  :: other
+         logical                    :: equals
       end function equals_
 
    end interface
 
-   ! In renderbuff_pixel_sm
+   ! In rbuff_pixel_sm
 
    interface
 
       module function pixel_depth(self, i_x, i_y) result(depth)
          implicit none (type, external)
-         class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i_x
-         integer, intent(in)                     :: i_y
-         real(RD), pointer                       :: depth
+         class(rbuff_t), intent(in), target :: self
+         integer, intent(in)                :: i_x
+         integer, intent(in)                :: i_y
+         real(RD), pointer                  :: depth
       end function pixel_depth
 
       module function pixel_tag(self, i_x, i_y) result(tag)
          implicit none (type, external)
-         class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i_x
-         integer, intent(in)                     :: i_y
-         integer, pointer                        :: tag
+         class(rbuff_t), intent(in), target :: self
+         integer, intent(in)                :: i_x
+         integer, intent(in)                :: i_y
+         integer, pointer                   :: tag
       end function pixel_tag
 
       module function pixel_scalars(self, i_x, i_y) result(scalars)
          implicit none (type, external)
-         class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i_x
-         integer, intent(in)                     :: i_y
-         real(RD), pointer                       :: scalars(:)
+         class(rbuff_t), intent(in), target :: self
+         integer, intent(in)                :: i_x
+         integer, intent(in)                :: i_y
+         real(RD), pointer                  :: scalars(:)
       end function pixel_scalars
 
       module function pixel_vectors(self, i_x, i_y) result(vectors)
          implicit none (type, external)
-         class(renderbuff_t), intent(in), target :: self
-         integer, intent(in)                     :: i_x
-         integer, intent(in)                     :: i_y
-         type(vector_t), pointer                 :: vectors(:)
+         class(rbuff_t), intent(in), target :: self
+         integer, intent(in)                :: i_x
+         integer, intent(in)                :: i_y
+         type(vector_t), pointer            :: vectors(:)
       end function pixel_vectors
 
       module function pixel_count(self, tag) result(count_)
          implicit none (type, external)
-         class(renderbuff_t), intent(in) :: self
-         integer, intent(in), optional   :: tag
-         integer                         :: count_
+         class(rbuff_t), intent(in)    :: self
+         integer, intent(in), optional :: tag
+         integer                       :: count_
       end function pixel_count
 
       module function pixel_area(self) result(area)
          implicit none (type, external)
-         class(renderbuff_t), intent(in) :: self
-         real(RD)                        :: area
+         class(rbuff_t), intent(in) :: self
+         real(RD)                   :: area
       end function pixel_area
 
    end interface
 
-   ! In renderbuff_render_sm
+   ! In rbuff_render_sm
 
    interface
 
       module subroutine render(self, mesh, tag)
          implicit none (type, external)
-         class(renderbuff_t), intent(inout) :: self
-         type(mesh_t), intent(in)           :: mesh
-         integer, intent(in), optional      :: tag
+         class(rbuff_t), intent(inout) :: self
+         type(mesh_t), intent(in)      :: mesh
+         integer, intent(in), optional :: tag
       end subroutine render
 
       module subroutine render_triangle(self, points, scalars, vectors, tag)
          implicit none (type, external)
-         class(renderbuff_t), intent(inout) :: self
-         type(point_t), intent(in)          :: points(:)
-         real(RD), intent(in)               :: scalars(:,:)
-         type(vector_t), intent(in)         :: vectors(:,:)
-         integer, intent(in), optional      :: tag
+         class(rbuff_t), intent(inout) :: self
+         type(point_t), intent(in)     :: points(:)
+         real(RD), intent(in)          :: scalars(:,:)
+         type(vector_t), intent(in)    :: vectors(:,:)
+         integer, intent(in), optional :: tag
       end subroutine render_triangle
 
       module subroutine clear(self)
          implicit none (type, external)
-         class(renderbuff_t), intent(inout) :: self
+         class(rbuff_t), intent(inout) :: self
       end subroutine clear
       
    end interface
 
-   ! In renderbuff_io_sm
+   ! In rbuff_io_sm
 
    interface
 
       module subroutine read(self, hdf5io, stat)
          implicit none (type, external)
-         class(renderbuff_t), intent(out) :: self
-         type(hdf5io_t), intent(inout)    :: hdf5io
-         integer, intent(out), optional   :: stat
+         class(rbuff_t), intent(out)    :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
       end subroutine read
 
       module subroutine write(self, hdf5io, stat)
          implicit none (type, external)
-         class(renderbuff_t), intent(in) :: self
-         type(hdf5io_t), intent(inout)   :: hdf5io
-         integer, intent(out), optional  :: stat
+         class(rbuff_t), intent(in)     :: self
+         type(hdf5io_t), intent(inout)  :: hdf5io
+         integer, intent(out), optional :: stat
       end subroutine write
 
    end interface
@@ -227,6 +227,6 @@ module renderbuff_m
 
    public :: NULL_TAG
    public :: DEFAULT_TAG
-   public :: renderbuff_t
+   public :: rbuff_t
 
-end module renderbuff_m
+end module rbuff_m

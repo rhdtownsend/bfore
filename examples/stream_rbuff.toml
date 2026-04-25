@@ -3,7 +3,7 @@ bin_x = 16
 bin_y = 16
 
 [files]
-renderbuff_file_name = 'rbuff-{i}.h5'
+rbuff_file_name = 'rbuff-{i}.h5'
 stream_file_name = 'stream-{i}.h5'
 
 [loop]

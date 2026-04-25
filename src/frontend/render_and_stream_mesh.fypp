@@ -26,7 +26,7 @@ program render_and_stream_mesh
 
    use file_m
    use mesh_m
-   use renderbuff_m
+   use rbuff_m
    use stat_m
    use star_m
    use string_m
@@ -67,7 +67,7 @@ program render_and_stream_mesh
    type(hdf5io_t)             :: hdf5io
    character(TYPE_LEN)        :: type
    class(mesh_t), allocatable :: mesh
-   type(renderbuff_t)         :: rbuff
+   type(rbuff_t)              :: rbuff
    type(stream_t)             :: stream
 
    integer(ID) :: c_beg, c_end, c_rate
@@ -87,7 +87,7 @@ program render_and_stream_mesh
    end if
 
    call init_view(table, view)
-   call init_renderbuff(table, n_x, n_y)
+   call init_rbuff(table, n_x, n_y)
    call init_stream(table, patch_n_x, patch_n_y)
    call init_files(table, mesh_file_name, rbuff_file_name, stream_file_name)
    call init_loop(table, i_0, delta_i, n_i)
@@ -129,7 +129,7 @@ program render_and_stream_mesh
 
       call SYSTEM_CLOCK(c_beg)
 
-      rbuff = renderbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
+      rbuff = rbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
 
       call rbuff%render(mesh, 1)
 
@@ -237,7 +237,7 @@ contains
 
    !****
 
-   subroutine init_renderbuff(table, n_x, n_y)
+   subroutine init_rbuff(table, n_x, n_y)
 
       type(toml_table), intent(inout) :: table
       integer, intent(out)            :: n_x
@@ -247,10 +247,10 @@ contains
       integer                   :: stat
       integer                   :: origin
 
-      ! Read the renderbuff table
+      ! Read the rbuff table
 
-      call get_value(table, 'renderbuff', table_rbuff, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'renderbuff', origin, 'table')
+      call get_value(table, 'rbuff', table_rbuff, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'rbuff', origin, 'table')
 
       call get_value(table_rbuff, 'n_x', n_x, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'n_x', origin, 'integer')
@@ -262,7 +262,7 @@ contains
 
       return
 
-   end subroutine init_renderbuff
+   end subroutine init_rbuff
 
    !****
 
@@ -314,8 +314,8 @@ contains
       call get_value(table_files, 'mesh_file_name', mesh_file_name, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'mesh_file_name', origin, 'string')
 
-      call get_value(table_files, 'renderbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
-      call check_toml_stat(context, stat, 'renderbuff_file_name', origin, 'string')
+      call get_value(table_files, 'rbuff_file_name', rbuff_file_name, stat=stat, origin=origin)
+      call check_toml_stat(context, stat, 'rbuff_file_name', origin, 'string')
 
       call get_value(table_files, 'stream_file_name', stream_file_name, stat=stat, origin=origin)
       call check_toml_stat(context, stat, 'stream_file_name', origin, 'string')

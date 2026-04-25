@@ -1,5 +1,5 @@
-! Submodule : renderbuff_operate_sm
-! Purpose   : Operators for renderbuff_t
+! Submodule : rbuff_operate_sm
+! Purpose   : Operators for rbuff_t
 !
 ! Copyright 2024-2026 Rich Townsend
 !
@@ -18,7 +18,7 @@
 
 #:include 'forum.inc'
 
-submodule(renderbuff_m) renderbuff_operate_sm
+submodule(rbuff_m) rbuff_operate_sm
 
    ! No implicit typing
 
@@ -30,7 +30,7 @@ contains
 
    module procedure equals_
 
-      ! Test the renderbuffs for equality
+      ! Test the rbuffs for equality
 
       equals = &
          self%view == other%view .AND. &
@@ -53,4 +53,4 @@ contains
 
    end procedure equals_
 
-end submodule renderbuff_operate_sm
+end submodule rbuff_operate_sm

@@ -26,7 +26,7 @@ module stream_m
    use forum_m
 
    use mesh_m
-   use renderbuff_m
+   use rbuff_m
    use transform_m
    use vector_m
    use view_m
@@ -62,7 +62,7 @@ module stream_m
 
    interface stream_t
       module procedure stream_t_mesh_
-      module procedure stream_t_renderbuff_
+      module procedure stream_t_rbuff_
       module procedure stream_t_merge_
    end interface stream_t
 
@@ -85,14 +85,14 @@ module stream_m
          type(stream_t)                 :: stream
       end function stream_t_mesh_
 
-      module function stream_t_renderbuff_(rbuff, tag, patch_n_x, patch_n_y) result(stream)
+      module function stream_t_rbuff_(rbuff, tag, patch_n_x, patch_n_y) result(stream)
          implicit none (type, external)
-         type(renderbuff_t), intent(in) :: rbuff
-         integer, intent(in), optional  :: tag
-         integer, intent(in), optional  :: patch_n_x
-         integer, intent(in), optional  :: patch_n_y
-         type(stream_t)                 :: stream
-      end function stream_t_renderbuff_
+         type(rbuff_t), intent(in)     :: rbuff
+         integer, intent(in), optional :: tag
+         integer, intent(in), optional :: patch_n_x
+         integer, intent(in), optional :: patch_n_y
+         type(stream_t)                :: stream
+      end function stream_t_rbuff_
 
       module function stream_t_merge_(streams) result(stream)
          implicit none (type, external)
