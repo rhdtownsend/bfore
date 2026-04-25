@@ -1,0 +1,88 @@
+! Submodule : mode_perturb_sm
+! Purpose   : Perturbation evaluation routines for mode_t
+!
+! Copyright 2024-2026 Rich Townsend
+!
+! This file is part of BFORE. BFORE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version
+! 3.
+!
+! BFORE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'forum.inc'
+
+submodule (mode_m) mode_perturb_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure vxi
+
+      complex(RD) :: E
+
+      ! Evaluate the displacement perturbation vector
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the components of the displacement perturbation
+      ! vector (wrt the local spherical basis vectors)
+
+      vxi(1) =  REAL(self%C_r * r * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+      vxi(2) = REAL(self%C_h * r * spherical_rgrad_Y_theta(self%l, self%m, theta, phi) * E, RD)
+      vxi(3) = REAL(self%C_h * r * spherical_rgrad_Y_phi(self%l, self%m, theta, phi) * E, RD)
+
+      ! Finish
+
+   end procedure vxi
+
+   !****
+
+   module procedure delta_T
+      
+      complex(RD) :: E
+
+      ! Evaluate the temperature perturbation
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the temperature perturbation
+
+      delta_T = REAL(self%C_T * T * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+
+   end procedure delta_T
+
+   !****
+
+   module procedure delta_g
+
+      complex(RD) :: E
+
+      ! Evaluate the gravity perturbation
+
+      ! Set up the complex phasor
+
+      E = EXP(-CMPLX(0._RD, 1._RD, RD) * self%sigma * time)
+
+      ! Calculate the gravity perturbation
+
+      delta_g = REAL(self%C_g * g * spherical_Y(self%l, self%m, theta, phi) * E, RD)
+
+   end procedure delta_g
+
+end submodule mode_perturb_sm

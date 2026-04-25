@@ -1,0 +1,51 @@
+! Submodule : mode_construct_sm
+! Purpose   : Constructor routines for mode_t
+!
+! Copyright 2024-2026 Rich Townsend
+!
+! This file is part of BFORE. BFORE is free software: you can
+! redistribute it and/or modify it under the terms of the GNU General
+! Public License as published by the Free Software Foundation, version
+! 3.
+!
+! BFORE is distributed in the hope that it will be useful, but WITHOUT
+! ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+! or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+! License for more details.
+!
+! You should have received a copy of the GNU General Public License
+! along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#:include 'forum.inc'
+
+submodule (mode_m) mode_construct_sm
+
+   ! No implicit typing
+
+   implicit none (type, external)
+
+   ! Procedures
+
+contains
+
+   module procedure mode_t_
+
+      ! Construct the mode_t
+
+      mode%l = l
+      mode%m = m
+
+      mode%C_r = C_r
+      mode%C_h = C_h
+      mode%C_T = C_T
+      mode%C_g = C_g
+
+      mode%sigma = sigma
+
+      ! Finish
+
+      return
+
+   end procedure mode_t_
+
+end submodule mode_construct_sm
