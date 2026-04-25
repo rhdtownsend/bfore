@@ -116,6 +116,7 @@ contains
 
    module procedure render_triangle
 
+      integer  :: tag_
       integer  :: i_x_min
       integer  :: i_x_max
       integer  :: i_y_min
@@ -142,6 +143,12 @@ contains
 
       @:CHECK_BOUNDS(SIZE(vectors, 1), self%n_vector)
       @:CHECK_BOUNDS(SIZE(vectors, 2), 3)
+
+      if (PRESENT(tag)) then
+         tag_ = tag
+      else
+         tag_ = DEFAULT_TAG
+      end if
 
       ! Render a triangle. The algorithm largely follows that
       ! described by Pineda (1988)
@@ -205,7 +212,7 @@ contains
 
                depth = DOT_PRODUCT(lambda, points%z)
 
-               if (depth > self%PD(i_x,i_y)) then
+               if (self%PT(i_x,i_y) == NULL_TAG .OR. depth > self%PD(i_x,i_y)) then
 
                   ! Store the depth
 
@@ -213,16 +220,16 @@ contains
 
                   ! Store the tag
 
-                  if (PRESENT(tag)) self%PT(i_x,i_y) = tag
+                  self%PT(i_x,i_y) = tag_
 
                   ! Store the scalars and vectors
 
                   do i = 1, self%n_scalar
-                     self%PS(i,i_x,i_y) = SUM(scalars(i,:)*lambda)
+                     self%PS(i,i_x,i_y) = scalars(i,1)*lambda(1) + scalars(i,2)*lambda(2) + scalars(i,3)*lambda(3)
                   end do
 
                   do i = 1, self%n_vector
-                     self%PV(i,i_x,i_y) = sum(vectors(i,:)*lambda)
+                     self%PV(i,i_x,i_y) = vectors(i,1)*lambda(1) + vectors(i,2)*lambda(2) + vectors(i,3)*lambda(3)
                   end do
 
                   ! Flag that at least one pixel on this scanline was
@@ -249,4 +256,16 @@ contains
 
    end procedure render_triangle
 
+   !****
+
+   module procedure clear
+
+      ! Clear the renderbuff
+
+      self%PT = NULL_TAG
+
+      ! Finish
+
+   end procedure clear
+      
 end submodule renderbuff_render_sm
