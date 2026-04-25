@@ -62,6 +62,8 @@ program render_mesh
    type(hdf5io_t)             :: hdf5io
    character(TYPE_LEN)        :: type
    class(mesh_t), allocatable :: mesh
+   integer                    :: n_scalar
+   integer                    :: n_vector
    type(rbuff_t)              :: rbuff
 
    ! Read command-line arguments
@@ -109,9 +111,21 @@ program render_mesh
       call mesh%read(hdf5io)
       call hdf5io%final()
 
+      if (i == i_0) then
+         n_scalar = mesh%n_scalar
+         n_vector = mesh%n_vector
+      else
+         @:ASSERT(n_scalar == mesh%n_scalar, 'dimension mismatch')
+         @:ASSERT(n_vector == mesh%n_vector, 'dimension mismatch')
+      end if
+
       ! Render the mesh
 
-      rbuff = rbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
+      if (i == i_0) then
+         rbuff = rbuff_t(view, n_x, n_y, n_scalar, n_vector)
+      else
+         call rbuff%clear()
+      end if
 
       call rbuff%render(mesh, 1)
 

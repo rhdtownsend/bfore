@@ -67,6 +67,8 @@ program render_and_stream_mesh
    type(hdf5io_t)             :: hdf5io
    character(TYPE_LEN)        :: type
    class(mesh_t), allocatable :: mesh
+   integer                    :: n_scalar
+   integer                    :: n_vector
    type(rbuff_t)              :: rbuff
    type(stream_t)             :: stream
 
@@ -125,11 +127,23 @@ program render_and_stream_mesh
 
       print *,'Mesh read time:',REAL(c_end-c_beg, RD)/c_rate
 
+      if (i == i_0) then
+         n_scalar = mesh%n_scalar
+         n_vector = mesh%n_vector
+      else
+         @:ASSERT(n_scalar == mesh%n_scalar, 'dimension mismatch')
+         @:ASSERT(n_vector == mesh%n_vector, 'dimension mismatch')
+      end if
+
       ! Render the mesh
 
       call SYSTEM_CLOCK(c_beg)
 
-      rbuff = rbuff_t(view, n_x, n_y, mesh%n_scalar, mesh%n_vector)
+      if (i == i_0) then
+         rbuff = rbuff_t(view, n_x, n_y, n_scalar, n_vector)
+      else
+         call rbuff%clear()
+      end if
 
       call rbuff%render(mesh, 1)
 
@@ -140,7 +154,7 @@ program render_and_stream_mesh
       ! Write the mesh
 
       if (rbuff_file_name_i /= '') then
-         print *,'writing rbuff to', rbuff_file_name_i
+         print *,'writing rbuff to ', rbuff_file_name_i
          hdf5io = hdf5io_t(rbuff_file_name_i, CREATE_FILE)
          call rbuff%write(hdf5io)
          call hdf5io%final()
@@ -159,7 +173,7 @@ program render_and_stream_mesh
       ! Write the stream
 
       if (stream_file_name_i /= '') then
-         print *,'writing stream to', stream_file_name_i
+         print *,'writing stream to ', stream_file_name_i
          hdf5io = hdf5io_t(stream_file_name_i, CREATE_FILE)
          call stream%write(hdf5io)
          call hdf5io%final()
