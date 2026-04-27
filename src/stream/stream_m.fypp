@@ -80,7 +80,7 @@ module stream_m
 
       module function stream_t_mesh_(mesh, view) result(stream)
          implicit none (type, external)
-         type(mesh_t), intent(in)       :: mesh
+         class(mesh_t), intent(in)      :: mesh
          type(view_t), intent(in)       :: view
          type(stream_t)                 :: stream
       end function stream_t_mesh_
