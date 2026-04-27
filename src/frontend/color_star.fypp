@@ -181,8 +181,6 @@ contains
       type(hdf5io_t)            :: hdf5io
       type(passband_t)          :: passband
 
-      character(16) :: label
-
       ! Read the msg table
 
       call get_value(table, 'msg', table_msg, stat=stat, origin=origin)
@@ -215,7 +213,6 @@ contains
 
       do i = 1, n_axes
          call specgrid%get_axis(i, axes(i))
-         call axes(i)%get_label(label)
       end do
 
       ! Create the photgrids
