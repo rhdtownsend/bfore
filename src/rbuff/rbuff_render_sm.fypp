@@ -133,6 +133,7 @@ contains
       integer  :: i_y
       logical  :: any_inside
       real(RD) :: EF(3)
+      real(RD) :: EF_row(3)
       logical  :: inside
       real(RD) :: lambda(3)
       real(RD) :: depth
@@ -194,11 +195,13 @@ contains
 
          any_inside = .FALSE.
 
+         EF_row = i_y*EF_b + EF_c
+
          x_loop: do i_x = i_x_min, i_x_max
 
             ! Evaluate the edge functions
 
-            EF = i_x*EF_a + i_y*EF_b + EF_c
+            EF = EF_row + i_x*EF_a
 
             ! Determine if the pixel lies within the triangle
 
