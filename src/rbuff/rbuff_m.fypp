@@ -38,8 +38,8 @@ module rbuff_m
 
    ! Parameter definitions
 
-   integer, parameter :: NULL_TAG = -2
-   integer, parameter :: DEFAULT_TAG = -1
+   integer, parameter :: NULL_TAG = -1
+   integer, parameter :: DEFAULT_TAG = 0
 
    ! Derived-type definitions
 
