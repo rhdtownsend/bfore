@@ -47,7 +47,6 @@ contains
 
       class(mesh_t), intent(inout) :: mesh
       integer, intent(in)          :: i
-      type(vector_t)               :: normals(mesh%n_vert)
 
       integer        :: f
       type(vector_t) :: area
