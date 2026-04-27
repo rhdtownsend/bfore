@@ -206,7 +206,6 @@ contains
       integer :: e1
       integer :: e2
       integer :: e3
-      integer :: e3
       integer :: e4
       integer :: e5
       integer :: e6
@@ -404,7 +403,7 @@ contains
 
       ! If necessary, expand arrays
 
-      if (d_vert > mesh%n_vert) then
+      if (d_vert > SIZE(mesh%VE)) then
 
          call reallocate(mesh%VE, [d_vert])
          call reallocate(mesh%VP, [d_vert])
@@ -414,7 +413,7 @@ contains
 
       end if
 
-      if (d_edge > mesh%n_edge) then
+      if (d_edge > SIZE(mesh%EV)) then
 
          call reallocate(mesh%EV, [d_edge])
          call reallocate(mesh%ET, [d_edge])
