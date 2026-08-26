@@ -109,11 +109,11 @@ program stream_rbuff
 
 contains
 
-   subroutine init_stream(table, n_x, n_y)
+   subroutine init_stream(table, patch_n_x, patch_n_y)
 
       type(toml_table), intent(inout) :: table
-      integer, intent(out)            :: n_x
-      integer, intent(out)            :: n_y
+      integer, intent(out)            :: patch_n_x
+      integer, intent(out)            :: patch_n_y
 
       type(toml_table), pointer :: table_stream
       integer                   :: stat
