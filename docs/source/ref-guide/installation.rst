@@ -82,6 +82,19 @@ The initial output from the tests should look something like this:
    :language: console
    :lines: 1-10
 
+Installing the :py:mod:`bfore` Module
+=====================================
+
+To install the :py:mod:`bfore` Python module, use the :command:`pip`
+tool:
+
+.. code-block:: console
+
+   $ pip install $BFORE_DIR/python
+
+You can alternatively add the :file:`$BFORE_DIR/python/src` directory to
+the :envvar:`PYTHONPATH` environment variable.
+
 Custom Builds
 =============
 
