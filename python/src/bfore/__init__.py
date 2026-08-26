@@ -1,5 +1,5 @@
 # Module  : bfore
-# Purpose : Python classes for Fortran mesh_t and geo_mesh_t types
+# Purpose : Python classes for BFORE types
 
 import h5py as h5
 import numpy as np
