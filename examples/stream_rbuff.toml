@@ -1,10 +1,10 @@
 [stream]
-bin_x = 16
-bin_y = 16
+patch_n_x = 16
+patch_n_y = 16
 
 [files]
-rbuff_file_name = 'rbuff-{i}.h5'
-stream_file_name = 'stream-{i}.h5'
+rbuff_file_name = 'rbuff.h5'
+stream_file_name = 'stream.h5'
 
 [loop]
-n_i = 64
+n_i = 1
