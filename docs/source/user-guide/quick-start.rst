@@ -12,7 +12,8 @@ To get started with BFORE, follow these five simple steps:
 * unpack the source code using the :command:`tar` utility;
 * set the :envvar:`BFORE_DIR` environment variable to point to the
   newly created source directory;
-* compile and install GYRE using the command :command:`make -j -C $BFORE_DIR`.
+* compile and install BFORE using the command :command:`make -j -C $BFORE_DIR`.
+* install the :py:mod:`bfore` Python module using the command :command:`pip install $BFORE_DIR/python` (optional).
 
 For a more in-depth installation guide that covers alternative
 use-cases, refer to the :ref:`installation` chapter. Otherwise,
