@@ -18,4 +18,4 @@ rbuff_file_name = ''
 stream_file_name = 'stream-{i}.h5'
 
 [loop]
-n_i = 1
+n_i = 64
