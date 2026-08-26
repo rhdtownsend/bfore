@@ -181,7 +181,7 @@ module rbuff_m
       module subroutine render(self, mesh, tag)
          implicit none (type, external)
          class(rbuff_t), intent(inout) :: self
-         type(mesh_t), intent(in)      :: mesh
+         class(mesh_t), intent(in)     :: mesh
          integer, intent(in), optional :: tag
       end subroutine render
 
