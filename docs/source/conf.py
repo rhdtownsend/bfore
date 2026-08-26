@@ -24,7 +24,7 @@ import sphinx_rtd_theme
 
 project = 'BFORE'
 author = 'Rich Townsend'
-version = '0.1'
+version = '0.1+dev'
 release = version
 branch = 'main'
 copyright = '2024-2026, Rich Townsend'
